@@ -15,13 +15,14 @@ void Engine::Init(HWND hWnd, float viewportWidth, float viewportHeight)
 	InitD3D(hWnd);
 	InitViewport(viewportWidth, viewportHeight);
 	InitPipeline();
-	InitGraphics();
+	InitScene();
 }
 
 void Engine::Release()
 {
+	delete triangle;
+
 	SAFE_RELEASE(standardInputLayout);
-	SAFE_RELEASE(vertexBuffer);
 	SAFE_RELEASE(standardVS);
 	SAFE_RELEASE(standardOpaquePS);
 
@@ -108,29 +109,10 @@ void Engine::InitPipeline()
 	context->IASetInputLayout(standardInputLayout);
 }
 
-void Engine::InitGraphics()
+void Engine::InitScene()
 {
-	StandardVertexData vertices[] =
-	{
-		{  0.0f,    0.5f, 0.0f, { 1.0f, 0.0f, 0.0f, 1.0f } },
-		{  0.45f,  -0.5,  0.0f, { 0.0f, 1.0f, 0.0f, 1.0f } },
-		{  -0.45f, -0.5f, 0.0f, { 0.0f, 0.0f, 1.0f, 1.0f } }
-	};
-
-	D3D11_BUFFER_DESC bd;
-	ZeroMemory(&bd, sizeof(bd));
-	bd.Usage = D3D11_USAGE_DYNAMIC; // write access access by CPU and GPU
-	bd.ByteWidth = sizeof(StandardVertexData) * 3;
-	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	
-
-	device->CreateBuffer(&bd, nullptr, &vertexBuffer);
-
-	D3D11_MAPPED_SUBRESOURCE ms;
-	context->Map(vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &ms);
-	memcpy(ms.pData, vertices, sizeof(vertices));
-	context->Unmap(vertexBuffer, 0);
+	triangle = new Triangle();
+	triangle->Init(device, context);
 }
 
 void Engine::ReleaseD3D()
@@ -146,12 +128,7 @@ void Engine::RenderFrame(void)
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	context->ClearRenderTargetView(backbuffer, clearColor);
 
-	UINT stride = sizeof(StandardVertexData);
-	UINT offset = 0;
-	context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
-	context->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	context->Draw(3, 0);
+	triangle->Draw(context);
 
 	swapchain->Present(0, 0);
 }

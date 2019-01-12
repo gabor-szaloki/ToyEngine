@@ -103,7 +103,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			ShowWindow(hWnd, showCmd);
 
 			gEngine->Release();
-			gEngine->Init(hWnd, clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
+			gEngine->Init(hWnd, float(clientRect.right - clientRect.left), float(clientRect.bottom - clientRect.top));
 
 			break;
 		}

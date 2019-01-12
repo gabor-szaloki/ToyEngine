@@ -16,12 +16,24 @@
     <ClCompile Include="Engine.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="Drawable.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Triangle.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine.h">
       <Filter>Source</Filter>
     </ClInclude>
     <ClInclude Include="Common.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="Drawable.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="Triangle.h">
       <Filter>Source</Filter>
     </ClInclude>
   </ItemGroup>
