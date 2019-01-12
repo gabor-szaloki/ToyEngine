@@ -10,8 +10,8 @@ Engine::Engine()
 	time = deltaTime = 0.0f;
 	camera = new Camera();
 	ZeroMemory(&cameraInputState, sizeof(CameraInputState));
-	cameraSpeed = 5.0f;
-
+	cameraMoveSpeed = 5.0f;
+	cameraTurnSpeed = 2.0f;
 }
 
 Engine::~Engine()
@@ -47,7 +47,7 @@ void Engine::InitD3D(HWND hWnd)
 	scd.SampleDesc.Count = 1;
 	scd.Windowed = true;
 
-	D3D11CreateDeviceAndSwapChain(
+	HRESULT hr = D3D11CreateDeviceAndSwapChain(
 		nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, nullptr, 0, D3D11_SDK_VERSION,
 		&scd, &swapchain, &device, nullptr, &context);
 
@@ -170,10 +170,14 @@ void Engine::Update(float elapsedTime)
 		camera->GetRight() * ((cameraInputState.isMovingRight ? 1.0f : 0.0f) + (cameraInputState.isMovingLeft ? -1.0f : 0.0f)) +
 		camera->GetUp() * ((cameraInputState.isMovingUp ? 1.0f : 0.0f) + (cameraInputState.isMovingDown ? -1.0f : 0.0f)) +
 		camera->GetForward() * ((cameraInputState.isMovingForward ? 1.0f : 0.0f) + (cameraInputState.isMovingBackward ? -1.0f : 0.0f));
-	XMVECTOR cameraMoveDelta = cameraMoveDir * cameraSpeed * deltaTime;
+	XMVECTOR cameraMoveDelta = cameraMoveDir * cameraMoveSpeed * deltaTime;
 	if (cameraInputState.isSpeeding)
 		cameraMoveDelta *= 2.0f;
 	camera->MoveEye(cameraMoveDelta);
+
+	camera->Rotate(cameraInputState.deltaPitch * cameraTurnSpeed * deltaTime, cameraInputState.deltaYaw * cameraTurnSpeed * deltaTime);
+	//camera->Rotate(0, 1 * cameraTurnSpeed * deltaTime);
+	cameraInputState.deltaPitch = cameraInputState.deltaYaw = 0;
 }
 
 void Engine::RenderFrame()
@@ -188,6 +192,7 @@ void Engine::RenderFrame()
 	context->VSSetConstantBuffers(0, 1, &perFrameCB);
 
 	//box->worldTransform = XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), time);
+	//box->worldTransform = XMMatrixTranslation(1, 2, 3);
 	box->Draw(context, perObjectCB);
 
 	triangle->worldTransform = XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), time);

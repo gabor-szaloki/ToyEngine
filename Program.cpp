@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <time.h>
 
 #include "Common.h"
@@ -8,6 +9,8 @@
 
 int showCmd;
 bool fullscreen = false;
+bool rightMouseButtonHeldDown = false;
+POINT lastMousePos;
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -67,11 +70,40 @@ quit:
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	switch (message)
+	if (message == WM_DESTROY)
 	{
-	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
+	}
+
+	if (gEngine == nullptr)
+		return DefWindowProc(hWnd, message, wParam, lParam);
+
+	switch (message)
+	{
+	case WM_RBUTTONUP:
+		rightMouseButtonHeldDown = false;
+		SetCapture(nullptr);
+		ShowCursor(true);
+		break;
+	case WM_RBUTTONDOWN:
+	{
+		rightMouseButtonHeldDown = true;
+		SetCapture(hWnd);
+		ShowCursor(false);
+		GetCursorPos(&lastMousePos);
+		break;
+	}
+	case WM_MOUSEMOVE:
+		if (rightMouseButtonHeldDown)
+		{
+			POINT mousePos;
+			GetCursorPos(&mousePos);
+			gEngine->cameraInputState.deltaYaw = mousePos.x - lastMousePos.x;
+			gEngine->cameraInputState.deltaPitch = mousePos.y - lastMousePos.y;
+			SetCursorPos(lastMousePos.x, lastMousePos.y);
+		}
+		break;
 	case WM_KEYUP:
 		switch (wParam)
 		{

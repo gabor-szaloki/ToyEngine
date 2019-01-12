@@ -15,11 +15,12 @@ public:
 	XMVECTOR GetEye() { return eye; }
 	void SetEye(XMVECTOR eye);
 	void MoveEye(XMVECTOR direction);
-	XMVECTOR GetAt() { return at; }
+	void SetRotation(float pitch, float yaw);
+	void Rotate(float deltaPitch, float deltaYaw);
 	XMVECTOR GetUp() { return up; }
-	XMVECTOR GetForward() { return XMVector3Normalize(at - eye); }
+	XMVECTOR GetForward() { return XMVectorSet(viewMatrixF4X4.m[0][2], viewMatrixF4X4.m[1][2], viewMatrixF4X4.m[2][2], 0.0f); }
 	XMVECTOR GetRight() { return XMVector3Cross(up, GetForward()); }
-	void SetViewParams(XMVECTOR eye, XMVECTOR at, XMVECTOR up);
+	void SetViewParams(XMVECTOR eye, XMVECTOR up, float pitch, float yaw);
 	XMMATRIX GetViewMatrix() { return viewMatrix; }
 
 	float GetViewportWidth() { return viewportWidth; }
@@ -32,13 +33,16 @@ public:
 
 private:
 
-	XMVECTOR eye, at, up;
+	XMVECTOR eye, up;
+	float pitch, yaw;
 
 	float viewportWidth, viewportHeight;
 	float fov, nearPlane, farPlane;
 
 	XMMATRIX viewMatrix;
+	XMFLOAT4X4 viewMatrixF4X4;
 	XMMATRIX projectionMatrix;
+	XMFLOAT4X4 projectionMatrixF4X4;
 
 	void RecalculateViewMatrix();
 	void RecalculateProjectionMatrix();

@@ -7,6 +7,8 @@
 #include <DirectXMath.h>
 
 #define SAFE_RELEASE(resource) { if (resource != nullptr) { resource->Release(); } }
+#define GET_X_LPARAM(lp) ((int)(short)LOWORD(lp))
+#define GET_Y_LPARAM(lp) ((int)(short)HIWORD(lp))
 
 using namespace DirectX;
 

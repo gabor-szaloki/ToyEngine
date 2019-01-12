@@ -42,6 +42,8 @@ public:
 		bool isMovingUp;
 		bool isMovingDown;
 		bool isSpeeding;
+		int deltaYaw;
+		int deltaPitch;
 	};
 	CameraInputState cameraInputState;
 
@@ -50,7 +52,7 @@ private:
 	float time, deltaTime;
 
 	Camera *camera;
-	float cameraSpeed;
+	float cameraMoveSpeed, cameraTurnSpeed;
 
 	ID3D11Device *device;
 	ID3D11DeviceContext *context;
