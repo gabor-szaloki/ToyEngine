@@ -1,11 +1,17 @@
 #include "Engine.h"
 
 #include "Triangle.h"
+#include "Box.h"
 
 Engine *gEngine;
 
 Engine::Engine()
 {
+	time = deltaTime = 0.0f;
+	viewportWidth = viewportHeight = 0.0f;
+	fov = XM_PIDIV2;
+	nearPlane = 0.1f;
+	farPlane = 100.0f;
 }
 
 Engine::~Engine()
@@ -22,12 +28,8 @@ void Engine::Init(HWND hWnd, float viewportWidth, float viewportHeight)
 
 void Engine::Release()
 {
-	delete triangle;
-
-	SAFE_RELEASE(standardInputLayout);
-	SAFE_RELEASE(standardVS);
-	SAFE_RELEASE(standardOpaquePS);
-
+	ReleaseScene();
+	ReleasePipeline();
 	ReleaseD3D();
 }
 
@@ -58,6 +60,14 @@ void Engine::InitD3D(HWND hWnd)
 	context->OMSetRenderTargets(1, &backbuffer, nullptr);
 }
 
+void Engine::ReleaseD3D()
+{
+	SAFE_RELEASE(swapchain);
+	SAFE_RELEASE(backbuffer);
+	SAFE_RELEASE(device);
+	SAFE_RELEASE(context);
+}
+
 void Engine::InitViewport(float w, float h)
 {
 	D3D11_VIEWPORT viewport;
@@ -68,6 +78,9 @@ void Engine::InitViewport(float w, float h)
 	viewport.Height = h;
 
 	context->RSSetViewports(1, &viewport);
+
+	viewportWidth = w;
+	viewportHeight = h;
 }
 
 void Engine::InitPipeline()
@@ -94,8 +107,8 @@ void Engine::InitPipeline()
 	if (FAILED(hr))
 		throw;
 
-	device->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &standardVS);
-	device->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &standardOpaquePS);
+	hr = device->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &standardVS);
+	hr = device->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &standardOpaquePS);
 
 	context->VSSetShader(standardVS, nullptr, 0);
 	context->PSSetShader(standardOpaquePS, nullptr, 0);
@@ -106,31 +119,73 @@ void Engine::InitPipeline()
 		{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
 	};
 
-	device->CreateInputLayout(ied, 2, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &standardInputLayout);
+	hr = device->CreateInputLayout(ied, 2, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &standardInputLayout);
 
 	context->IASetInputLayout(standardInputLayout);
+
+	D3D11_BUFFER_DESC bd;
+	ZeroMemory(&bd, sizeof(D3D11_BUFFER_DESC));
+	bd.Usage = D3D11_USAGE_DEFAULT;
+	bd.ByteWidth = sizeof(PerFrameConstantBufferData);
+	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	bd.CPUAccessFlags = 0;
+
+	hr = device->CreateBuffer(&bd, nullptr, &perFrameCB);
+	
+	bd.ByteWidth = sizeof(PerObjectConstantBufferData);
+
+	hr = device->CreateBuffer(&bd, nullptr, &perObjectCB);
+}
+
+void Engine::ReleasePipeline()
+{
+	SAFE_RELEASE(perFrameCB);
+	SAFE_RELEASE(perObjectCB);
+	SAFE_RELEASE(standardInputLayout);
+	SAFE_RELEASE(standardVS);
+	SAFE_RELEASE(standardOpaquePS);
 }
 
 void Engine::InitScene()
 {
 	triangle = new Triangle();
 	triangle->Init(device, context);
+
+	box = new Box();
+	box->Init(device, context);
 }
 
-void Engine::ReleaseD3D()
+void Engine::ReleaseScene()
 {
-	SAFE_RELEASE(swapchain);
-	SAFE_RELEASE(backbuffer);
-	SAFE_RELEASE(device);
-	SAFE_RELEASE(context);
+	delete triangle;
+	delete box;
 }
 
-void Engine::RenderFrame(void)
+void Engine::RenderFrame(float elapsedTime)
 {
+	deltaTime = elapsedTime - time;
+	time = elapsedTime;
+
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	context->ClearRenderTargetView(backbuffer, clearColor);
 
-	triangle->Draw(context);
+	PerFrameConstantBufferData perFrameCBData;
+
+	XMVECTOR eye = XMVectorSet(0.0f, 1.0f, -5.0f, 0.0f);
+	XMVECTOR at = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	perFrameCBData.view = XMMatrixLookAtLH(eye, at, up);
+
+	perFrameCBData.projection = XMMatrixPerspectiveFovLH(fov, viewportWidth / viewportHeight, nearPlane, farPlane);
+
+	context->UpdateSubresource(perFrameCB, 0, nullptr, &perFrameCBData, 0, 0);
+	context->VSSetConstantBuffers(0, 1, &perFrameCB);
+
+	box->worldTransform = XMMatrixRotationAxis(up, time);
+	box->Draw(context, perObjectCB);
+
+	triangle->worldTransform = XMMatrixRotationAxis(up, time);
+	triangle->Draw(context, perObjectCB);
 
 	swapchain->Present(0, 0);
 }

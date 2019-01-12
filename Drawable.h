@@ -2,19 +2,28 @@
 
 #include "Common.h"
 
-class Drawable
+__declspec(align(16)) class Drawable
 {
 public:
 
+	XMMATRIX worldTransform;
+
 	Drawable();
-	~Drawable();
+	virtual ~Drawable();
+
+	void* operator new(size_t i) { return _mm_malloc(i, 16); }
+	void operator delete(void* p) { _mm_free(p); }
 
 	virtual void Init(ID3D11Device *device, ID3D11DeviceContext *context) = 0;
-	void Draw(ID3D11DeviceContext *context);
+	virtual void Draw(ID3D11DeviceContext *context, ID3D11Buffer *perObjectCB);
 
 protected:
 
-	//XMMATRIX worldTransform;
 	ID3D11Buffer *vertexBuffer;
+	ID3D11Buffer *indexBuffer;
+	UINT indexCount;
+
+	void InitBuffers(ID3D11Device *device, ID3D11DeviceContext *context, 
+		StandardVertexData *vertices, UINT vertexCount, WORD *indices, UINT indexCount);
 };
 

@@ -8,8 +8,10 @@
 
 #define SAFE_RELEASE(resource) { if (resource != nullptr) { resource->Release(); } }
 
+using namespace DirectX;
+
 struct StandardVertexData 
 { 
-	DirectX::XMFLOAT3 position; 
-	DirectX::XMFLOAT4 color;
+	XMFLOAT3 position; 
+	XMFLOAT4 color;
 };

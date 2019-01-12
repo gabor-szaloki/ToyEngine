@@ -1,3 +1,6 @@
+#include <time.h>
+
+#include "Common.h"
 #include "Engine.h"
 
 #define DEFAULT_WINDOWED_WIDTH 1280
@@ -51,7 +54,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				goto quit;
 		}
 
-		gEngine->RenderFrame();
+		float time = (float)clock() / (float)CLOCKS_PER_SEC;
+		gEngine->RenderFrame(time);
 	}
 
 quit:
