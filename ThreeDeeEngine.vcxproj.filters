@@ -25,6 +25,9 @@
     <ClCompile Include="Box.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine.h">
@@ -40,6 +43,9 @@
       <Filter>Source</Filter>
     </ClInclude>
     <ClInclude Include="Box.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
       <Filter>Source</Filter>
     </ClInclude>
   </ItemGroup>

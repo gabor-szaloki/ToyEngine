@@ -8,14 +8,12 @@ Engine *gEngine;
 Engine::Engine()
 {
 	time = deltaTime = 0.0f;
-	viewportWidth = viewportHeight = 0.0f;
-	fov = XM_PIDIV2;
-	nearPlane = 0.1f;
-	farPlane = 100.0f;
+	camera = new Camera();
 }
 
 Engine::~Engine()
 {
+	delete camera;
 }
 
 void Engine::Init(HWND hWnd, float viewportWidth, float viewportHeight)
@@ -79,8 +77,7 @@ void Engine::InitViewport(float w, float h)
 
 	context->RSSetViewports(1, &viewport);
 
-	viewportWidth = w;
-	viewportHeight = h;
+	camera->SetProjectionParams(w, h, camera->GetFOV(), camera->GetNearPlane(), camera->GetFarPlane());
 }
 
 void Engine::InitPipeline()
@@ -174,9 +171,8 @@ void Engine::RenderFrame(float elapsedTime)
 	XMVECTOR eye = XMVectorSet(0.0f, 1.0f, -5.0f, 0.0f);
 	XMVECTOR at = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-	perFrameCBData.view = XMMatrixLookAtLH(eye, at, up);
-
-	perFrameCBData.projection = XMMatrixPerspectiveFovLH(fov, viewportWidth / viewportHeight, nearPlane, farPlane);
+	perFrameCBData.view = camera->GetViewMatrix();
+	perFrameCBData.projection = camera->GetProjectionMatrix();
 
 	context->UpdateSubresource(perFrameCB, 0, nullptr, &perFrameCBData, 0, 0);
 	context->VSSetConstantBuffers(0, 1, &perFrameCB);

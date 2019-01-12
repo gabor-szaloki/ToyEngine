@@ -3,6 +3,7 @@
 #include <windows.h>
 
 #include "Common.h"
+#include "Camera.h"
 #include "Drawable.h"
 
 class Engine
@@ -34,8 +35,7 @@ private:
 
 	float time, deltaTime;
 
-	float viewportWidth, viewportHeight;
-	float fov, nearPlane, farPlane;
+	Camera *camera;
 
 	ID3D11Device *device;
 	ID3D11DeviceContext *context;
