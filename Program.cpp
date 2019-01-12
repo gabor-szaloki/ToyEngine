@@ -55,7 +55,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 
 		float time = (float)clock() / (float)CLOCKS_PER_SEC;
-		gEngine->RenderFrame(time);
+		gEngine->Update(time);
+		gEngine->RenderFrame();
 	}
 
 quit:
@@ -71,9 +72,56 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
+	case WM_KEYUP:
+		switch (wParam)
+		{
+		case 0x57: // W
+			gEngine->cameraInputState.isMovingForward = false;
+			break;
+		case 0x53: // S
+			gEngine->cameraInputState.isMovingBackward = false;
+			break;
+		case 0x44: // D
+			gEngine->cameraInputState.isMovingRight = false;
+			break;
+		case 0x41: // A
+			gEngine->cameraInputState.isMovingLeft = false;
+			break;
+		case 0x45: // E
+			gEngine->cameraInputState.isMovingUp = false;
+			break;
+		case 0x51: // Q
+			gEngine->cameraInputState.isMovingDown = false;
+			break;
+		case VK_SHIFT:
+			gEngine->cameraInputState.isSpeeding = false;
+			break;
+		}
+		break;
 	case WM_KEYDOWN:
 		switch (wParam)
 		{
+		case 0x57: // W
+			gEngine->cameraInputState.isMovingForward = true;
+			break;
+		case 0x53: // S
+			gEngine->cameraInputState.isMovingBackward = true;
+			break;
+		case 0x44: // D
+			gEngine->cameraInputState.isMovingRight = true;
+			break;
+		case 0x41: // A
+			gEngine->cameraInputState.isMovingLeft = true;
+			break;
+		case 0x45: // E
+			gEngine->cameraInputState.isMovingUp = true;
+			break;
+		case 0x51: // Q
+			gEngine->cameraInputState.isMovingDown= true;
+			break;
+		case VK_SHIFT:
+			gEngine->cameraInputState.isSpeeding = true;
+			break;
 		case VK_F11:
 		{
 			fullscreen = !fullscreen;

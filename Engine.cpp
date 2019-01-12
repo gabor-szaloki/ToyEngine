@@ -9,6 +9,9 @@ Engine::Engine()
 {
 	time = deltaTime = 0.0f;
 	camera = new Camera();
+	ZeroMemory(&cameraInputState, sizeof(CameraInputState));
+	cameraSpeed = 5.0f;
+
 }
 
 Engine::~Engine()
@@ -158,29 +161,36 @@ void Engine::ReleaseScene()
 	delete box;
 }
 
-void Engine::RenderFrame(float elapsedTime)
+void Engine::Update(float elapsedTime)
 {
 	deltaTime = elapsedTime - time;
 	time = elapsedTime;
 
+	XMVECTOR cameraMoveDir =
+		camera->GetRight() * ((cameraInputState.isMovingRight ? 1.0f : 0.0f) + (cameraInputState.isMovingLeft ? -1.0f : 0.0f)) +
+		camera->GetUp() * ((cameraInputState.isMovingUp ? 1.0f : 0.0f) + (cameraInputState.isMovingDown ? -1.0f : 0.0f)) +
+		camera->GetForward() * ((cameraInputState.isMovingForward ? 1.0f : 0.0f) + (cameraInputState.isMovingBackward ? -1.0f : 0.0f));
+	XMVECTOR cameraMoveDelta = cameraMoveDir * cameraSpeed * deltaTime;
+	if (cameraInputState.isSpeeding)
+		cameraMoveDelta *= 2.0f;
+	camera->MoveEye(cameraMoveDelta);
+}
+
+void Engine::RenderFrame()
+{
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	context->ClearRenderTargetView(backbuffer, clearColor);
 
 	PerFrameConstantBufferData perFrameCBData;
-
-	XMVECTOR eye = XMVectorSet(0.0f, 1.0f, -5.0f, 0.0f);
-	XMVECTOR at = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	perFrameCBData.view = camera->GetViewMatrix();
 	perFrameCBData.projection = camera->GetProjectionMatrix();
-
 	context->UpdateSubresource(perFrameCB, 0, nullptr, &perFrameCBData, 0, 0);
 	context->VSSetConstantBuffers(0, 1, &perFrameCB);
 
-	box->worldTransform = XMMatrixRotationAxis(up, time);
+	//box->worldTransform = XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), time);
 	box->Draw(context, perObjectCB);
 
-	triangle->worldTransform = XMMatrixRotationAxis(up, time);
+	triangle->worldTransform = XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), time);
 	triangle->Draw(context, perObjectCB);
 
 	swapchain->Present(0, 0);

@@ -23,7 +23,9 @@ public:
 	void ReleasePipeline();
 	void InitScene();
 	void ReleaseScene();
-	void RenderFrame(float elapsedTime);
+
+	void Update(float elapsedTime);
+	void RenderFrame();
 
 	float GetTime() { return time; }
 	float GetDeltaTime() { return deltaTime; }
@@ -31,11 +33,24 @@ public:
 	struct PerFrameConstantBufferData { XMMATRIX view; XMMATRIX projection; };
 	struct PerObjectConstantBufferData { XMMATRIX world; };
 
+	struct CameraInputState
+	{
+		bool isMovingForward;
+		bool isMovingBackward;
+		bool isMovingRight;
+		bool isMovingLeft;
+		bool isMovingUp;
+		bool isMovingDown;
+		bool isSpeeding;
+	};
+	CameraInputState cameraInputState;
+
 private:
 
 	float time, deltaTime;
 
 	Camera *camera;
+	float cameraSpeed;
 
 	ID3D11Device *device;
 	ID3D11DeviceContext *context;

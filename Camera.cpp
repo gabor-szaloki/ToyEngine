@@ -19,6 +19,17 @@ Camera::~Camera()
 {
 }
 
+void Camera::SetEye(XMVECTOR eye)
+{
+	this->eye = eye;
+	RecalculateViewMatrix();
+}
+
+void Camera::MoveEye(XMVECTOR direction)
+{
+	SetEye(eye + direction);
+}
+
 void Camera::SetViewParams(XMVECTOR eye, XMVECTOR at, XMVECTOR up)
 {
 	this->eye = eye;

@@ -13,9 +13,12 @@ public:
 	void operator delete(void* p) { _mm_free(p); }
 
 	XMVECTOR GetEye() { return eye; }
+	void SetEye(XMVECTOR eye);
+	void MoveEye(XMVECTOR direction);
 	XMVECTOR GetAt() { return at; }
 	XMVECTOR GetUp() { return up; }
-	XMVECTOR GetDirection() { return XMVector3Normalize(at - eye); }
+	XMVECTOR GetForward() { return XMVector3Normalize(at - eye); }
+	XMVECTOR GetRight() { return XMVector3Cross(up, GetForward()); }
 	void SetViewParams(XMVECTOR eye, XMVECTOR at, XMVECTOR up);
 	XMMATRIX GetViewMatrix() { return viewMatrix; }
 
