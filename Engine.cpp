@@ -10,9 +10,10 @@ Engine::~Engine()
 {
 }
 
-void Engine::Init(HWND hWnd)
+void Engine::Init(HWND hWnd, float viewportWidth, float viewportHeight)
 {
 	InitD3D(hWnd);
+	InitViewport(viewportWidth, viewportHeight);
 	InitPipeline();
 	InitGraphics();
 }
@@ -52,15 +53,16 @@ void Engine::InitD3D(HWND hWnd)
 	pBackBuffer->Release();
 
 	context->OMSetRenderTargets(1, &backbuffer, nullptr);
+}
 
-	// Set the viewport
-
+void Engine::InitViewport(float w, float h)
+{
 	D3D11_VIEWPORT viewport;
 	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
 	viewport.TopLeftX = 0;
 	viewport.TopLeftY = 0;
-	viewport.Width = 1280;
-	viewport.Height = 720;
+	viewport.Width = w;
+	viewport.Height = h;
 
 	context->RSSetViewports(1, &viewport);
 }

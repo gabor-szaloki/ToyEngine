@@ -16,10 +16,11 @@ public:
 	Engine();
 	~Engine();
 
-	void Init(HWND hWnd);
+	void Init(HWND hWnd, float viewportWidth, float viewportHeight);
 	void Release();
 
 	void InitD3D(HWND hWnd);
+	void InitViewport(float w, float h);
 	void InitPipeline();
 	void InitGraphics();
 	void ReleaseD3D();
