@@ -1,5 +1,7 @@
 #include "Engine.h"
 
+#include "Triangle.h"
+
 Engine *gEngine;
 
 Engine::Engine()

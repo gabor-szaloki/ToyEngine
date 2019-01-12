@@ -8,4 +8,8 @@
 
 #define SAFE_RELEASE(resource) { if (resource != nullptr) { resource->Release(); } }
 
-struct StandardVertexData { float X, Y, Z; float Color[4]; };
+struct StandardVertexData 
+{ 
+	DirectX::XMFLOAT3 position; 
+	DirectX::XMFLOAT4 color;
+};

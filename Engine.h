@@ -4,7 +4,6 @@
 
 #include "Common.h"
 #include "Drawable.h"
-#include "Triangle.h"
 
 using namespace DirectX;
 

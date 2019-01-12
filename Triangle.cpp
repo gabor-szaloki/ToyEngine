@@ -1,5 +1,7 @@
 #include "Triangle.h"
 
+using namespace DirectX;
+
 Triangle::Triangle()
 {
 }
@@ -13,9 +15,9 @@ void Triangle::Init(ID3D11Device *device, ID3D11DeviceContext *context)
 {
 	StandardVertexData vertices[] =
 	{
-		{  0.0f,    0.5f, 0.0f, { 1.0f, 0.0f, 0.0f, 1.0f } },
-		{  0.45f,  -0.5,  0.0f, { 0.0f, 1.0f, 0.0f, 1.0f } },
-		{  -0.45f, -0.5f, 0.0f, { 0.0f, 0.0f, 1.0f, 1.0f } }
+		{ XMFLOAT3( 0.0f,   0.5f, 0.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
+		{ XMFLOAT3( 0.45f, -0.5f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
+		{ XMFLOAT3(-0.45f, -0.5f, 0.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) }
 	};
 
 	D3D11_BUFFER_DESC bd;
