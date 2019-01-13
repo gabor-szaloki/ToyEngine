@@ -22,7 +22,6 @@ Engine::Engine()
 	mainLightDirection = XMVector3Normalize(XMVectorSet(-0.4f, -0.5f, 0.6f, 0.0f));
 
 	ZeroMemory(&guiState, sizeof(GuiState));
-	guiState.showDemoWindow = true;
 }
 
 Engine::~Engine()
@@ -32,8 +31,10 @@ Engine::~Engine()
 
 void Engine::Init(HWND hWnd, float viewportWidth, float viewportHeight)
 {
-	InitD3D(hWnd, viewportWidth, viewportHeight);
-	InitImGui(hWnd);
+	this->hWnd = hWnd;
+
+	InitD3D(viewportWidth, viewportHeight);
+	InitImGui();
 	InitPipeline();
 	InitScene();
 }
@@ -46,7 +47,7 @@ void Engine::Release()
 	ReleaseD3D();
 }
 
-void Engine::InitD3D(HWND hWnd, float width, float height)
+void Engine::InitD3D(float width, float height)
 {
 	// Direct3D initialization
 
@@ -135,7 +136,7 @@ void Engine::ReleaseD3D()
 	SAFE_RELEASE(context);
 }
 
-void Engine::InitImGui(HWND hWnd)
+void Engine::InitImGui()
 {
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
@@ -265,8 +266,31 @@ void Engine::UpdateGUI()
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 
+	if (ImGui::BeginMainMenuBar())
+	{
+		if (ImGui::BeginMenu("App"))
+		{
+			if (ImGui::MenuItem("Exit", "ALT+F4")) { PostMessage(hWnd, WM_CLOSE, 0, 0); }
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("Window"))
+		{
+			if (ImGui::MenuItem("ImGui demo window", nullptr)) { guiState.showDemoWindow = true; }
+			if (ImGui::MenuItem("Light settings", nullptr)) { guiState.lightSettingsActive = true; }
+			ImGui::EndMenu();
+		}
+		ImGui::EndMainMenuBar();
+	}
+
 	if (guiState.showDemoWindow)
 		ImGui::ShowDemoWindow(&guiState.showDemoWindow);
+
+	if (guiState.lightSettingsActive)
+	{
+		ImGui::Begin("Light settings", &guiState.lightSettingsActive, ImGuiWindowFlags_None);
+		ImGui::ColorEdit3("Main light color", reinterpret_cast<float*>(&mainLightColor));
+		ImGui::End();
+	}
 	
 	// Rendering
 	ImGui::Render();

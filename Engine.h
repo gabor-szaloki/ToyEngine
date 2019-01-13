@@ -16,9 +16,9 @@ public:
 	void Init(HWND hWnd, float viewportWidth, float viewportHeight);
 	void Release();
 
-	void InitD3D(HWND hWnd, float width, float height);
+	void InitD3D(float width, float height);
 	void ReleaseD3D();
-	void InitImGui(HWND hWnd);
+	void InitImGui();
 	void ReleaseImGui();
 	void InitPipeline();
 	void ReleasePipeline();
@@ -57,6 +57,8 @@ private:
 	XMFLOAT4 mainLightColor;
 	XMVECTOR mainLightDirection;
 
+	HWND hWnd;
+
 	ID3D11Device *device;
 	ID3D11DeviceContext *context;
 	IDXGISwapChain *swapchain;
@@ -77,6 +79,7 @@ private:
 	struct GuiState
 	{
 		bool showDemoWindow;
+		bool lightSettingsActive;
 	};
 	GuiState guiState;
 
