@@ -1,7 +1,7 @@
 #include "Engine.h"
 
-#include "Triangle.h"
 #include "Box.h"
+#include "Plane.h"
 
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_win32.h"
@@ -14,7 +14,7 @@ Engine::Engine()
 	time = deltaTime = 0.0f;
 	
 	camera = new Camera();
-	camera->SetEye(XMVectorSet(2.0f, 2.0f, -3.0f, 0.0f));
+	camera->SetEye(XMVectorSet(2.0f, 3.5f, -3.0f, 0.0f));
 	camera->SetRotation(XM_PI / 6, -XM_PIDIV4);
 
 	ZeroMemory(&cameraInputState, sizeof(CameraInputState));
@@ -24,7 +24,7 @@ Engine::Engine()
 	mainLightIntensity = 1.0f;
 	mainLightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	mainLightYaw = -XM_PI / 3;
-	mainLightPitch = XM_PIDIV4;
+	mainLightPitch = XM_PI / 3;
 
 	ZeroMemory(&guiState, sizeof(GuiState));
 	guiState.enabled = true;
@@ -233,24 +233,30 @@ void Engine::ReleasePipeline()
 
 void Engine::InitScene()
 {
-	triangle = new Triangle();
-	triangle->Init(device, context);
-
 	box = new Box();
 	box->Init(device, context);
+	box->worldTransform = XMMatrixTranslation(0.0f, 1.5f, 0.0f);
+	drawables.push_back(box);
+
+	floor = new Plane();
+	floor->Init(device, context);
+	floor->worldTransform = XMMatrixScaling(10.0f, 1.0f, 10.0f);
+	drawables.push_back(floor);
 }
 
 void Engine::ReleaseScene()
 {
-	delete triangle;
-	delete box;
+	for (size_t i = 0; i < drawables.size(); i++)
+		delete drawables[i];
 }
 
 void Engine::Update(float elapsedTime)
 {
+	// Update time
 	deltaTime = elapsedTime - time;
 	time = elapsedTime;
 
+	// Update camera movement
 	XMVECTOR cameraMoveDir =
 		camera->GetRight() * ((cameraInputState.isMovingRight ? 1.0f : 0.0f) + (cameraInputState.isMovingLeft ? -1.0f : 0.0f)) +
 		camera->GetUp() * ((cameraInputState.isMovingUp ? 1.0f : 0.0f) + (cameraInputState.isMovingDown ? -1.0f : 0.0f)) +
@@ -260,11 +266,14 @@ void Engine::Update(float elapsedTime)
 		cameraMoveDelta *= 2.0f;
 	camera->MoveEye(cameraMoveDelta);
 
+	// Update camera rotation
 	camera->Rotate(cameraInputState.deltaPitch * cameraTurnSpeed * deltaTime, cameraInputState.deltaYaw * cameraTurnSpeed * deltaTime);
 	cameraInputState.deltaPitch = cameraInputState.deltaYaw = 0;
 
-	triangle->worldTransform = XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), time) * XMMatrixTranslation(1.0f, 0.0f, 0.0f);
+	// Update scene
+	box->worldTransform = XMMatrixRotationY(elapsedTime * 0.05f) * XMMatrixTranslation(0.0f, 1.5f, 0.0f);
 
+	// Update ImGui
 	UpdateGUI();
 }
 
@@ -334,8 +343,8 @@ void Engine::RenderFrame()
 	context->VSSetConstantBuffers(0, 1, &perFrameCB);
 	context->PSSetConstantBuffers(0, 1, &perFrameCB);
 
-	box->Draw(context, perObjectCB);
-	triangle->Draw(context, perObjectCB);
+	for (size_t i = 0; i < drawables.size(); i++)
+		drawables[i]->Draw(context, perObjectCB);
 
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 

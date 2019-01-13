@@ -1,6 +1,7 @@
 #pragma once
 
 #include <windows.h>
+#include <vector>
 
 #include "EngineCommon.h"
 #include "Camera.h"
@@ -75,8 +76,10 @@ private:
 	ID3D11VertexShader *standardVS;
 	ID3D11PixelShader *standardOpaquePS;
 
-	Drawable *triangle;
 	Drawable *box;
+	Drawable *floor;
+
+	std::vector<Drawable*> drawables;
 
 	struct GuiState
 	{
