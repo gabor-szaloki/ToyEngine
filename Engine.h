@@ -16,9 +16,8 @@ public:
 	void Init(HWND hWnd, float viewportWidth, float viewportHeight);
 	void Release();
 
-	void InitD3D(HWND hWnd);
+	void InitD3D(HWND hWnd, float width, float height);
 	void ReleaseD3D();
-	void InitViewport(float w, float h);
 	void InitPipeline();
 	void ReleasePipeline();
 	void InitScene();
@@ -58,6 +57,8 @@ private:
 	ID3D11DeviceContext *context;
 	IDXGISwapChain *swapchain;
 	ID3D11RenderTargetView *backbuffer;
+	ID3D11DepthStencilView *depthStencilView;
+	ID3D11DepthStencilState *depthStencilState;
 
 	ID3D11Buffer *perFrameCB;
 	ID3D11Buffer *perObjectCB;

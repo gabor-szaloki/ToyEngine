@@ -21,8 +21,7 @@ Engine::~Engine()
 
 void Engine::Init(HWND hWnd, float viewportWidth, float viewportHeight)
 {
-	InitD3D(hWnd);
-	InitViewport(viewportWidth, viewportHeight);
+	InitD3D(hWnd, viewportWidth, viewportHeight);
 	InitPipeline();
 	InitScene();
 }
@@ -34,7 +33,7 @@ void Engine::Release()
 	ReleaseD3D();
 }
 
-void Engine::InitD3D(HWND hWnd)
+void Engine::InitD3D(HWND hWnd, float width, float height)
 {
 	// Direct3D initialization
 
@@ -51,36 +50,76 @@ void Engine::InitD3D(HWND hWnd)
 		nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, nullptr, 0, D3D11_SDK_VERSION,
 		&scd, &swapchain, &device, nullptr, &context);
 
-	// Set the render target
+	// Setup viewport
 
-	ID3D11Texture2D *pBackBuffer;
-	swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
-	device->CreateRenderTargetView(pBackBuffer, nullptr, &backbuffer);
-	pBackBuffer->Release();
+	D3D11_VIEWPORT viewport;
+	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
+	viewport.MinDepth = 0;
+	viewport.MaxDepth = 1;
+	viewport.TopLeftX = 0;
+	viewport.TopLeftY = 0;
+	viewport.Width = width;
+	viewport.Height = height;
 
-	context->OMSetRenderTargets(1, &backbuffer, nullptr);
+	context->RSSetViewports(1, &viewport);
+	camera->SetProjectionParams(width, height, camera->GetFOV(), camera->GetNearPlane(), camera->GetFarPlane());
+
+	// Create backbuffer render target view
+
+	ID3D11Texture2D *backBufferTexture;
+	swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&backBufferTexture);
+	device->CreateRenderTargetView(backBufferTexture, nullptr, &backbuffer);
+	backBufferTexture->Release();
+
+	// Create depth stencil view
+	
+	ID3D11Texture2D *depthStencilTexture;
+	D3D11_TEXTURE2D_DESC td;
+	ZeroMemory(&td, sizeof(D3D11_TEXTURE2D_DESC));
+	td.Width = (UINT)width;
+	td.Height = (UINT)height;
+	td.MipLevels = 1;
+	td.ArraySize = 1;
+	td.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+	td.SampleDesc.Count = 1;
+	td.SampleDesc.Quality = 0;
+	td.Usage = D3D11_USAGE_DEFAULT;
+	td.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	td.CPUAccessFlags = 0;
+	td.MiscFlags = 0;
+	device->CreateTexture2D(&td, nullptr, &depthStencilTexture);
+
+	D3D11_DEPTH_STENCIL_VIEW_DESC dsvd;
+	ZeroMemory(&dsvd, sizeof(D3D11_DEPTH_STENCIL_VIEW_DESC));
+	dsvd.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+	dsvd.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	dsvd.Texture2D.MipSlice = 0;
+	device->CreateDepthStencilView(depthStencilTexture, &dsvd, &depthStencilView);
+	depthStencilTexture->Release();
+
+	// Create depth stencil state
+
+	D3D11_DEPTH_STENCIL_DESC dsd;
+	ZeroMemory(&dsd, sizeof(D3D11_DEPTH_STENCIL_DESC));
+	dsd.DepthEnable = true;
+	dsd.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	dsd.DepthFunc = D3D11_COMPARISON_LESS;
+	dsd.StencilEnable = false;
+
+	device->CreateDepthStencilState(&dsd, &depthStencilState);
+	context->OMSetDepthStencilState(depthStencilState, 1);
+
+	context->OMSetRenderTargets(1, &backbuffer, depthStencilView);
 }
 
 void Engine::ReleaseD3D()
 {
 	SAFE_RELEASE(swapchain);
 	SAFE_RELEASE(backbuffer);
+	SAFE_RELEASE(depthStencilView);
+	SAFE_RELEASE(depthStencilState);
 	SAFE_RELEASE(device);
 	SAFE_RELEASE(context);
-}
-
-void Engine::InitViewport(float w, float h)
-{
-	D3D11_VIEWPORT viewport;
-	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
-	viewport.TopLeftX = 0;
-	viewport.TopLeftY = 0;
-	viewport.Width = w;
-	viewport.Height = h;
-
-	context->RSSetViewports(1, &viewport);
-
-	camera->SetProjectionParams(w, h, camera->GetFOV(), camera->GetNearPlane(), camera->GetFarPlane());
 }
 
 void Engine::InitPipeline()
@@ -176,7 +215,6 @@ void Engine::Update(float elapsedTime)
 	camera->MoveEye(cameraMoveDelta);
 
 	camera->Rotate(cameraInputState.deltaPitch * cameraTurnSpeed * deltaTime, cameraInputState.deltaYaw * cameraTurnSpeed * deltaTime);
-	//camera->Rotate(0, 1 * cameraTurnSpeed * deltaTime);
 	cameraInputState.deltaPitch = cameraInputState.deltaYaw = 0;
 }
 
@@ -184,6 +222,7 @@ void Engine::RenderFrame()
 {
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	context->ClearRenderTargetView(backbuffer, clearColor);
+	context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 	PerFrameConstantBufferData perFrameCBData;
 	perFrameCBData.view = camera->GetViewMatrix();
@@ -195,7 +234,7 @@ void Engine::RenderFrame()
 	//box->worldTransform = XMMatrixTranslation(1, 2, 3);
 	box->Draw(context, perObjectCB);
 
-	triangle->worldTransform = XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), time);
+	triangle->worldTransform = XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), time) * XMMatrixTranslation(1.0f, 0.0f, 0.0f);
 	triangle->Draw(context, perObjectCB);
 
 	swapchain->Present(0, 0);
