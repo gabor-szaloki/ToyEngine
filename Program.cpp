@@ -11,7 +11,9 @@ int showCmd;
 bool fullscreen = false;
 bool rightMouseButtonHeldDown = false;
 POINT lastMousePos;
+bool ctrl = false;
 
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
@@ -68,7 +70,6 @@ quit:
 	return msg.wParam;
 }
 
-extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -133,13 +134,19 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		case VK_SHIFT:
 			gEngine->cameraInputState.isSpeeding = false;
 			break;
+		case VK_CONTROL:
+			ctrl = false;
+			break;
 		}
 		break;
 	case WM_KEYDOWN:
 		switch (wParam)
 		{
 		case 0x57: // W
-			gEngine->cameraInputState.isMovingForward = true;
+			if (ctrl)
+				gEngine->ToggleGUI();
+			else
+				gEngine->cameraInputState.isMovingForward = true;
 			break;
 		case 0x53: // S
 			gEngine->cameraInputState.isMovingBackward = true;
@@ -158,6 +165,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			break;
 		case VK_SHIFT:
 			gEngine->cameraInputState.isSpeeding = true;
+			break;
+		case VK_CONTROL:
+			ctrl = true;
 			break;
 		case VK_F11:
 		{

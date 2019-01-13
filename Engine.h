@@ -32,6 +32,8 @@ public:
 	float GetTime() { return time; }
 	float GetDeltaTime() { return deltaTime; }
 
+	void ToggleGUI() { guiState.enabled = !guiState.enabled; }
+
 	struct CameraInputState
 	{
 		bool isMovingForward;
@@ -55,7 +57,7 @@ private:
 
 	float mainLightIntensity;
 	XMFLOAT4 mainLightColor;
-	XMVECTOR mainLightDirection;
+	float mainLightYaw, mainLightPitch;
 
 	HWND hWnd;
 
@@ -78,8 +80,9 @@ private:
 
 	struct GuiState
 	{
+		bool enabled;
 		bool showDemoWindow;
-		bool lightSettingsActive;
+		bool showLightSettingsWindow;
 	};
 	GuiState guiState;
 

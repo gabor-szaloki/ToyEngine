@@ -19,9 +19,12 @@ Engine::Engine()
 
 	mainLightIntensity = 0.5f;
 	mainLightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	mainLightDirection = XMVector3Normalize(XMVectorSet(-0.4f, -0.5f, 0.6f, 0.0f));
+	mainLightYaw = XM_PI / 3;
+	mainLightPitch = XM_PIDIV4;
 
 	ZeroMemory(&guiState, sizeof(GuiState));
+	guiState.enabled = true;
+	guiState.showLightSettingsWindow = true;
 }
 
 Engine::~Engine()
@@ -266,17 +269,25 @@ void Engine::UpdateGUI()
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 
+	if (!guiState.enabled)
+	{
+		ImGui::Render();
+		return;
+	}
+
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("App"))
 		{
+			if (ImGui::MenuItem("Toggle fullscreen", "F11")) { PostMessage(hWnd, WM_KEYDOWN, VK_F11, 0); }
 			if (ImGui::MenuItem("Exit", "ALT+F4")) { PostMessage(hWnd, WM_CLOSE, 0, 0); }
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Window"))
 		{
+			if (ImGui::MenuItem("Light settings", nullptr)) { guiState.showLightSettingsWindow = true; }
+			ImGui::Separator();
 			if (ImGui::MenuItem("ImGui demo window", nullptr)) { guiState.showDemoWindow = true; }
-			if (ImGui::MenuItem("Light settings", nullptr)) { guiState.lightSettingsActive = true; }
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();
@@ -285,10 +296,14 @@ void Engine::UpdateGUI()
 	if (guiState.showDemoWindow)
 		ImGui::ShowDemoWindow(&guiState.showDemoWindow);
 
-	if (guiState.lightSettingsActive)
+	if (guiState.showLightSettingsWindow)
 	{
-		ImGui::Begin("Light settings", &guiState.lightSettingsActive, ImGuiWindowFlags_None);
-		ImGui::ColorEdit3("Main light color", reinterpret_cast<float*>(&mainLightColor));
+		ImGui::Begin("Light settings", &guiState.showLightSettingsWindow, ImGuiWindowFlags_None);
+		ImGui::Text("Main light");
+		ImGui::SliderAngle("Yaw", &mainLightYaw, 0.0f, 360.0f);
+		ImGui::SliderAngle("Pitch", &mainLightPitch, 0.0f, 90.0f);
+		ImGui::SliderFloat("Intensity", &mainLightIntensity, 0.0f, 2.0f);
+		ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&mainLightColor));
 		ImGui::End();
 	}
 	
@@ -306,7 +321,9 @@ void Engine::RenderFrame()
 	perFrameCBData.view = camera->GetViewMatrix();
 	perFrameCBData.projection = camera->GetProjectionMatrix();
 	perFrameCBData.mainLightColor = GetMainLightColorIntensity();
-	XMStoreFloat4(&perFrameCBData.mainLightDirection, mainLightDirection);
+	XMMATRIX lightMatrix = XMMatrixRotationRollPitchYaw(mainLightPitch, mainLightYaw, 0.0f);
+	XMStoreFloat4(&perFrameCBData.mainLightDirection, lightMatrix.r[2]);
+	
 	context->UpdateSubresource(perFrameCB, 0, nullptr, &perFrameCBData, 0, 0);
 	context->VSSetConstantBuffers(0, 1, &perFrameCB);
 	context->PSSetConstantBuffers(0, 1, &perFrameCB);
