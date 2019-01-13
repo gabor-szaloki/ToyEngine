@@ -12,14 +12,18 @@ Engine *gEngine;
 Engine::Engine()
 {
 	time = deltaTime = 0.0f;
+	
 	camera = new Camera();
+	camera->SetEye(XMVectorSet(2.0f, 2.0f, -3.0f, 0.0f));
+	camera->SetRotation(XM_PI / 6, -XM_PIDIV4);
+
 	ZeroMemory(&cameraInputState, sizeof(CameraInputState));
 	cameraMoveSpeed = 5.0f;
 	cameraTurnSpeed = 2.0f;
 
-	mainLightIntensity = 0.5f;
+	mainLightIntensity = 1.0f;
 	mainLightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	mainLightYaw = XM_PI / 3;
+	mainLightYaw = -XM_PI / 3;
 	mainLightPitch = XM_PIDIV4;
 
 	ZeroMemory(&guiState, sizeof(GuiState));
@@ -259,6 +263,8 @@ void Engine::Update(float elapsedTime)
 	camera->Rotate(cameraInputState.deltaPitch * cameraTurnSpeed * deltaTime, cameraInputState.deltaYaw * cameraTurnSpeed * deltaTime);
 	cameraInputState.deltaPitch = cameraInputState.deltaYaw = 0;
 
+	triangle->worldTransform = XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), time) * XMMatrixTranslation(1.0f, 0.0f, 0.0f);
+
 	UpdateGUI();
 }
 
@@ -328,11 +334,7 @@ void Engine::RenderFrame()
 	context->VSSetConstantBuffers(0, 1, &perFrameCB);
 	context->PSSetConstantBuffers(0, 1, &perFrameCB);
 
-	//box->worldTransform = XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), time);
-	//box->worldTransform = XMMatrixTranslation(1, 2, 3);
 	box->Draw(context, perObjectCB);
-
-	triangle->worldTransform = XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), time) * XMMatrixTranslation(1.0f, 0.0f, 0.0f);
 	triangle->Draw(context, perObjectCB);
 
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
