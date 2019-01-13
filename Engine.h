@@ -18,12 +18,15 @@ public:
 
 	void InitD3D(HWND hWnd, float width, float height);
 	void ReleaseD3D();
+	void InitImGui(HWND hWnd);
+	void ReleaseImGui();
 	void InitPipeline();
 	void ReleasePipeline();
 	void InitScene();
 	void ReleaseScene();
 
 	void Update(float elapsedTime);
+	void UpdateGUI();
 	void RenderFrame();
 
 	float GetTime() { return time; }
@@ -70,6 +73,12 @@ private:
 
 	Drawable *triangle;
 	Drawable *box;
+
+	struct GuiState
+	{
+		bool showDemoWindow;
+	};
+	GuiState guiState;
 
 	XMFLOAT4 GetMainLightColorIntensity();
 };

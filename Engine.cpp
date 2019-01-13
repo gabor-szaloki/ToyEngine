@@ -3,6 +3,10 @@
 #include "Triangle.h"
 #include "Box.h"
 
+#include "ImGui/imgui.h"
+#include "ImGui/imgui_impl_win32.h"
+#include "ImGui/imgui_impl_dx11.h"
+
 Engine *gEngine;
 
 Engine::Engine()
@@ -12,9 +16,13 @@ Engine::Engine()
 	ZeroMemory(&cameraInputState, sizeof(CameraInputState));
 	cameraMoveSpeed = 5.0f;
 	cameraTurnSpeed = 2.0f;
+
 	mainLightIntensity = 0.5f;
 	mainLightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	mainLightDirection = XMVector3Normalize(XMVectorSet(-0.4f, -0.5f, 0.6f, 0.0f));
+
+	ZeroMemory(&guiState, sizeof(GuiState));
+	guiState.showDemoWindow = true;
 }
 
 Engine::~Engine()
@@ -25,6 +33,7 @@ Engine::~Engine()
 void Engine::Init(HWND hWnd, float viewportWidth, float viewportHeight)
 {
 	InitD3D(hWnd, viewportWidth, viewportHeight);
+	InitImGui(hWnd);
 	InitPipeline();
 	InitScene();
 }
@@ -33,6 +42,7 @@ void Engine::Release()
 {
 	ReleaseScene();
 	ReleasePipeline();
+	ReleaseImGui();
 	ReleaseD3D();
 }
 
@@ -123,6 +133,30 @@ void Engine::ReleaseD3D()
 	SAFE_RELEASE(depthStencilState);
 	SAFE_RELEASE(device);
 	SAFE_RELEASE(context);
+}
+
+void Engine::InitImGui(HWND hWnd)
+{
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsClassic();
+
+	// Setup Platform/Renderer bindings
+	ImGui_ImplWin32_Init(hWnd);
+	ImGui_ImplDX11_Init(device, context);
+}
+
+void Engine::ReleaseImGui()
+{
+	ImGui_ImplDX11_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
 }
 
 void Engine::InitPipeline()
@@ -220,6 +254,22 @@ void Engine::Update(float elapsedTime)
 
 	camera->Rotate(cameraInputState.deltaPitch * cameraTurnSpeed * deltaTime, cameraInputState.deltaYaw * cameraTurnSpeed * deltaTime);
 	cameraInputState.deltaPitch = cameraInputState.deltaYaw = 0;
+
+	UpdateGUI();
+}
+
+void Engine::UpdateGUI()
+{
+	// Start the Dear ImGui frame
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
+	if (guiState.showDemoWindow)
+		ImGui::ShowDemoWindow(&guiState.showDemoWindow);
+	
+	// Rendering
+	ImGui::Render();
 }
 
 void Engine::RenderFrame()
@@ -243,6 +293,8 @@ void Engine::RenderFrame()
 
 	triangle->worldTransform = XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), time) * XMMatrixTranslation(1.0f, 0.0f, 0.0f);
 	triangle->Draw(context, perObjectCB);
+
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
 	swapchain->Present(0, 0);
 }
