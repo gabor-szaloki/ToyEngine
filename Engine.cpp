@@ -248,6 +248,7 @@ void Engine::ReleaseScene()
 {
 	for (size_t i = 0; i < drawables.size(); i++)
 		delete drawables[i];
+	drawables.clear();
 }
 
 void Engine::Update(float elapsedTime)
