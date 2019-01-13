@@ -11,9 +11,3 @@
 #define GET_Y_LPARAM(lp) ((int)(short)HIWORD(lp))
 
 using namespace DirectX;
-
-struct StandardVertexData 
-{ 
-	XMFLOAT3 position; 
-	XMFLOAT4 color;
-};

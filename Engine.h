@@ -2,7 +2,7 @@
 
 #include <windows.h>
 
-#include "Common.h"
+#include "EngineCommon.h"
 #include "Camera.h"
 #include "Drawable.h"
 
@@ -29,9 +29,6 @@ public:
 	float GetTime() { return time; }
 	float GetDeltaTime() { return deltaTime; }
 
-	struct PerFrameConstantBufferData { XMMATRIX view; XMMATRIX projection; };
-	struct PerObjectConstantBufferData { XMMATRIX world; };
-
 	struct CameraInputState
 	{
 		bool isMovingForward;
@@ -53,6 +50,10 @@ private:
 	Camera *camera;
 	float cameraMoveSpeed, cameraTurnSpeed;
 
+	float mainLightIntensity;
+	XMFLOAT4 mainLightColor;
+	XMVECTOR mainLightDirection;
+
 	ID3D11Device *device;
 	ID3D11DeviceContext *context;
 	IDXGISwapChain *swapchain;
@@ -69,6 +70,8 @@ private:
 
 	Drawable *triangle;
 	Drawable *box;
+
+	XMFLOAT4 GetMainLightColorIntensity();
 };
 
 extern Engine *gEngine;

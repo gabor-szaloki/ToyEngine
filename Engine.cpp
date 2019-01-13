@@ -12,6 +12,9 @@ Engine::Engine()
 	ZeroMemory(&cameraInputState, sizeof(CameraInputState));
 	cameraMoveSpeed = 5.0f;
 	cameraTurnSpeed = 2.0f;
+	mainLightIntensity = 0.5f;
+	mainLightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	mainLightDirection = XMVector3Normalize(XMVectorSet(-0.4f, -0.5f, 0.6f, 0.0f));
 }
 
 Engine::~Engine()
@@ -155,10 +158,11 @@ void Engine::InitPipeline()
 	D3D11_INPUT_ELEMENT_DESC ied[] =
 	{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
 	};
 
-	hr = device->CreateInputLayout(ied, 2, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &standardInputLayout);
+	hr = device->CreateInputLayout(ied, ARRAYSIZE(ied), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &standardInputLayout);
 
 	context->IASetInputLayout(standardInputLayout);
 
@@ -227,8 +231,11 @@ void Engine::RenderFrame()
 	PerFrameConstantBufferData perFrameCBData;
 	perFrameCBData.view = camera->GetViewMatrix();
 	perFrameCBData.projection = camera->GetProjectionMatrix();
+	perFrameCBData.mainLightColor = GetMainLightColorIntensity();
+	XMStoreFloat4(&perFrameCBData.mainLightDirection, mainLightDirection);
 	context->UpdateSubresource(perFrameCB, 0, nullptr, &perFrameCBData, 0, 0);
 	context->VSSetConstantBuffers(0, 1, &perFrameCB);
+	context->PSSetConstantBuffers(0, 1, &perFrameCB);
 
 	//box->worldTransform = XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), time);
 	//box->worldTransform = XMMatrixTranslation(1, 2, 3);
@@ -238,4 +245,9 @@ void Engine::RenderFrame()
 	triangle->Draw(context, perObjectCB);
 
 	swapchain->Present(0, 0);
+}
+
+XMFLOAT4 Engine::GetMainLightColorIntensity()
+{
+	return XMFLOAT4(mainLightColor.x * mainLightIntensity, mainLightColor.y * mainLightIntensity, mainLightColor.z * mainLightIntensity, 1.0f);
 }

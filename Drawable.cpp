@@ -1,5 +1,4 @@
 #include "Drawable.h"
-#include "Engine.h"
 
 Drawable::Drawable()
 {
@@ -22,11 +21,12 @@ void Drawable::Draw(ID3D11DeviceContext *context, ID3D11Buffer *perObjectCB)
 	context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R16_UINT, 0);
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	Engine::PerObjectConstantBufferData perObjectCBData;
+	PerObjectConstantBufferData perObjectCBData;
 	perObjectCBData.world = worldTransform;
 
 	context->UpdateSubresource(perObjectCB, 0, nullptr, &perObjectCBData, 0, 0);
 	context->VSSetConstantBuffers(1, 1, &perObjectCB);
+	context->PSSetConstantBuffers(1, 1, &perObjectCB);
 
 	context->DrawIndexed(indexCount, 0, 0);
 }

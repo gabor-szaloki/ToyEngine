@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Drawable.h"
+#include "EngineCommon.h"
 
 class Triangle : public Drawable
 {

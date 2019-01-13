@@ -48,6 +48,9 @@
     <ClInclude Include="Camera.h">
       <Filter>Source</Filter>
     </ClInclude>
+    <ClInclude Include="EngineCommon.h">
+      <Filter>Source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\Standard.shader">
