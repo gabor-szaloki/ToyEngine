@@ -6,7 +6,9 @@ struct StandardVertexData
 {
 	XMFLOAT3 position;
 	XMFLOAT3 normal;
+	XMFLOAT4 tangent;
 	XMFLOAT4 color;
+	XMFLOAT2 uv;
 };
 
 struct PerFrameConstantBufferData 

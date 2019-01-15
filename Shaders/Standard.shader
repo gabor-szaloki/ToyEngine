@@ -21,7 +21,9 @@ struct VSInputStandard
 {
 	float4 position : POSITION;
 	float3 normal : NORMAL;
+	float4 tangent : TANGENT;
 	float4 color : COLOR;
+	float2 uv : TEXCOORD;
 };
 
 struct VSOutputStandard
@@ -29,6 +31,7 @@ struct VSOutputStandard
 	float4 position : SV_POSITION;
 	float3 normal : NORMAL;
 	float4 color : COLOR;
+	float2 uv : TEXCOORD0;
 };
 
 //--------------------------------------------------------------------------------------
@@ -48,6 +51,8 @@ VSOutputStandard StandardVS(VSInputStandard v)
 	o.normal = worldNormal;
 
 	o.color = v.color;
+
+	o.uv = v.uv;
 
 	return o;
 }
