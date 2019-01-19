@@ -4,11 +4,14 @@
 #include "Common.h"
 #include "Engine.h"
 
+#define DEFAULT_WINDOWED_POS_X 100
+#define DEFAULT_WINDOWED_POS_Y 100
 #define DEFAULT_WINDOWED_WIDTH 1280
 #define DEFAULT_WINDOWED_HEIGHT 720
 
 int showCmd;
 bool fullscreen = false;
+RECT lastWindowedRect = { DEFAULT_WINDOWED_POS_X, DEFAULT_WINDOWED_POS_Y, DEFAULT_WINDOWED_POS_X + DEFAULT_WINDOWED_WIDTH, DEFAULT_WINDOWED_POS_Y + DEFAULT_WINDOWED_HEIGHT };
 bool rightMouseButtonHeldDown = false;
 POINT lastMousePos;
 bool ctrl = false;
@@ -39,7 +42,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		"ThreeDee", // title
 		WS_OVERLAPPEDWINDOW, // window style
 		//WS_POPUP, // window style
-		100, 100, wr.right - wr.left, wr.bottom - wr.top, // x, y, w, h
+		DEFAULT_WINDOWED_POS_X, DEFAULT_WINDOWED_POS_Y, wr.right - wr.left, wr.bottom - wr.top, // x, y, w, h
 		nullptr, nullptr, hInstance, nullptr);
 
 	gEngine = new Engine();
@@ -171,6 +174,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			break;
 		case VK_F11:
 		{
+			if (!fullscreen)
+				GetWindowRect(hWnd, &lastWindowedRect);
+
 			fullscreen = !fullscreen;
 			OutputDebugString(fullscreen ? "VK_F11, Going fullscreen\n" : "Going windowed\n");
 
@@ -180,23 +186,14 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			GetMonitorInfo(hMon, &monitorInfo);
 
 			RECT monitorRect = monitorInfo.rcMonitor;
-			RECT clientRect = fullscreen ? monitorRect : 
-				RECT { monitorRect.left, monitorRect.top, monitorRect.left + DEFAULT_WINDOWED_WIDTH, monitorRect.top + DEFAULT_WINDOWED_HEIGHT };
-			DWORD windowStyle = fullscreen ? WS_POPUP : WS_OVERLAPPEDWINDOW;
-			RECT windowRect = clientRect;
-			AdjustWindowRect(&windowRect, windowStyle, false);
+			RECT windowRect = fullscreen ? monitorRect : lastWindowedRect;
 
 			int x = windowRect.left;
 			int y = windowRect.top;
-			if (!fullscreen)
-			{
-				x += 100;
-				y += 100;
-			}
 			int width = windowRect.right - windowRect.left;
 			int height = windowRect.bottom - windowRect.top;
 
-			SetWindowLong(hWnd, GWL_STYLE, windowStyle);
+			SetWindowLong(hWnd, GWL_STYLE, fullscreen ? WS_POPUP : WS_OVERLAPPEDWINDOW);
 			SetWindowPos(hWnd, hWnd, x, y, width, height, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 			MoveWindow(hWnd, x, y, width, height, true);
 			ShowWindow(hWnd, showCmd);
