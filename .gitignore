@@ -1,5 +1,11 @@
+# Folders
 .vs/
 Debug/
 Release/
+
+# File types
 *.vcxproj.user
+
+# Exact files
 imgui.ini
+RenderDoc_capture_settings.cap
