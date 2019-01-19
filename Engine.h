@@ -79,6 +79,8 @@ private:
 	ID3D11PixelShader *standardOpaquePS;
 
 	ID3D11SamplerState *samplerLinearWrap;
+	ID3D11SamplerState *samplerAnisotropicWrap;
+	bool anisotropicFilteringEnabled;
 
 	Drawable *box;
 	Drawable *floor;
@@ -90,6 +92,7 @@ private:
 	{
 		bool enabled;
 		bool showDemoWindow;
+		bool showEngineSettingsWindow;
 		bool showLightSettingsWindow;
 	};
 	GuiState guiState;

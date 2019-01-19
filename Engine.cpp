@@ -30,7 +30,10 @@ Engine::Engine()
 
 	ZeroMemory(&guiState, sizeof(GuiState));
 	guiState.enabled = true;
+	guiState.showEngineSettingsWindow = true;
 	guiState.showLightSettingsWindow = true;
+
+	anisotropicFilteringEnabled = true;
 }
 
 Engine::~Engine()
@@ -231,18 +234,25 @@ void Engine::InitPipeline()
 	sd.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
 	sd.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
 	sd.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-	sd.MipLODBias = 0.f;
-	sd.ComparisonFunc = D3D11_COMPARISON_NEVER;
-	sd.MinLOD = 0.f;
+	sd.MipLODBias = 0;
+	sd.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+	sd.MinLOD = 0;
 	sd.MaxLOD = D3D11_FLOAT32_MAX;
 
 	if (FAILED(device->CreateSamplerState(&sd, &samplerLinearWrap)))
+		throw;
+
+	sd.Filter = D3D11_FILTER_ANISOTROPIC;
+	sd.MaxAnisotropy = 16;
+
+	if (FAILED(device->CreateSamplerState(&sd, &samplerAnisotropicWrap)))
 		throw;
 }
 
 void Engine::ReleasePipeline()
 {
 	SAFE_RELEASE(samplerLinearWrap);
+	SAFE_RELEASE(samplerAnisotropicWrap);
 	SAFE_RELEASE(perFrameCB);
 	SAFE_RELEASE(perObjectCB);
 	SAFE_RELEASE(standardInputLayout);
@@ -342,6 +352,13 @@ void Engine::UpdateGUI()
 	if (guiState.showDemoWindow)
 		ImGui::ShowDemoWindow(&guiState.showDemoWindow);
 
+	if (guiState.showEngineSettingsWindow)
+	{
+		ImGui::Begin("Engine settings", &guiState.showEngineSettingsWindow, ImGuiWindowFlags_None);
+		ImGui::Checkbox("Anisotropic filtering", &anisotropicFilteringEnabled);
+		ImGui::End();
+	}
+
 	if (guiState.showLightSettingsWindow)
 	{
 		ImGui::Begin("Light settings", &guiState.showLightSettingsWindow, ImGuiWindowFlags_None);
@@ -374,7 +391,7 @@ void Engine::RenderFrame()
 	context->VSSetConstantBuffers(0, 1, &perFrameCB);
 	context->PSSetConstantBuffers(0, 1, &perFrameCB);
 
-	context->PSSetSamplers(0, 1, &samplerLinearWrap);
+	context->PSSetSamplers(0, 1, anisotropicFilteringEnabled ? &samplerAnisotropicWrap : &samplerLinearWrap);
 
 	for (size_t i = 0; i < drawables.size(); i++)
 		drawables[i]->Draw(context, perObjectCB);
@@ -386,9 +403,9 @@ void Engine::RenderFrame()
 
 ID3D11ShaderResourceView *Engine::LoadRGBATextureFromPNG(const char *filename)
 {
-	std::vector<unsigned char> textureData;
+	std::vector<unsigned char> pngData;
 	UINT width, height;
-	UINT error = lodepng::decode(textureData, width, height, filename);
+	UINT error = lodepng::decode(pngData, width, height, filename);
 	if (error != 0)
 	{
 		char errortext[MAX_PATH];
@@ -400,35 +417,35 @@ ID3D11ShaderResourceView *Engine::LoadRGBATextureFromPNG(const char *filename)
 	ZeroMemory(&td, sizeof(D3D11_TEXTURE2D_DESC));
 	td.Width = width;
 	td.Height = height;
-	td.MipLevels = 1;
+	td.MipLevels = 0;
 	td.ArraySize = 1;
 	td.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	td.SampleDesc.Count = 1;
 	td.Usage = D3D11_USAGE_DEFAULT;
-	td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	td.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
 	td.CPUAccessFlags = 0;
-
-	D3D11_SUBRESOURCE_DATA subResource;
-	subResource.pSysMem = &textureData[0];
-	subResource.SysMemPitch = td.Width * 4;
-	subResource.SysMemSlicePitch = 0;
+	td.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
 
 	ID3D11Texture2D *texture2d;
-	HRESULT result = device->CreateTexture2D(&td, &subResource, &texture2d);
+	HRESULT result = device->CreateTexture2D(&td, nullptr, &texture2d);
 	if (FAILED(result))
 		OutputDebugString("issue creating texture\n");
 
+	context->UpdateSubresource(texture2d, 0, nullptr, &pngData[0], td.Width * 4, 0);
+
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
 	ZeroMemory(&srvDesc, sizeof(srvDesc));
-	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	srvDesc.Format = td.Format;
 	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MipLevels = td.MipLevels;
+	srvDesc.Texture2D.MipLevels = -1;
 	srvDesc.Texture2D.MostDetailedMip = 0;
 
 	ID3D11ShaderResourceView *textureRV;
 	result = device->CreateShaderResourceView(texture2d, &srvDesc, &textureRV);
 	if (FAILED(result))
 		OutputDebugString("issue creating shaderResourceView \n");
+
+	context->GenerateMips(textureRV);
 
 	texture2d->Release();
 
