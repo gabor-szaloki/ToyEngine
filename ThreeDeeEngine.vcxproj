@@ -125,6 +125,7 @@
     <ClCompile Include="ImGui\imgui_impl_dx11.cpp" />
     <ClCompile Include="ImGui\imgui_impl_win32.cpp" />
     <ClCompile Include="ImGui\imgui_widgets.cpp" />
+    <ClCompile Include="LodePNG\lodepng.cpp" />
     <ClCompile Include="Plane.cpp" />
     <ClCompile Include="Program.cpp" />
   </ItemGroup>
@@ -146,6 +147,7 @@
     <ClInclude Include="ImGui\imstb_rectpack.h" />
     <ClInclude Include="ImGui\imstb_textedit.h" />
     <ClInclude Include="ImGui\imstb_truetype.h" />
+    <ClInclude Include="LodePNG\lodepng.h" />
     <ClInclude Include="Plane.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

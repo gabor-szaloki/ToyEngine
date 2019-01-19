@@ -25,5 +25,9 @@ protected:
 
 	void InitBuffers(ID3D11Device *device, ID3D11DeviceContext *context, 
 		StandardVertexData *vertices, UINT vertexCount, WORD *indices, UINT indexCount);
+
+	ID3D11Texture2D *texture2d;
+	ID3D11SamplerState *sampler;
+	ID3D11ShaderResourceView *textureRV;
 };
 

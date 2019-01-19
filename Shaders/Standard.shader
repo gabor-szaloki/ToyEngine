@@ -15,6 +15,12 @@ cbuffer PerObjectConstantBuffer : register(b1)
 }
 
 //--------------------------------------------------------------------------------------
+// Textures and samplers
+//--------------------------------------------------------------------------------------
+Texture2D _BaseTexture : register(t0);
+SamplerState _Sampler_LinearWrap : register(s0);
+
+//--------------------------------------------------------------------------------------
 // Input/Output structures
 //--------------------------------------------------------------------------------------
 struct VSInputStandard
@@ -62,7 +68,10 @@ float4 StandardOpaquePS(VSOutputStandard i) : SV_TARGET
 {
 	float4 c;
 
+	float4 baseTextureSample = _BaseTexture.Sample(_Sampler_LinearWrap, i.uv);
+
 	c = i.color;
+	c.rgb *= baseTextureSample.rgb;
 
 	float3 ambient = 0.1f;
 	float3 direct = saturate(dot(i.normal, -_MainLightDirection.xyz)) * _MainLightColor.rgb;
