@@ -275,10 +275,20 @@ void Engine::ReleasePipeline()
 
 void Engine::InitScene()
 {
-	auto* blueTilesBaseTexture = LoadRGBATextureFromPNG("Textures\\Tiles20_col_smooth.png");
-	textureRVs.push_back(blueTilesBaseTexture);
+	auto* testBaseTexture = LoadTextureFromPNG("Textures\\test_base.png");
+	textureRVs.push_back(testBaseTexture);
+	auto* testNormalTexture = LoadTextureFromPNG("Textures\\test_nrm.png");
+	textureRVs.push_back(testNormalTexture);
 
-	Material *blueTiles = new Material(standardVS, standardOpaquePS, blueTilesBaseTexture, nullptr);
+	auto* blueTilesBaseTexture = LoadTextureFromPNG("Textures\\Tiles20_col_smooth.png");
+	textureRVs.push_back(blueTilesBaseTexture);
+	auto* blueTilesNormalTexture = LoadTextureFromPNG("Textures\\Tiles20_nrm.png");
+	textureRVs.push_back(blueTilesNormalTexture);
+
+	Material *test = new Material(standardVS, standardOpaquePS, testBaseTexture, testNormalTexture);
+	materials.push_back(test);
+
+	Material *blueTiles = new Material(standardVS, standardOpaquePS, blueTilesBaseTexture, blueTilesNormalTexture);
 	materials.push_back(blueTiles);
 
 	box = new Box();
@@ -390,7 +400,7 @@ void Engine::UpdateGUI()
 	{
 		ImGui::Begin("Light settings", &guiState.showLightSettingsWindow, ImGuiWindowFlags_None);
 		ImGui::Text("Main light");
-		ImGui::SliderAngle("Yaw", &mainLightYaw, 0.0f, 360.0f);
+		ImGui::SliderAngle("Yaw", &mainLightYaw, -180.0f, 180.0f);
 		ImGui::SliderAngle("Pitch", &mainLightPitch, 0.0f, 90.0f);
 		ImGui::SliderFloat("Intensity", &mainLightIntensity, 0.0f, 2.0f);
 		ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&mainLightColor));
@@ -433,7 +443,7 @@ void Engine::RenderFrame()
 	swapchain->Present(0, 0);
 }
 
-ID3D11ShaderResourceView *Engine::LoadRGBATextureFromPNG(const char *filename)
+ID3D11ShaderResourceView *Engine::LoadTextureFromPNG(const char *filename)
 {
 	std::vector<unsigned char> pngData;
 	UINT width, height;

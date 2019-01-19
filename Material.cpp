@@ -23,5 +23,5 @@ void Material::SetToContext(ID3D11DeviceContext *context)
 	context->VSSetShader(vertexShader, nullptr, 0);
 	context->PSSetShader(pixelShader, nullptr, 0);
 	context->PSSetShaderResources(0, 1, &baseTextureRV);
-	// TODO: normalTexture
+	context->PSSetShaderResources(1, 1, &normalTextureRV);
 }

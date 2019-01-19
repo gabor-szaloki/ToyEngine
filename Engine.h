@@ -39,7 +39,7 @@ public:
 
 	void ToggleGUI() { guiState.enabled = !guiState.enabled; }
 
-	ID3D11ShaderResourceView *LoadRGBATextureFromPNG(const char *filename);
+	ID3D11ShaderResourceView *LoadTextureFromPNG(const char *filename);
 
 	struct CameraInputState
 	{
