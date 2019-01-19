@@ -35,6 +35,8 @@ public:
 
 	void ToggleGUI() { guiState.enabled = !guiState.enabled; }
 
+	ID3D11ShaderResourceView *LoadRGBATextureFromPNG(const char *filename);
+
 	struct CameraInputState
 	{
 		bool isMovingForward;
@@ -76,10 +78,13 @@ private:
 	ID3D11VertexShader *standardVS;
 	ID3D11PixelShader *standardOpaquePS;
 
+	ID3D11SamplerState *samplerLinearWrap;
+
 	Drawable *box;
 	Drawable *floor;
 
 	std::vector<Drawable*> drawables;
+	std::vector<Material*> materials;
 
 	struct GuiState
 	{

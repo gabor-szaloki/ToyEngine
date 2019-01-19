@@ -7,6 +7,8 @@
 #include "ImGui/imgui_impl_win32.h"
 #include "ImGui/imgui_impl_dx11.h"
 
+#include "LodePNG/lodepng.h"
+
 Engine *gEngine;
 
 Engine::Engine()
@@ -222,10 +224,25 @@ void Engine::InitPipeline()
 	bd.ByteWidth = sizeof(PerObjectConstantBufferData);
 
 	hr = device->CreateBuffer(&bd, nullptr, &perObjectCB);
+
+	D3D11_SAMPLER_DESC sd;
+	ZeroMemory(&sd, sizeof(D3D11_SAMPLER_DESC));
+	sd.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	sd.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	sd.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	sd.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	sd.MipLODBias = 0.f;
+	sd.ComparisonFunc = D3D11_COMPARISON_NEVER;
+	sd.MinLOD = 0.f;
+	sd.MaxLOD = D3D11_FLOAT32_MAX;
+
+	if (FAILED(device->CreateSamplerState(&sd, &samplerLinearWrap)))
+		throw;
 }
 
 void Engine::ReleasePipeline()
 {
+	SAFE_RELEASE(samplerLinearWrap);
 	SAFE_RELEASE(perFrameCB);
 	SAFE_RELEASE(perObjectCB);
 	SAFE_RELEASE(standardInputLayout);
@@ -235,14 +252,21 @@ void Engine::ReleasePipeline()
 
 void Engine::InitScene()
 {
+	Material *blueTiles = new Material();
+	blueTiles->SetPaths("Textures\\Tiles20_col_smooth.png", "Textures\\Tiles20_nrm.png");
+	blueTiles->LoadTextures();
+	materials.push_back(blueTiles);
+
 	box = new Box();
 	box->Init(device, context);
 	box->worldTransform = XMMatrixTranslation(0.0f, 1.5f, 0.0f);
+	box->material = blueTiles;
 	drawables.push_back(box);
 
 	floor = new Plane();
 	floor->Init(device, context);
 	floor->worldTransform = XMMatrixScaling(10.0f, 1.0f, 10.0f);
+	floor->material = blueTiles;
 	drawables.push_back(floor);
 }
 
@@ -251,6 +275,10 @@ void Engine::ReleaseScene()
 	for (size_t i = 0; i < drawables.size(); i++)
 		delete drawables[i];
 	drawables.clear();
+
+	for (size_t i = 0; i < materials.size(); i++)
+		delete materials[i];
+	materials.clear();
 }
 
 void Engine::Update(float elapsedTime)
@@ -346,12 +374,65 @@ void Engine::RenderFrame()
 	context->VSSetConstantBuffers(0, 1, &perFrameCB);
 	context->PSSetConstantBuffers(0, 1, &perFrameCB);
 
+	context->PSSetSamplers(0, 1, &samplerLinearWrap);
+
 	for (size_t i = 0; i < drawables.size(); i++)
 		drawables[i]->Draw(context, perObjectCB);
 
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
 	swapchain->Present(0, 0);
+}
+
+ID3D11ShaderResourceView *Engine::LoadRGBATextureFromPNG(const char *filename)
+{
+	std::vector<unsigned char> textureData;
+	UINT width, height;
+	UINT error = lodepng::decode(textureData, width, height, filename);
+	if (error != 0)
+	{
+		char errortext[MAX_PATH];
+		sprintf_s(errortext, "error %d %s\n", error, lodepng_error_text(error));
+		OutputDebugString(errortext);
+	}
+
+	D3D11_TEXTURE2D_DESC td;
+	ZeroMemory(&td, sizeof(D3D11_TEXTURE2D_DESC));
+	td.Width = width;
+	td.Height = height;
+	td.MipLevels = 1;
+	td.ArraySize = 1;
+	td.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	td.SampleDesc.Count = 1;
+	td.Usage = D3D11_USAGE_DEFAULT;
+	td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	td.CPUAccessFlags = 0;
+
+	D3D11_SUBRESOURCE_DATA subResource;
+	subResource.pSysMem = &textureData[0];
+	subResource.SysMemPitch = td.Width * 4;
+	subResource.SysMemSlicePitch = 0;
+
+	ID3D11Texture2D *texture2d;
+	HRESULT result = device->CreateTexture2D(&td, &subResource, &texture2d);
+	if (FAILED(result))
+		OutputDebugString("issue creating texture\n");
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+	ZeroMemory(&srvDesc, sizeof(srvDesc));
+	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = td.MipLevels;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+
+	ID3D11ShaderResourceView *textureRV;
+	result = device->CreateShaderResourceView(texture2d, &srvDesc, &textureRV);
+	if (FAILED(result))
+		OutputDebugString("issue creating shaderResourceView \n");
+
+	texture2d->Release();
+
+	return textureRV;
 }
 
 XMFLOAT4 Engine::GetMainLightColorIntensity()

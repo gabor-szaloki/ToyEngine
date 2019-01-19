@@ -1,12 +1,14 @@
 #pragma once
 
 #include "EngineCommon.h"
+#include "Material.h"
 
 __declspec(align(16)) class Drawable
 {
 public:
 
 	XMMATRIX worldTransform;
+	Material *material;
 
 	Drawable();
 	virtual ~Drawable();
@@ -25,9 +27,5 @@ protected:
 
 	void InitBuffers(ID3D11Device *device, ID3D11DeviceContext *context, 
 		StandardVertexData *vertices, UINT vertexCount, WORD *indices, UINT indexCount);
-
-	ID3D11Texture2D *texture2d;
-	ID3D11SamplerState *sampler;
-	ID3D11ShaderResourceView *textureRV;
 };
 

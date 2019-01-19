@@ -55,6 +55,9 @@
     <ClCompile Include="LodePNG\lodepng.cpp">
       <Filter>LodePNG</Filter>
     </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine.h">
@@ -104,6 +107,9 @@
     </ClInclude>
     <ClInclude Include="LodePNG\lodepng.h">
       <Filter>LodePNG</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>Source</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
