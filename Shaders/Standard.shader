@@ -5,6 +5,7 @@ cbuffer PerFrameConstantBuffer : register(b0)
 {
 	float4x4 _View;
 	float4x4 _Projection;
+	float4 _AmbientLightColor;
 	float4 _MainLightColor;
 	float4 _MainLightDirection;
 }
@@ -83,7 +84,7 @@ float4 StandardOpaquePS(VSOutputStandard i) : SV_TARGET
 	c = i.color;
 	c.rgb *= baseTextureSample.rgb;
 
-	float3 ambient = 0.2f;
+	float3 ambient = _AmbientLightColor.rgb;
 	float3 direct = saturate(dot(normal, -_MainLightDirection.xyz)) * _MainLightColor.rgb;
 	float3 light = ambient + direct;
 	c.rgb *= light;

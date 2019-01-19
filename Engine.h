@@ -62,6 +62,8 @@ private:
 	Camera *camera;
 	float cameraMoveSpeed, cameraTurnSpeed;
 
+	float ambientLightIntensity;
+	XMFLOAT4 ambientLightColor;
 	float mainLightIntensity;
 	XMFLOAT4 mainLightColor;
 	float mainLightYaw, mainLightPitch;
@@ -102,7 +104,7 @@ private:
 	};
 	GuiState guiState;
 
-	XMFLOAT4 GetMainLightColorIntensity();
+	XMFLOAT4 GetFinalLightColor(XMFLOAT4 color, float intensity);
 };
 
 extern Engine *gEngine;

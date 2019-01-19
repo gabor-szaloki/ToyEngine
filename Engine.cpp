@@ -23,6 +23,8 @@ Engine::Engine()
 	cameraMoveSpeed = 5.0f;
 	cameraTurnSpeed = 2.0f;
 
+	ambientLightIntensity = 0.5f;
+	ambientLightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	mainLightIntensity = 1.0f;
 	mainLightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	mainLightYaw = -XM_PI / 3;
@@ -399,11 +401,14 @@ void Engine::UpdateGUI()
 	if (guiState.showLightSettingsWindow)
 	{
 		ImGui::Begin("Light settings", &guiState.showLightSettingsWindow, ImGuiWindowFlags_None);
+		ImGui::Text("Ambient light");
+		ImGui::SliderFloat("Intensity##ambient", &ambientLightIntensity, 0.0f, 1.0f);
+		ImGui::ColorEdit3("Color##ambient", reinterpret_cast<float*>(&ambientLightColor));
 		ImGui::Text("Main light");
 		ImGui::SliderAngle("Yaw", &mainLightYaw, -180.0f, 180.0f);
 		ImGui::SliderAngle("Pitch", &mainLightPitch, 0.0f, 90.0f);
-		ImGui::SliderFloat("Intensity", &mainLightIntensity, 0.0f, 2.0f);
-		ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&mainLightColor));
+		ImGui::SliderFloat("Intensity##main", &mainLightIntensity, 0.0f, 2.0f);
+		ImGui::ColorEdit3("Color##main", reinterpret_cast<float*>(&mainLightColor));
 		ImGui::End();
 	}
 	
@@ -422,7 +427,8 @@ void Engine::RenderFrame()
 	PerFrameConstantBufferData perFrameCBData;
 	perFrameCBData.view = camera->GetViewMatrix();
 	perFrameCBData.projection = camera->GetProjectionMatrix();
-	perFrameCBData.mainLightColor = GetMainLightColorIntensity();
+	perFrameCBData.ambientLightColor = GetFinalLightColor(ambientLightColor, ambientLightIntensity);
+	perFrameCBData.mainLightColor = GetFinalLightColor(mainLightColor, mainLightIntensity);
 	XMMATRIX lightMatrix = XMMatrixRotationRollPitchYaw(mainLightPitch, mainLightYaw, 0.0f);
 	XMStoreFloat4(&perFrameCBData.mainLightDirection, lightMatrix.r[2]);
 	
@@ -494,7 +500,7 @@ ID3D11ShaderResourceView *Engine::LoadTextureFromPNG(const char *filename)
 	return textureRV;
 }
 
-XMFLOAT4 Engine::GetMainLightColorIntensity()
+XMFLOAT4 Engine::GetFinalLightColor(XMFLOAT4 color, float intensity)
 {
-	return XMFLOAT4(mainLightColor.x * mainLightIntensity, mainLightColor.y * mainLightIntensity, mainLightColor.z * mainLightIntensity, 1.0f);
+	return XMFLOAT4(color.x * intensity, color.y * intensity, color.z * intensity, 1.0f);
 }
