@@ -45,7 +45,8 @@ void Engine::Init(HWND hWnd, float viewportWidth, float viewportHeight)
 {
 	this->hWnd = hWnd;
 
-	InitD3D(viewportWidth, viewportHeight);
+	InitDevice();
+	InitRenderTargets(viewportWidth, viewportHeight);
 	InitImGui();
 	InitPipeline();
 	InitScene();
@@ -56,13 +57,12 @@ void Engine::Release()
 	ReleaseScene();
 	ReleasePipeline();
 	ReleaseImGui();
-	ReleaseD3D();
+	ReleaseRenderTargets();
+	ReleaseDevice();
 }
 
-void Engine::InitD3D(float width, float height)
+void Engine::InitDevice()
 {
-	// Direct3D initialization
-
 	DXGI_SWAP_CHAIN_DESC scd;
 	ZeroMemory(&scd, sizeof(DXGI_SWAP_CHAIN_DESC));
 	scd.BufferCount = 1;
@@ -75,7 +75,17 @@ void Engine::InitD3D(float width, float height)
 	HRESULT hr = D3D11CreateDeviceAndSwapChain(
 		nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, nullptr, 0, D3D11_SDK_VERSION,
 		&scd, &swapchain, &device, nullptr, &context);
+}
 
+void Engine::ReleaseDevice()
+{
+	SAFE_RELEASE(swapchain);
+	SAFE_RELEASE(device);
+	SAFE_RELEASE(context);
+}
+
+void Engine::InitRenderTargets(float width, float height)
+{
 	// Setup viewport
 
 	D3D11_VIEWPORT viewport;
@@ -138,14 +148,11 @@ void Engine::InitD3D(float width, float height)
 	context->OMSetRenderTargets(1, &backbuffer, depthStencilView);
 }
 
-void Engine::ReleaseD3D()
+void Engine::ReleaseRenderTargets()
 {
-	SAFE_RELEASE(swapchain);
 	SAFE_RELEASE(backbuffer);
 	SAFE_RELEASE(depthStencilView);
 	SAFE_RELEASE(depthStencilState);
-	SAFE_RELEASE(device);
-	SAFE_RELEASE(context);
 }
 
 void Engine::InitImGui()
@@ -174,79 +181,85 @@ void Engine::ReleaseImGui()
 
 void Engine::InitPipeline()
 {
+	HRESULT hr;
 	ID3DBlob *vsBlob, *psBlob, *errorBlob;
 
-	HRESULT hr;
-
-	hr = D3DCompileFromFile(L"Shaders\\Standard.shader", nullptr, nullptr, "StandardVS", "vs_4_0", 0, 0, &vsBlob, &errorBlob);
-	if (errorBlob)
+	// Shaders
 	{
-		OutputDebugString(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()));
-		errorBlob = nullptr;
+		hr = D3DCompileFromFile(L"Shaders\\Standard.shader", nullptr, nullptr, "StandardVS", "vs_4_0", 0, 0, &vsBlob, &errorBlob);
+		if (errorBlob)
+		{
+			OutputDebugString(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()));
+			errorBlob = nullptr;
+		}
+		if (FAILED(hr))
+			throw;
+
+		hr = D3DCompileFromFile(L"Shaders\\Standard.shader", nullptr, nullptr, "StandardOpaquePS", "ps_4_0", 0, 0, &psBlob, &errorBlob);
+		if (errorBlob)
+		{
+			OutputDebugString(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()));
+			errorBlob = nullptr;
+		}
+		if (FAILED(hr))
+			throw;
+
+		hr = device->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &standardVS);
+		hr = device->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &standardOpaquePS);
 	}
-	if (FAILED(hr))
-		throw;
 
-	hr = D3DCompileFromFile(L"Shaders\\Standard.shader", nullptr, nullptr, "StandardOpaquePS", "ps_4_0", 0, 0, &psBlob, &errorBlob);
-	if (errorBlob)
+	// Input layout
 	{
-		OutputDebugString(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()));
-		errorBlob = nullptr;
+		D3D11_INPUT_ELEMENT_DESC ied[] =
+		{
+			{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{"TANGENT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 40, D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 56, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		};
+
+		hr = device->CreateInputLayout(ied, ARRAYSIZE(ied), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &standardInputLayout);
 	}
-	if (FAILED(hr))
-		throw;
 
-	hr = device->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &standardVS);
-	hr = device->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &standardOpaquePS);
-
-	context->VSSetShader(standardVS, nullptr, 0);
-	context->PSSetShader(standardOpaquePS, nullptr, 0);
-
-	D3D11_INPUT_ELEMENT_DESC ied[] =
+	// Constant buffers
 	{
-		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"TANGENT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 40, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 56, D3D11_INPUT_PER_VERTEX_DATA, 0},
-	};
+		D3D11_BUFFER_DESC bd;
+		ZeroMemory(&bd, sizeof(D3D11_BUFFER_DESC));
+		bd.Usage = D3D11_USAGE_DEFAULT;
+		bd.ByteWidth = sizeof(PerFrameConstantBufferData);
+		bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		bd.CPUAccessFlags = 0;
 
-	hr = device->CreateInputLayout(ied, ARRAYSIZE(ied), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &standardInputLayout);
+		hr = device->CreateBuffer(&bd, nullptr, &perFrameCB);
 
-	context->IASetInputLayout(standardInputLayout);
+		bd.ByteWidth = sizeof(PerObjectConstantBufferData);
 
-	D3D11_BUFFER_DESC bd;
-	ZeroMemory(&bd, sizeof(D3D11_BUFFER_DESC));
-	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(PerFrameConstantBufferData);
-	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	bd.CPUAccessFlags = 0;
+		hr = device->CreateBuffer(&bd, nullptr, &perObjectCB);
+	}
 
-	hr = device->CreateBuffer(&bd, nullptr, &perFrameCB);
-	
-	bd.ByteWidth = sizeof(PerObjectConstantBufferData);
+	// Samplers
+	{
+		D3D11_SAMPLER_DESC sd;
+		ZeroMemory(&sd, sizeof(D3D11_SAMPLER_DESC));
+		sd.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		sd.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		sd.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		sd.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		sd.MipLODBias = 0;
+		sd.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+		sd.MinLOD = 0;
+		sd.MaxLOD = D3D11_FLOAT32_MAX;
 
-	hr = device->CreateBuffer(&bd, nullptr, &perObjectCB);
+		if (FAILED(device->CreateSamplerState(&sd, &samplerLinearWrap)))
+			throw;
 
-	D3D11_SAMPLER_DESC sd;
-	ZeroMemory(&sd, sizeof(D3D11_SAMPLER_DESC));
-	sd.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-	sd.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-	sd.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-	sd.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-	sd.MipLODBias = 0;
-	sd.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-	sd.MinLOD = 0;
-	sd.MaxLOD = D3D11_FLOAT32_MAX;
+		sd.Filter = D3D11_FILTER_ANISOTROPIC;
+		sd.MaxAnisotropy = 16;
 
-	if (FAILED(device->CreateSamplerState(&sd, &samplerLinearWrap)))
-		throw;
-
-	sd.Filter = D3D11_FILTER_ANISOTROPIC;
-	sd.MaxAnisotropy = 16;
-
-	if (FAILED(device->CreateSamplerState(&sd, &samplerAnisotropicWrap)))
-		throw;
+		if (FAILED(device->CreateSamplerState(&sd, &samplerAnisotropicWrap)))
+			throw;
+	}
 }
 
 void Engine::ReleasePipeline()
@@ -262,9 +275,10 @@ void Engine::ReleasePipeline()
 
 void Engine::InitScene()
 {
-	Material *blueTiles = new Material();
-	blueTiles->SetPaths("Textures\\Tiles20_col_smooth.png", "Textures\\Tiles20_nrm.png");
-	blueTiles->LoadTextures();
+	auto* blueTilesBaseTexture = LoadRGBATextureFromPNG("Textures\\Tiles20_col_smooth.png");
+	textureRVs.push_back(blueTilesBaseTexture);
+
+	Material *blueTiles = new Material(standardVS, standardOpaquePS, blueTilesBaseTexture, nullptr);
 	materials.push_back(blueTiles);
 
 	box = new Box();
@@ -289,6 +303,18 @@ void Engine::ReleaseScene()
 	for (size_t i = 0; i < materials.size(); i++)
 		delete materials[i];
 	materials.clear();
+
+	for (size_t i = 0; i < textureRVs.size(); i++)
+		SAFE_RELEASE(textureRVs[i]);
+	textureRVs.clear();
+}
+
+void Engine::Resize(HWND hWnd, float width, float height)
+{
+	context->OMSetRenderTargets(0, 0, 0);
+	ReleaseRenderTargets();
+	swapchain->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
+	InitRenderTargets(width, height);
 }
 
 void Engine::Update(float elapsedTime)
@@ -341,6 +367,7 @@ void Engine::UpdateGUI()
 		}
 		if (ImGui::BeginMenu("Window"))
 		{
+			if (ImGui::MenuItem("Engine settings", nullptr)) { guiState.showEngineSettingsWindow = true; }
 			if (ImGui::MenuItem("Light settings", nullptr)) { guiState.showLightSettingsWindow = true; }
 			ImGui::Separator();
 			if (ImGui::MenuItem("ImGui demo window", nullptr)) { guiState.showDemoWindow = true; }
@@ -380,6 +407,8 @@ void Engine::RenderFrame()
 	context->ClearRenderTargetView(backbuffer, clearColor);
 	context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
+	context->IASetInputLayout(standardInputLayout);
+
 	PerFrameConstantBufferData perFrameCBData;
 	perFrameCBData.view = camera->GetViewMatrix();
 	perFrameCBData.projection = camera->GetProjectionMatrix();
@@ -392,6 +421,9 @@ void Engine::RenderFrame()
 	context->PSSetConstantBuffers(0, 1, &perFrameCB);
 
 	context->PSSetSamplers(0, 1, anisotropicFilteringEnabled ? &samplerAnisotropicWrap : &samplerLinearWrap);
+
+	context->VSSetShader(standardVS, nullptr, 0);
+	context->PSSetShader(standardOpaquePS, nullptr, 0);
 
 	for (size_t i = 0; i < drawables.size(); i++)
 		drawables[i]->Draw(context, perObjectCB);

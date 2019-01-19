@@ -17,14 +17,18 @@ public:
 	void Init(HWND hWnd, float viewportWidth, float viewportHeight);
 	void Release();
 
-	void InitD3D(float width, float height);
-	void ReleaseD3D();
+	void InitDevice();
+	void ReleaseDevice();
+	void InitRenderTargets(float width, float height);
+	void ReleaseRenderTargets();
 	void InitImGui();
 	void ReleaseImGui();
 	void InitPipeline();
 	void ReleasePipeline();
 	void InitScene();
 	void ReleaseScene();
+
+	void Resize(HWND hWnd, float width, float height);
 
 	void Update(float elapsedTime);
 	void UpdateGUI();
@@ -87,6 +91,7 @@ private:
 
 	std::vector<Drawable*> drawables;
 	std::vector<Material*> materials;
+	std::vector<ID3D11ShaderResourceView*> textureRVs;
 
 	struct GuiState
 	{

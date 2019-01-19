@@ -172,7 +172,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		case VK_F11:
 		{
 			fullscreen = !fullscreen;
-			OutputDebugString(fullscreen ? "Going fullscreen\n" : "Going windowed\n");
+			OutputDebugString(fullscreen ? "VK_F11, Going fullscreen\n" : "Going windowed\n");
 
 			HMONITOR hMon = MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY);
 			MONITORINFO monitorInfo;
@@ -201,13 +201,25 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			MoveWindow(hWnd, x, y, width, height, true);
 			ShowWindow(hWnd, showCmd);
 
-			gEngine->Release();
-			gEngine->Init(hWnd, float(clientRect.right - clientRect.left), float(clientRect.bottom - clientRect.top));
-
 			break;
 		}
 		}
 		break;
+	case WM_SIZE:
+	{
+		RECT clientRect;
+		GetClientRect(hWnd, &clientRect);
+		int w = clientRect.right - clientRect.left;
+		int h = clientRect.bottom - clientRect.top;
+
+		char str[MAX_PATH];
+		sprintf_s(str, "WM_SIZE, clientRect: x:%d, y:%d, w:%d, h:%d\n", clientRect.left, clientRect.top, w, h);
+		OutputDebugString(str);
+
+		gEngine->Resize(hWnd, float(w), float(h));
+
+		break;
+	}
 	}
 
 	return DefWindowProc(hWnd, message, wParam, lParam);

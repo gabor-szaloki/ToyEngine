@@ -6,18 +6,21 @@ class Material
 {
 
 public:
-	Material();
+	Material(
+		ID3D11VertexShader *vertexShader, 
+		ID3D11PixelShader *pixelShader, 
+		ID3D11ShaderResourceView *baseTextureRV, 
+		ID3D11ShaderResourceView *normalTextureRV);
 	~Material();
 
-	void SetPaths(const char *baseTexturePath, const char *normalTexturePath);
-	void LoadTextures();
 	void SetToContext(ID3D11DeviceContext *context);
 
 private:
-	const char *baseTexturePath, *normalTexturePath;
 
 	ID3D11ShaderResourceView *baseTextureRV;
 	ID3D11ShaderResourceView *normalTextureRV;
 
-};
+	ID3D11VertexShader *vertexShader;
+	ID3D11PixelShader *pixelShader;
 
+};
