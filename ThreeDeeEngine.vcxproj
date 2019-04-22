@@ -159,6 +159,22 @@
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="Shaders\Common.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Shaders\Lighting.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Shaders\Surface.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Shaders\Input.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

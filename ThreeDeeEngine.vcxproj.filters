@@ -119,5 +119,17 @@
     <Text Include="Shaders\Standard.shader">
       <Filter>Shaders</Filter>
     </Text>
+    <Text Include="Shaders\Surface.hlsl">
+      <Filter>Shaders</Filter>
+    </Text>
+    <Text Include="Shaders\Lighting.hlsl">
+      <Filter>Shaders</Filter>
+    </Text>
+    <Text Include="Shaders\Common.hlsl">
+      <Filter>Shaders</Filter>
+    </Text>
+    <Text Include="Shaders\Input.hlsl">
+      <Filter>Shaders</Filter>
+    </Text>
   </ItemGroup>
 </Project>

@@ -1,36 +1,14 @@
 //--------------------------------------------------------------------------------------
 // Includes
 //--------------------------------------------------------------------------------------
-#include "BRDF.hlsl"
 
-//--------------------------------------------------------------------------------------
-// Constant buffers
-//--------------------------------------------------------------------------------------
-cbuffer PerFrameConstantBuffer : register(b0)
-{
-	float4x4 _View;
-	float4x4 _Projection;
-	float4 _AmbientLightColor;
-	float4 _MainLightColor;
-	float4 _MainLightDirection;
-	float3 _CameraWorldPosition;
-}
-
-cbuffer PerObjectConstantBuffer : register(b1)
-{
-	float4x4 _World;
-}
-
-//--------------------------------------------------------------------------------------
-// Textures and samplers
-//--------------------------------------------------------------------------------------
-Texture2D _BaseTexture : register(t0);
-Texture2D _NormalTexture : register(t1);
-SamplerState _Sampler : register(s0);
+#include "Surface.hlsl"
+#include "Lighting.hlsl"
 
 //--------------------------------------------------------------------------------------
 // Input/Output structures
 //--------------------------------------------------------------------------------------
+
 struct VSInputStandard
 {
 	float4 position : POSITION;
@@ -77,54 +55,13 @@ VSOutputStandard StandardVS(VSInputStandard v)
 	return o;
 }
 
-
 float4 StandardOpaquePS(VSOutputStandard i) : SV_TARGET
 {
 	float4 c = 1;
 
-	//
-	// Surface
-	//
+	SurfaceOutput s = Surface(i.normal, i.tangent, i.binormal, i.uv, i.color);
 
-	float4 baseTextureSample = _BaseTexture.Sample(_Sampler, i.uv);
-	float3 normalTextureSample = _NormalTexture.Sample(_Sampler, i.uv).rgb;
-	normalTextureSample = normalTextureSample * 2.0 - 1.0;
-
-	float3 albedo = baseTextureSample.rgb * i.color.rgb;
-
-	float3 normal = i.tangent * normalTextureSample.x + i.binormal * normalTextureSample.y + i.normal * normalTextureSample.z;
-	normal = normalize(normal);
-
-	float roughness = baseTextureSample.a;
-	float metalness = 0.0f;
-
-	//
-	// Lighting
-	//
+	c.rgb = Lighting(s, i.worldPos);
 	
-	float3 lightVector = -_MainLightDirection.xyz;
-	float3 viewVector = normalize(_CameraWorldPosition - i.worldPos);
-
-	// Color at normal incidence
-	float3 F0 = lerp(0.04, albedo, metalness);
-	
-	// Specular contribution
-	float3 kS = 0;
-	float3 specular = GGX_Specular(_MainLightColor.rgb, normal, lightVector, viewVector, roughness, F0, kS);
-
-	// Diffuse contribution
-	float3 kD = (1 - kS) * (1 - metalness);
-	float nDotL = saturate(dot(normal, lightVector));
-	float3 lambert = nDotL * _MainLightColor.rgb;
-	float3 diffuse = albedo * lambert;
-
-	// Ambient contribution
-	float3 ambient = albedo * _AmbientLightColor.rgb;
-
-	c.rgb = ambient + kD * diffuse +/* kS * */specular;
-
-	// Debug
-	//c.rgb = specular;
-
 	return c;
 }

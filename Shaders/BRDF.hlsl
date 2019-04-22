@@ -1,4 +1,7 @@
-static const float PI = 3.14159265359;
+#ifndef BRDF_INCLUDED
+#define BRDF_INCLUDED
+
+#include "Common.hlsl"
 
 float NormalDistributionGGXTR(float3 normalVec, float3 halfwayVec, float roughness)
 {
@@ -13,7 +16,6 @@ float NormalDistributionGGXTR(float3 normalVec, float3 halfwayVec, float roughne
 	return nom / denom;
 }
 
-
 float GeometrySchlickGGX(float NdotV, float roughness)  // k is a remapping of roughness based on direct lighting or IBL lighting
 {
 	float r = roughness + 1.0f;
@@ -24,7 +26,6 @@ float GeometrySchlickGGX(float NdotV, float roughness)  // k is a remapping of r
 
 	return nom / denom;
 }
-
 
 float GeometrySmith(float3 normalVec, float3 viewDir, float3 lightDir, float k)
 {
@@ -46,27 +47,4 @@ float3 FresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)   // 
 	return F0 + (max(float3(1.0f - roughness, 1.0f - roughness, 1.0f - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0f);
 }
 
-float3 GGX_Specular(float3 lightColor, float3 normal, float3 lightVector, float3 viewVector, float perceptualRoughness, float3 F0, out float3 kS)
-{
-	float roughness = perceptualRoughness * perceptualRoughness;
-	float3 reflectionVector = reflect(-viewVector, normal);
-	float3 halfVector = normalize(lightVector + viewVector);
-
-	// Distribution
-	float D = NormalDistributionGGXTR(normal, halfVector, roughness);
-
-	// Calculate fresnel
-	float3 F = FresnelSchlick(saturate(dot(halfVector, viewVector)), F0);
-	kS = F;
-
-	// Geometry term
-	float G = GeometrySmith(normal, viewVector, lightVector, roughness);
-
-	// Calculate the Cook-Torrance denominator
-	float vDotN = saturate(dot(viewVector, normal));
-	float hDotN = saturate(dot(halfVector, normal));
-	float denominator = saturate(4 * vDotN * hDotN + 0.05);
-
-	float3 radiance = lightColor * D * G * F / denominator;
-	return radiance;
-}
+#endif
