@@ -64,8 +64,8 @@ VSOutputStandard StandardVS(VSInputStandard v)
 	float4 clipPos = mul(_Projection, viewPos);
 	o.position = clipPos;
 
-	o.normal = mul(_World, float4(v.normal, 0)).xyz;
-	o.tangent = mul(_World, float4(v.tangent.xyz, 0)).xyz;
+	o.normal = normalize(mul(_World, float4(v.normal, 0)).xyz);
+	o.tangent = normalize(mul(_World, float4(v.tangent.xyz, 0)).xyz);
 	o.binormal = cross(o.tangent, o.normal) * v.tangent.w;
 
 	o.color = v.color;
