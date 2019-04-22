@@ -301,7 +301,7 @@ void Engine::InitScene()
 
 	floor = new Plane();
 	floor->Init(device, context);
-	floor->worldTransform = XMMatrixScaling(10.0f, 1.0f, 10.0f);
+	floor->worldTransform = XMMatrixScaling(10.0f, 10.0f, 10.0f);
 	floor->material = blueTiles;
 	drawables.push_back(floor);
 }
