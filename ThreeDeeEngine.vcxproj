@@ -131,7 +131,9 @@
     <ClCompile Include="Program.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\Standard.shader" />
+    <Text Include="Shaders\Standard.shader">
+      <FileType>Document</FileType>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Box.h" />
@@ -151,6 +153,11 @@
     <ClInclude Include="LodePNG\lodepng.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Plane.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Shaders\BRDF.hlsl">
+      <FileType>Document</FileType>
+    </Text>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

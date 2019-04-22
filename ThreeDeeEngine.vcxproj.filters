@@ -113,8 +113,11 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\Standard.shader">
+    <Text Include="Shaders\BRDF.hlsl">
       <Filter>Shaders</Filter>
-    </None>
+    </Text>
+    <Text Include="Shaders\Standard.shader">
+      <Filter>Shaders</Filter>
+    </Text>
   </ItemGroup>
 </Project>

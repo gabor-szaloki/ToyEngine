@@ -188,7 +188,7 @@ void Engine::InitPipeline()
 
 	// Shaders
 	{
-		hr = D3DCompileFromFile(L"Shaders\\Standard.shader", nullptr, nullptr, "StandardVS", "vs_4_0", 0, 0, &vsBlob, &errorBlob);
+		hr = D3DCompileFromFile(L"Shaders\\Standard.shader", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "StandardVS", "vs_4_0", 0, 0, &vsBlob, &errorBlob);
 		if (errorBlob)
 		{
 			OutputDebugString(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()));
@@ -197,7 +197,7 @@ void Engine::InitPipeline()
 		if (FAILED(hr))
 			throw;
 
-		hr = D3DCompileFromFile(L"Shaders\\Standard.shader", nullptr, nullptr, "StandardOpaquePS", "ps_4_0", 0, 0, &psBlob, &errorBlob);
+		hr = D3DCompileFromFile(L"Shaders\\Standard.shader", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "StandardOpaquePS", "ps_4_0", 0, 0, &psBlob, &errorBlob);
 		if (errorBlob)
 		{
 			OutputDebugString(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()));
@@ -282,7 +282,7 @@ void Engine::InitScene()
 	auto* testNormalTexture = LoadTextureFromPNG("Textures\\test_nrm.png");
 	textureRVs.push_back(testNormalTexture);
 
-	auto* blueTilesBaseTexture = LoadTextureFromPNG("Textures\\Tiles20_col_smooth.png");
+	auto* blueTilesBaseTexture = LoadTextureFromPNG("Textures\\Tiles20_base.png");
 	textureRVs.push_back(blueTilesBaseTexture);
 	auto* blueTilesNormalTexture = LoadTextureFromPNG("Textures\\Tiles20_nrm.png");
 	textureRVs.push_back(blueTilesNormalTexture);
@@ -431,6 +431,7 @@ void Engine::RenderFrame()
 	perFrameCBData.mainLightColor = GetFinalLightColor(mainLightColor, mainLightIntensity);
 	XMMATRIX lightMatrix = XMMatrixRotationRollPitchYaw(mainLightPitch, mainLightYaw, 0.0f);
 	XMStoreFloat4(&perFrameCBData.mainLightDirection, lightMatrix.r[2]);
+	XMStoreFloat3(&perFrameCBData.cameraWorldPosition, camera->GetEye());
 	
 	context->UpdateSubresource(perFrameCB, 0, nullptr, &perFrameCBData, 0, 0);
 	context->VSSetConstantBuffers(0, 1, &perFrameCB);

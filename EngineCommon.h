@@ -18,6 +18,7 @@ struct PerFrameConstantBufferData
 	XMFLOAT4 ambientLightColor;
 	XMFLOAT4 mainLightColor;
 	XMFLOAT4 mainLightDirection;
+	XMFLOAT3 cameraWorldPosition;
 };
 
 struct PerObjectConstantBufferData 
