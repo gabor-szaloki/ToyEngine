@@ -1,7 +1,6 @@
 #include "Engine.h"
 
-#include "Box.h"
-#include "Plane.h"
+#include "Privitives.h"
 
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_win32.h"
@@ -293,13 +292,13 @@ void Engine::InitScene()
 	Material *blueTiles = new Material(standardVS, standardOpaquePS, blueTilesBaseTexture, blueTilesNormalTexture);
 	materials.push_back(blueTiles);
 
-	box = new Box();
+	box = new Primitives::Box();
 	box->Init(device, context);
 	box->worldTransform = XMMatrixTranslation(0.0f, 1.5f, 0.0f);
 	box->material = blueTiles;
 	drawables.push_back(box);
 
-	floor = new Plane();
+	floor = new Primitives::Plane();
 	floor->Init(device, context);
 	floor->worldTransform = XMMatrixScaling(10.0f, 10.0f, 10.0f);
 	floor->material = blueTiles;

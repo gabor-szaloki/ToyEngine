@@ -115,7 +115,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Box.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Drawable.cpp" />
     <ClCompile Include="Engine.cpp" />
@@ -127,7 +126,6 @@
     <ClCompile Include="ImGui\imgui_widgets.cpp" />
     <ClCompile Include="LodePNG\lodepng.cpp" />
     <ClCompile Include="Material.cpp" />
-    <ClCompile Include="Plane.cpp" />
     <ClCompile Include="Program.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -136,7 +134,6 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Box.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="Drawable.h" />
@@ -152,7 +149,7 @@
     <ClInclude Include="ImGui\imstb_truetype.h" />
     <ClInclude Include="LodePNG\lodepng.h" />
     <ClInclude Include="Material.h" />
-    <ClInclude Include="Plane.h" />
+    <ClInclude Include="Privitives.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Shaders\BRDF.hlsl">

@@ -25,9 +25,6 @@
     <ClCompile Include="Drawable.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="Box.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="Camera.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -49,9 +46,6 @@
     <ClCompile Include="ImGui\imgui_widgets.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="Plane.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="LodePNG\lodepng.cpp">
       <Filter>LodePNG</Filter>
     </ClCompile>
@@ -67,9 +61,6 @@
       <Filter>Source</Filter>
     </ClInclude>
     <ClInclude Include="Drawable.h">
-      <Filter>Source</Filter>
-    </ClInclude>
-    <ClInclude Include="Box.h">
       <Filter>Source</Filter>
     </ClInclude>
     <ClInclude Include="Camera.h">
@@ -102,13 +93,13 @@
     <ClInclude Include="ImGui\imstb_truetype.h">
       <Filter>ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="Plane.h">
-      <Filter>Source</Filter>
-    </ClInclude>
     <ClInclude Include="LodePNG\lodepng.h">
       <Filter>LodePNG</Filter>
     </ClInclude>
     <ClInclude Include="Material.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="Privitives.h">
       <Filter>Source</Filter>
     </ClInclude>
   </ItemGroup>
