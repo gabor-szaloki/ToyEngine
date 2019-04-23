@@ -108,8 +108,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		{
 			POINT mousePos;
 			GetCursorPos(&mousePos);
-			gEngine->cameraInputState.deltaYaw = mousePos.x - lastMousePos.x;
-			gEngine->cameraInputState.deltaPitch = mousePos.y - lastMousePos.y;
+			gEngine->cameraInputState.deltaYaw += mousePos.x - lastMousePos.x;
+			gEngine->cameraInputState.deltaPitch += mousePos.y - lastMousePos.y;
 			SetCursorPos(lastMousePos.x, lastMousePos.y);
 		}
 		break;
