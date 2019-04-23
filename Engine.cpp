@@ -33,6 +33,7 @@ Engine::Engine()
 	guiState.enabled = true;
 	guiState.showEngineSettingsWindow = true;
 	guiState.showLightSettingsWindow = true;
+	guiState.showStatsWindow = true;
 
 	showWireframe = false;
 	anisotropicFilteringEnabled = true;
@@ -394,6 +395,7 @@ void Engine::UpdateGUI()
 		{
 			if (ImGui::MenuItem("Engine settings", nullptr)) { guiState.showEngineSettingsWindow = true; }
 			if (ImGui::MenuItem("Light settings", nullptr)) { guiState.showLightSettingsWindow = true; }
+			if (ImGui::MenuItem("Stats", nullptr)) { guiState.showStatsWindow = true; }
 			ImGui::Separator();
 			if (ImGui::MenuItem("ImGui demo window", nullptr)) { guiState.showDemoWindow = true; }
 			ImGui::EndMenu();
@@ -423,6 +425,15 @@ void Engine::UpdateGUI()
 		ImGui::SliderAngle("Pitch", &mainLightPitch, 0.0f, 90.0f);
 		ImGui::SliderFloat("Intensity##main", &mainLightIntensity, 0.0f, 2.0f);
 		ImGui::ColorEdit3("Color##main", reinterpret_cast<float*>(&mainLightColor));
+		ImGui::End();
+	}
+
+	if (guiState.showStatsWindow)
+	{
+		ImGui::Begin("Stats", &guiState.showEngineSettingsWindow, ImGuiWindowFlags_None);
+		float fps = ImGui::GetIO().Framerate;
+		ImGui::Text("FPS:           %.0f", fps);
+		ImGui::Text("Frame time:    %.1f ms", 1000.0f / fps);
 		ImGui::End();
 	}
 	

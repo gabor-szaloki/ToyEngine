@@ -104,6 +104,7 @@ private:
 		bool showDemoWindow;
 		bool showEngineSettingsWindow;
 		bool showLightSettingsWindow;
+		bool showStatsWindow;
 	};
 	GuiState guiState;
 
