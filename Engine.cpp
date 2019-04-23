@@ -34,6 +34,7 @@ Engine::Engine()
 	guiState.showEngineSettingsWindow = true;
 	guiState.showLightSettingsWindow = true;
 
+	showWireframe = false;
 	anisotropicFilteringEnabled = true;
 }
 
@@ -147,6 +148,12 @@ void Engine::InitRenderTargets(float width, float height)
 	context->OMSetDepthStencilState(depthStencilState, 1);
 
 	context->OMSetRenderTargets(1, &backbuffer, depthStencilView);
+
+	D3D11_RASTERIZER_DESC wireframeRD;
+	ZeroMemory(&wireframeRD, sizeof(D3D11_RASTERIZER_DESC));
+	wireframeRD.FillMode = D3D11_FILL_WIREFRAME;
+	wireframeRD.CullMode = D3D11_CULL_NONE;
+	device->CreateRasterizerState(&wireframeRD, &wireframeRasterizerState);
 }
 
 void Engine::ReleaseRenderTargets()
@@ -292,17 +299,23 @@ void Engine::InitScene()
 	Material *blueTiles = new Material(standardVS, standardOpaquePS, blueTilesBaseTexture, blueTilesNormalTexture);
 	materials.push_back(blueTiles);
 
-	box = new Primitives::Box();
-	box->Init(device, context);
-	box->worldTransform = XMMatrixTranslation(0.0f, 1.5f, 0.0f);
-	box->material = blueTiles;
-	drawables.push_back(box);
-
 	floor = new Primitives::Plane();
 	floor->Init(device, context);
 	floor->worldTransform = XMMatrixScaling(10.0f, 10.0f, 10.0f);
 	floor->material = blueTiles;
 	drawables.push_back(floor);
+
+	box = new Primitives::Box();
+	box->Init(device, context);
+	box->worldTransform = XMMatrixTranslation(-1.5f, 1.5f, 0.0f);
+	box->material = blueTiles;
+	drawables.push_back(box);
+
+	sphere = new Primitives::Sphere();
+	sphere->Init(device, context);
+	sphere->worldTransform = XMMatrixTranslation(1.5f, 1.5f, 0.0f);
+	sphere->material = blueTiles;
+	drawables.push_back(sphere);
 }
 
 void Engine::ReleaseScene()
@@ -349,7 +362,8 @@ void Engine::Update(float elapsedTime)
 	cameraInputState.deltaPitch = cameraInputState.deltaYaw = 0;
 
 	// Update scene
-	box->worldTransform = XMMatrixRotationY(elapsedTime * 0.05f) * XMMatrixTranslation(0.0f, 1.5f, 0.0f);
+	box->worldTransform = XMMatrixRotationY(elapsedTime * 0.05f) * XMMatrixTranslation(-1.5f, 1.5f, 0.0f);
+	sphere->worldTransform = XMMatrixRotationY(elapsedTime * 0.05f) * XMMatrixTranslation(1.5f, 1.5f, 0.0f);
 
 	// Update ImGui
 	UpdateGUI();
@@ -393,6 +407,7 @@ void Engine::UpdateGUI()
 	if (guiState.showEngineSettingsWindow)
 	{
 		ImGui::Begin("Engine settings", &guiState.showEngineSettingsWindow, ImGuiWindowFlags_None);
+		ImGui::Checkbox("Show wireframe", &showWireframe);
 		ImGui::Checkbox("Anisotropic filtering", &anisotropicFilteringEnabled);
 		ImGui::End();
 	}
@@ -440,6 +455,8 @@ void Engine::RenderFrame()
 
 	context->VSSetShader(standardVS, nullptr, 0);
 	context->PSSetShader(standardOpaquePS, nullptr, 0);
+
+	context->RSSetState(showWireframe ? wireframeRasterizerState : nullptr);
 
 	for (size_t i = 0; i < drawables.size(); i++)
 		drawables[i]->Draw(context, perObjectCB);

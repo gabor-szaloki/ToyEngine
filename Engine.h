@@ -76,6 +76,7 @@ private:
 	ID3D11RenderTargetView *backbuffer;
 	ID3D11DepthStencilView *depthStencilView;
 	ID3D11DepthStencilState *depthStencilState;
+	ID3D11RasterizerState *wireframeRasterizerState;
 
 	ID3D11Buffer *perFrameCB;
 	ID3D11Buffer *perObjectCB;
@@ -86,10 +87,12 @@ private:
 
 	ID3D11SamplerState *samplerLinearWrap;
 	ID3D11SamplerState *samplerAnisotropicWrap;
+	bool showWireframe;
 	bool anisotropicFilteringEnabled;
 
-	Drawable *box;
 	Drawable *floor;
+	Drawable *box;
+	Drawable* sphere;
 
 	std::vector<Drawable*> drawables;
 	std::vector<Material*> materials;
