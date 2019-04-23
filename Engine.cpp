@@ -20,7 +20,7 @@ Engine::Engine()
 
 	ZeroMemory(&cameraInputState, sizeof(CameraInputState));
 	cameraMoveSpeed = 5.0f;
-	cameraTurnSpeed = 2.0f;
+	cameraTurnSpeed = 0.002f;
 
 	ambientLightIntensity = 0.5f;
 	ambientLightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -358,7 +358,7 @@ void Engine::Update(float elapsedTime)
 	camera->MoveEye(cameraMoveDelta);
 
 	// Update camera rotation
-	camera->Rotate(cameraInputState.deltaPitch * cameraTurnSpeed * deltaTime, cameraInputState.deltaYaw * cameraTurnSpeed * deltaTime);
+	camera->Rotate(cameraInputState.deltaPitch * cameraTurnSpeed, cameraInputState.deltaYaw * cameraTurnSpeed);
 	cameraInputState.deltaPitch = cameraInputState.deltaYaw = 0;
 
 	// Update scene
