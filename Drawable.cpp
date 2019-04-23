@@ -5,6 +5,9 @@
 Drawable::Drawable()
 {
 	worldTransform = XMMatrixIdentity();
+	material = nullptr;
+
+	vertexBuffer = indexBuffer = nullptr;
 	indexCount = 0;
 }
 
