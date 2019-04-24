@@ -89,6 +89,7 @@ private:
 	ID3D11SamplerState *samplerAnisotropicWrap;
 	bool showWireframe;
 	bool anisotropicFilteringEnabled;
+	int vsync;
 
 	Drawable *floor;
 	Drawable *box;

@@ -37,6 +37,7 @@ Engine::Engine()
 
 	showWireframe = false;
 	anisotropicFilteringEnabled = true;
+	vsync = 1;
 }
 
 Engine::~Engine()
@@ -411,6 +412,9 @@ void Engine::UpdateGUI()
 		ImGui::Begin("Engine settings", &guiState.showEngineSettingsWindow, ImGuiWindowFlags_None);
 		ImGui::Checkbox("Show wireframe", &showWireframe);
 		ImGui::Checkbox("Anisotropic filtering", &anisotropicFilteringEnabled);
+		bool vsyncEnabled = vsync > 0;
+		ImGui::Checkbox("V-Sync", &vsyncEnabled);
+		vsync = vsyncEnabled ? 1 : 0;
 		ImGui::End();
 	}
 
@@ -474,7 +478,7 @@ void Engine::RenderFrame()
 
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
-	swapchain->Present(0, 0);
+	swapchain->Present(vsync, 0);
 }
 
 ID3D11ShaderResourceView *Engine::LoadTextureFromPNG(const char *filename)
