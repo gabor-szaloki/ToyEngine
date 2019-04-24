@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <time.h>
+#include <chrono>
 
 #include "Common.h"
 #include "Engine.h"
@@ -50,6 +50,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	ShowWindow(hWnd, nShowCmd);
 
+	auto lastTime = std::chrono::high_resolution_clock::now();
+
 	MSG msg;
 	while (true)
 	{
@@ -62,8 +64,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				goto quit;
 		}
 
-		float time = (float)clock() / (float)CLOCKS_PER_SEC;
-		gEngine->Update(time);
+		auto currentTime = std::chrono::high_resolution_clock::now();
+		float deltaTimeInSeconds = ((double)std::chrono::duration_cast<std::chrono::microseconds>(currentTime - lastTime).count()) * 0.001 * 0.001;
+		lastTime = currentTime;
+
+		gEngine->Update(deltaTimeInSeconds);
 		gEngine->RenderFrame();
 	}
 

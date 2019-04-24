@@ -343,11 +343,11 @@ void Engine::Resize(HWND hWnd, float width, float height)
 	InitRenderTargets(width, height);
 }
 
-void Engine::Update(float elapsedTime)
+void Engine::Update(float deltaTime)
 {
 	// Update time
-	deltaTime = elapsedTime - time;
-	time = elapsedTime;
+	this->deltaTime = deltaTime;
+	time += deltaTime;;
 
 	// Update camera movement
 	XMVECTOR cameraMoveDir =
@@ -364,8 +364,8 @@ void Engine::Update(float elapsedTime)
 	cameraInputState.deltaPitch = cameraInputState.deltaYaw = 0;
 
 	// Update scene
-	box->worldTransform = XMMatrixRotationY(elapsedTime * 0.05f) * XMMatrixTranslation(-1.5f, 1.5f, 0.0f);
-	sphere->worldTransform = XMMatrixRotationY(elapsedTime * 0.05f) * XMMatrixTranslation(1.5f, 1.5f, 0.0f);
+	box->worldTransform = XMMatrixRotationY(time * 0.05f) * XMMatrixTranslation(-1.5f, 1.5f, 0.0f);
+	sphere->worldTransform = XMMatrixRotationY(time * 0.05f) * XMMatrixTranslation(1.5f, 1.5f, 0.0f);
 
 	// Update ImGui
 	UpdateGUI();

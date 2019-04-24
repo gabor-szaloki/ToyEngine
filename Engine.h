@@ -30,7 +30,7 @@ public:
 
 	void Resize(HWND hWnd, float width, float height);
 
-	void Update(float elapsedTime);
+	void Update(float deltaTime);
 	void UpdateGUI();
 	void RenderFrame();
 
