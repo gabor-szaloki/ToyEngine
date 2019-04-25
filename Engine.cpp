@@ -325,7 +325,7 @@ void Engine::InitPipeline()
 		sd.MipLODBias = 0.f;
 		sd.MaxAnisotropy = 0;
 		sd.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
-		sd.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT;
+		sd.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
 		if (FAILED(device->CreateSamplerState(&sd, &samplerShadowCmp)))
 			throw;
 	}
@@ -604,12 +604,16 @@ void Engine::RenderFrame()
 	PerFrameConstantBufferData perFrameCBData;
 	perFrameCBData.ambientLightColor = GetFinalLightColor(ambientLightColor, ambientLightIntensity);
 	perFrameCBData.mainLightColor = GetFinalLightColor(mainLight->GetColor(), mainLight->GetIntensity());
-	XMMATRIX mainLightTranslateMatrix = XMMatrixTranslationFromVector(camera->GetEye() + camera->GetForward() * shadowDistance * 0.5f);
-	XMMATRIX inverseLightViewMatrix = /*mainLightTranslateMatrix * */XMMatrixRotationRollPitchYaw(mainLight->GetPitch(), mainLight->GetYaw(), 0.0f);
+	// TODO: move shadow frustum with camera frustum
+	//XMMATRIX mainLightTranslateMatrix = XMMatrixTranslationFromVector(camera->GetEye() + camera->GetForward() * shadowDistance * 0.5f);
+	XMMATRIX inverseLightViewMatrix = XMMatrixRotationRollPitchYaw(mainLight->GetPitch(), mainLight->GetYaw(), 0.0f);
 	XMStoreFloat4(&perFrameCBData.mainLightDirection, inverseLightViewMatrix.r[2]);
 	XMMATRIX lightViewMatrix = XMMatrixInverse(nullptr, inverseLightViewMatrix);
-	XMMATRIX lightProjectionMatrix = XMMatrixOrthographicLH(shadowDistance, shadowDistance, -directionalShadowDistance, directionalShadowDistance); // TODO: calculate adaptively
-	perFrameCBData.mainLightShadowMatrix = GetShadowMatrix(lightViewMatrix, lightProjectionMatrix);
+	XMMATRIX lightProjectionMatrix = XMMatrixOrthographicLH(shadowDistance, shadowDistance, -directionalShadowDistance, directionalShadowDistance);
+	// TODO: precalc shadow matrix on cpu
+	//perFrameCBData.mainLightShadowMatrix = GetShadowMatrix(lightViewMatrix, lightProjectionMatrix);
+	perFrameCBData.mainLightView = lightViewMatrix;
+	perFrameCBData.mainLightProjection = lightProjectionMatrix;
 
 	context->UpdateSubresource(perFrameCB, 0, nullptr, &perFrameCBData, 0, 0);
 	context->VSSetConstantBuffers(0, 1, &perFrameCB);

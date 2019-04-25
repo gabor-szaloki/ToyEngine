@@ -10,7 +10,9 @@ cbuffer PerFrameConstantBuffer : register(b0)
 	float4 _AmbientLightColor;
 	float4 _MainLightColor;
 	float4 _MainLightDirection;
-	float4x4 _MainLightShadowMatrix;
+	//float4x4 _MainLightShadowMatrix;
+	float4x4 _MainLightView;
+	float4x4 _MainLightProjection;
 }
 
 cbuffer PerCameraConstantBuffer : register(b1)
