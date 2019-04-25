@@ -225,8 +225,8 @@ void Engine::InitShadowmap()
 	shadowPassViewport.MaxDepth = 1;
 	shadowPassViewport.TopLeftX = 0;
 	shadowPassViewport.TopLeftY = 0;
-	shadowPassViewport.Width = shadowResolution;
-	shadowPassViewport.Height = shadowResolution;
+	shadowPassViewport.Width = (float)shadowResolution;
+	shadowPassViewport.Height = (float)shadowResolution;
 
 	shadowmapTexture->Release();
 }
