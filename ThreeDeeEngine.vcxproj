@@ -124,6 +124,7 @@
     <ClCompile Include="ImGui\imgui_impl_dx11.cpp" />
     <ClCompile Include="ImGui\imgui_impl_win32.cpp" />
     <ClCompile Include="ImGui\imgui_widgets.cpp" />
+    <ClCompile Include="Light.cpp" />
     <ClCompile Include="LodePNG\lodepng.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Program.cpp" />
@@ -147,6 +148,7 @@
     <ClInclude Include="ImGui\imstb_rectpack.h" />
     <ClInclude Include="ImGui\imstb_textedit.h" />
     <ClInclude Include="ImGui\imstb_truetype.h" />
+    <ClInclude Include="Light.h" />
     <ClInclude Include="LodePNG\lodepng.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Privitives.h" />

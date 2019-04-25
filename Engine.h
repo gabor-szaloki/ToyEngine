@@ -5,6 +5,7 @@
 
 #include "EngineCommon.h"
 #include "Camera.h"
+#include "Light.h"
 #include "Drawable.h"
 
 class Engine
@@ -66,10 +67,8 @@ private:
 
 	float ambientLightIntensity;
 	XMFLOAT4 ambientLightColor;
-	float mainLightIntensity;
-	XMFLOAT4 mainLightColor;
-	float mainLightYaw, mainLightPitch;
 	int shadowResolution;
+	Light *mainLight;
 
 	HWND hWnd;
 

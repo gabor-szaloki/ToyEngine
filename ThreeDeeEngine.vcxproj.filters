@@ -52,6 +52,9 @@
     <ClCompile Include="Material.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="Light.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine.h">
@@ -100,6 +103,9 @@
       <Filter>Source</Filter>
     </ClInclude>
     <ClInclude Include="Privitives.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="Light.h">
       <Filter>Source</Filter>
     </ClInclude>
   </ItemGroup>

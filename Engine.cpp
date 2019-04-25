@@ -24,11 +24,11 @@ Engine::Engine()
 
 	ambientLightIntensity = 0.5f;
 	ambientLightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	mainLightIntensity = 1.0f;
-	mainLightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	mainLightYaw = -XM_PI / 3;
-	mainLightPitch = XM_PI / 3;
+	
 	shadowResolution = 1024;
+
+	mainLight = new Light();
+	mainLight->SetRotation(-XM_PI / 3, XM_PI / 3);
 
 	ZeroMemory(&guiState, sizeof(GuiState));
 	guiState.enabled = true;
@@ -44,6 +44,7 @@ Engine::Engine()
 
 Engine::~Engine()
 {
+	delete mainLight;
 	delete camera;
 }
 
@@ -503,16 +504,27 @@ void Engine::UpdateGUI()
 	if (guiState.showLightSettingsWindow)
 	{
 		ImGui::Begin("Light settings", &guiState.showLightSettingsWindow, ImGuiWindowFlags_None);
+
 		ImGui::Text("Ambient light");
 		ImGui::SliderFloat("Intensity##ambient", &ambientLightIntensity, 0.0f, 1.0f);
 		ImGui::ColorEdit3("Color##ambient", reinterpret_cast<float*>(&ambientLightColor));
+
 		ImGui::Text("Main light");
-		ImGui::SliderAngle("Yaw", &mainLightYaw, -180.0f, 180.0f);
-		ImGui::SliderAngle("Pitch", &mainLightPitch, 0.0f, 90.0f);
-		ImGui::SliderFloat("Intensity##main", &mainLightIntensity, 0.0f, 2.0f);
-		ImGui::ColorEdit3("Color##main", reinterpret_cast<float*>(&mainLightColor));
+		float mainLightYaw = mainLight->GetYaw();
+		float mainLightPitch = mainLight->GetPitch();
+		float mainLightIntensity = mainLight->GetIntensity();
+		XMFLOAT4 mainLightColor = mainLight->GetColor();
+		if (ImGui::SliderAngle("Yaw", &mainLightYaw, -180.0f, 180.0f))
+			mainLight->SetYaw(mainLightYaw);
+		if (ImGui::SliderAngle("Pitch", &mainLightPitch, 0.0f, 90.0f))
+			mainLight->SetPitch(mainLightPitch);
+		if (ImGui::SliderFloat("Intensity##main", &mainLightIntensity, 0.0f, 2.0f))
+			mainLight->SetIntensity(mainLightIntensity);
+		if (ImGui::ColorEdit3("Color##main", reinterpret_cast<float *>(&mainLightColor)))
+			mainLight->SetColor(mainLightColor);
 		if (ImGui::Button("Show shadowmap"))
 			guiState.showShadowmapDebugWindow = true;
+		
 		ImGui::End();
 	}
 
@@ -552,8 +564,8 @@ void Engine::RenderFrame()
 	perFrameCBData.view = camera->GetViewMatrix();
 	perFrameCBData.projection = camera->GetProjectionMatrix();
 	perFrameCBData.ambientLightColor = GetFinalLightColor(ambientLightColor, ambientLightIntensity);
-	perFrameCBData.mainLightColor = GetFinalLightColor(mainLightColor, mainLightIntensity);
-	XMMATRIX lightMatrix = XMMatrixRotationRollPitchYaw(mainLightPitch, mainLightYaw, 0.0f);
+	perFrameCBData.mainLightColor = GetFinalLightColor(mainLight->GetColor(), mainLight->GetIntensity());
+	XMMATRIX lightMatrix = XMMatrixRotationRollPitchYaw(mainLight->GetPitch(), mainLight->GetYaw(), 0.0f);
 	XMStoreFloat4(&perFrameCBData.mainLightDirection, lightMatrix.r[2]);
 	XMStoreFloat3(&perFrameCBData.cameraWorldPosition, camera->GetEye());
 
