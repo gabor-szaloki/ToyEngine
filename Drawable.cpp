@@ -30,8 +30,8 @@ void Drawable::Draw(ID3D11DeviceContext *context, ID3D11Buffer *perObjectCB, boo
 	perObjectCBData.world = worldTransform;
 
 	context->UpdateSubresource(perObjectCB, 0, nullptr, &perObjectCBData, 0, 0);
-	context->VSSetConstantBuffers(1, 1, &perObjectCB);
-	context->PSSetConstantBuffers(1, 1, &perObjectCB);
+	context->VSSetConstantBuffers(2, 1, &perObjectCB);
+	context->PSSetConstantBuffers(2, 1, &perObjectCB);
 
 	material->SetToContext(context, shadowPass);
 

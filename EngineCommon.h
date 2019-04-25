@@ -13,11 +13,16 @@ struct StandardVertexData
 
 struct PerFrameConstantBufferData 
 { 
-	XMMATRIX view; 
-	XMMATRIX projection; 
 	XMFLOAT4 ambientLightColor;
 	XMFLOAT4 mainLightColor;
 	XMFLOAT4 mainLightDirection;
+	XMMATRIX mainLightShadowMatrix;
+};
+
+struct PerCameraConstantBufferData
+{
+	XMMATRIX view;
+	XMMATRIX projection;
 	XMFLOAT3 cameraWorldPosition;
 };
 

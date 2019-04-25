@@ -34,6 +34,7 @@ public:
 	void ReleaseScene();
 
 	void Resize(HWND hWnd, float width, float height);
+	void RecompileShaders();
 
 	void Update(float deltaTime);
 	void UpdateGUI();
@@ -68,6 +69,8 @@ private:
 	float ambientLightIntensity;
 	XMFLOAT4 ambientLightColor;
 	int shadowResolution;
+	float shadowDistance;
+	float directionalShadowDistance;
 	Light *mainLight;
 
 	HWND hWnd;
@@ -89,6 +92,7 @@ private:
 	D3D11_VIEWPORT shadowPassViewport;
 
 	ID3D11Buffer *perFrameCB;
+	ID3D11Buffer *perCameraCB;
 	ID3D11Buffer *perObjectCB;
 
 	ID3D11InputLayout *standardInputLayout;
@@ -97,6 +101,7 @@ private:
 
 	ID3D11SamplerState *samplerLinearWrap;
 	ID3D11SamplerState *samplerAnisotropicWrap;
+	ID3D11SamplerState *samplerShadowCmp;
 	bool showWireframe;
 	bool anisotropicFilteringEnabled;
 	int vsync;
@@ -120,8 +125,10 @@ private:
 	};
 	GuiState guiState;
 
-	void ShadowPass();
+	void ShadowPass(XMMATRIX lightViewMatrix, XMMATRIX lightProjectionMatrix);
 	void ForwardPass();
+
+	XMMATRIX GetShadowMatrix(XMMATRIX lightView, XMMATRIX lightProjection);
 
 	ID3D11ShaderResourceView *LoadTextureFromPNG(const char *filename);
 

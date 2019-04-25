@@ -26,6 +26,8 @@ Engine::Engine()
 	ambientLightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	
 	shadowResolution = 1024;
+	shadowDistance = 20.0f;
+	directionalShadowDistance = 20.0f;
 
 	mainLight = new Light();
 	mainLight->SetRotation(-XM_PI / 3, XM_PI / 3);
@@ -273,14 +275,16 @@ void Engine::InitPipeline()
 		D3D11_BUFFER_DESC bd;
 		ZeroMemory(&bd, sizeof(D3D11_BUFFER_DESC));
 		bd.Usage = D3D11_USAGE_DEFAULT;
-		bd.ByteWidth = sizeof(PerFrameConstantBufferData);
 		bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		bd.CPUAccessFlags = 0;
 
+		bd.ByteWidth = sizeof(PerFrameConstantBufferData);
 		hr = device->CreateBuffer(&bd, nullptr, &perFrameCB);
 
-		bd.ByteWidth = sizeof(PerObjectConstantBufferData);
+		bd.ByteWidth = sizeof(PerCameraConstantBufferData);
+		hr = device->CreateBuffer(&bd, nullptr, &perCameraCB);
 
+		bd.ByteWidth = sizeof(PerObjectConstantBufferData);
 		hr = device->CreateBuffer(&bd, nullptr, &perObjectCB);
 	}
 
@@ -288,7 +292,6 @@ void Engine::InitPipeline()
 	{
 		D3D11_SAMPLER_DESC sd;
 		ZeroMemory(&sd, sizeof(D3D11_SAMPLER_DESC));
-		sd.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 		sd.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
 		sd.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
 		sd.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -297,13 +300,33 @@ void Engine::InitPipeline()
 		sd.MinLOD = 0;
 		sd.MaxLOD = D3D11_FLOAT32_MAX;
 
+		// linear
+		sd.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 		if (FAILED(device->CreateSamplerState(&sd, &samplerLinearWrap)))
 			throw;
 
+		// anisotropic
 		sd.Filter = D3D11_FILTER_ANISOTROPIC;
 		sd.MaxAnisotropy = 16;
-
 		if (FAILED(device->CreateSamplerState(&sd, &samplerAnisotropicWrap)))
+			throw;
+
+		// shadow cmp
+		ZeroMemory(&sd, sizeof(D3D11_SAMPLER_DESC));
+		sd.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+		sd.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+		sd.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+		sd.BorderColor[0] = 1.0f;
+		sd.BorderColor[1] = 1.0f;
+		sd.BorderColor[2] = 1.0f;
+		sd.BorderColor[3] = 1.0f;
+		sd.MinLOD = 0.f;
+		sd.MaxLOD = D3D11_FLOAT32_MAX;
+		sd.MipLODBias = 0.f;
+		sd.MaxAnisotropy = 0;
+		sd.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
+		sd.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT;
+		if (FAILED(device->CreateSamplerState(&sd, &samplerShadowCmp)))
 			throw;
 	}
 }
@@ -313,6 +336,7 @@ void Engine::ReleasePipeline()
 	SAFE_RELEASE(samplerLinearWrap);
 	SAFE_RELEASE(samplerAnisotropicWrap);
 	SAFE_RELEASE(perFrameCB);
+	SAFE_RELEASE(perCameraCB);
 	SAFE_RELEASE(perObjectCB);
 
 	ReleaseShaders();
@@ -353,6 +377,7 @@ void Engine::InitShaders()
 void Engine::ReleaseShaders()
 {
 	SAFE_RELEASE(standardInputLayout);
+	
 	SAFE_RELEASE(standardForwardVS);
 	SAFE_RELEASE(standardShadowVS);
 	SAFE_RELEASE(standardOpaqueForwardPS);
@@ -423,6 +448,12 @@ void Engine::Resize(HWND hWnd, float width, float height)
 	ReleaseRenderTargets();
 	swapchain->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
 	InitRenderTargets(width, height);
+}
+
+void Engine::RecompileShaders()
+{
+	ReleaseShaders();
+	InitShaders();
 }
 
 void Engine::Update(float deltaTime)
@@ -498,6 +529,8 @@ void Engine::UpdateGUI()
 		bool vsyncEnabled = vsync > 0;
 		ImGui::Checkbox("V-Sync", &vsyncEnabled);
 		vsync = vsyncEnabled ? 1 : 0;
+		//if (ImGui::Button("Recompile shaders"))
+		//	RecompileShaders();
 		ImGui::End();
 	}
 
@@ -522,6 +555,14 @@ void Engine::UpdateGUI()
 			mainLight->SetIntensity(mainLightIntensity);
 		if (ImGui::ColorEdit3("Color##main", reinterpret_cast<float *>(&mainLightColor)))
 			mainLight->SetColor(mainLightColor);
+		ImGui::SliderFloat("Shadow distance", &shadowDistance, 1.0f, 100.0f);
+		ImGui::DragFloat("Directional shadow distance", &directionalShadowDistance, 0.1f, 1.0f, 100.0f, "%.1f");
+		if (ImGui::InputInt("Shadow resolution", &shadowResolution, 512, 1024))
+		{
+			shadowResolution = fmaxf(shadowResolution, 128);
+			ReleaseShadowmap();
+			InitShadowmap();
+		}
 		if (ImGui::Button("Show shadowmap"))
 			guiState.showShadowmapDebugWindow = true;
 		
@@ -561,23 +602,25 @@ void Engine::RenderFrame()
 	context->IASetInputLayout(standardInputLayout);
 
 	PerFrameConstantBufferData perFrameCBData;
-	perFrameCBData.view = camera->GetViewMatrix();
-	perFrameCBData.projection = camera->GetProjectionMatrix();
 	perFrameCBData.ambientLightColor = GetFinalLightColor(ambientLightColor, ambientLightIntensity);
 	perFrameCBData.mainLightColor = GetFinalLightColor(mainLight->GetColor(), mainLight->GetIntensity());
-	XMMATRIX lightMatrix = XMMatrixRotationRollPitchYaw(mainLight->GetPitch(), mainLight->GetYaw(), 0.0f);
-	XMStoreFloat4(&perFrameCBData.mainLightDirection, lightMatrix.r[2]);
-	XMStoreFloat3(&perFrameCBData.cameraWorldPosition, camera->GetEye());
+	XMMATRIX mainLightTranslateMatrix = XMMatrixTranslationFromVector(camera->GetEye() + camera->GetForward() * shadowDistance * 0.5f);
+	XMMATRIX inverseLightViewMatrix = /*mainLightTranslateMatrix * */XMMatrixRotationRollPitchYaw(mainLight->GetPitch(), mainLight->GetYaw(), 0.0f);
+	XMStoreFloat4(&perFrameCBData.mainLightDirection, inverseLightViewMatrix.r[2]);
+	XMMATRIX lightViewMatrix = XMMatrixInverse(nullptr, inverseLightViewMatrix);
+	XMMATRIX lightProjectionMatrix = XMMatrixOrthographicLH(shadowDistance, shadowDistance, -directionalShadowDistance, directionalShadowDistance); // TODO: calculate adaptively
+	perFrameCBData.mainLightShadowMatrix = GetShadowMatrix(lightViewMatrix, lightProjectionMatrix);
 
 	context->UpdateSubresource(perFrameCB, 0, nullptr, &perFrameCBData, 0, 0);
 	context->VSSetConstantBuffers(0, 1, &perFrameCB);
 	context->PSSetConstantBuffers(0, 1, &perFrameCB);
 
 	context->PSSetSamplers(0, 1, anisotropicFilteringEnabled ? &samplerAnisotropicWrap : &samplerLinearWrap);
+	context->PSSetSamplers(1, 1, &samplerShadowCmp);
 
 	context->RSSetState(showWireframe ? wireframeRasterizerState : nullptr);
 
-	ShadowPass();
+	ShadowPass(lightViewMatrix, lightProjectionMatrix);
 	ForwardPass();
 
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
@@ -585,7 +628,7 @@ void Engine::RenderFrame()
 	swapchain->Present(vsync, 0);
 }
 
-void Engine::ShadowPass()
+void Engine::ShadowPass(XMMATRIX lightViewMatrix, XMMATRIX lightProjectionMatrix)
 {
 	context->RSSetViewports(1, &shadowPassViewport);
 	context->OMSetRenderTargets(0, nullptr, shadowmapDSV);
@@ -593,6 +636,15 @@ void Engine::ShadowPass()
 	const float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	context->ClearRenderTargetView(backbuffer, clearColor);
 	context->ClearDepthStencilView(shadowmapDSV, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	PerCameraConstantBufferData perCameraCBData;
+	perCameraCBData.view = lightViewMatrix;
+	perCameraCBData.projection = lightProjectionMatrix;
+	XMStoreFloat3(&perCameraCBData.cameraWorldPosition, camera->GetEye());
+
+	context->UpdateSubresource(perCameraCB, 0, nullptr, &perCameraCBData, 0, 0);
+	context->VSSetConstantBuffers(1, 1, &perCameraCB);
+	context->PSSetConstantBuffers(1, 1, &perCameraCB);
 
 	for (size_t i = 0; i < drawables.size(); i++)
 		drawables[i]->Draw(context, perObjectCB, true);
@@ -607,8 +659,28 @@ void Engine::ForwardPass()
 	context->ClearRenderTargetView(backbuffer, clearColor);
 	context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
+	PerCameraConstantBufferData perCameraCBData;
+	perCameraCBData.view = camera->GetViewMatrix();
+	perCameraCBData.projection = camera->GetProjectionMatrix();
+	XMStoreFloat3(&perCameraCBData.cameraWorldPosition, camera->GetEye());
+	
+	context->UpdateSubresource(perCameraCB, 0, nullptr, &perCameraCBData, 0, 0);
+	context->VSSetConstantBuffers(1, 1, &perCameraCB);
+	context->PSSetConstantBuffers(1, 1, &perCameraCB);
+
+	context->PSSetShaderResources(2, 1, &shadowmapSRV);
+
 	for (size_t i = 0; i < drawables.size(); i++)
 		drawables[i]->Draw(context, perObjectCB, false);
+}
+
+XMMATRIX Engine::GetShadowMatrix(XMMATRIX lightView, XMMATRIX lightProjection)
+{
+	XMMATRIX shadowProjectionMatrix = lightProjection;
+	shadowProjectionMatrix = XMMatrixTranspose(shadowProjectionMatrix);
+	shadowProjectionMatrix.r[2] *= -1;
+	shadowProjectionMatrix = XMMatrixTranspose(shadowProjectionMatrix);
+	return shadowProjectionMatrix * lightView;
 }
 
 ID3D11ShaderResourceView *Engine::LoadTextureFromPNG(const char *filename)

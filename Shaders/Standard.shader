@@ -27,6 +27,7 @@ struct VSOutputStandardForward
 	float4 color : COLOR;
 	float2 uv : TEXCOORD0;
 	float3 worldPos : TEXCOORD1;
+	float4 lightSpacePos : TEXCOORD2;
 };
 
 struct VSOutputStandardShadow
@@ -59,6 +60,8 @@ VSOutputStandardForward StandardForwardVS(VSInputStandard v)
 
 	o.worldPos = worldPos.xyz;
 
+	o.lightSpacePos = mul(_MainLightShadowMatrix, worldPos);
+
 	return o;
 }
 
@@ -68,7 +71,16 @@ float4 StandardOpaqueForwardPS(VSOutputStandardForward i) : SV_TARGET
 
 	SurfaceOutput s = Surface(i.normal, i.tangent, i.binormal, i.uv, i.color);
 
-	c.rgb = Lighting(s, i.worldPos);
+	float2 shadowTexCoords;
+	shadowTexCoords.x = 0.5f + (i.lightSpacePos.x / i.lightSpacePos.w * 0.5f);
+	shadowTexCoords.y = 0.5f - (i.lightSpacePos.y / i.lightSpacePos.w * 0.5f);
+	float pixelDepth = i.lightSpacePos.z / i.lightSpacePos.w;
+	float mainLightShadowAttenuation = _MainLightShadowmap.SampleCmpLevelZero(
+		_ShadowCmpSampler, shadowTexCoords, pixelDepth + 0.001);
+
+	//return float4(pixelDepth.xxx, 1);
+
+	c.rgb = Lighting(s, i.worldPos, mainLightShadowAttenuation);
 	
 	return c;
 }

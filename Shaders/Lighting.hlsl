@@ -29,7 +29,7 @@ float3 GGX_Specular(float3 lightColor, float3 normal, float3 lightVector, float3
 	return radiance;
 }
 
-float3 Lighting(SurfaceOutput s, float3 worldPos)
+float3 Lighting(SurfaceOutput s, float3 worldPos, float mainLightShadowAttenuation)
 {
 	float3 lightVector = -_MainLightDirection.xyz;
 	float3 viewVector = normalize(_CameraWorldPosition - worldPos);
@@ -50,7 +50,7 @@ float3 Lighting(SurfaceOutput s, float3 worldPos)
 	// Ambient contribution
 	float3 ambient = s.albedo * _AmbientLightColor.rgb;
 
-	return ambient + kD * diffuse +/* kS * */specular;
+	return ambient + (kD * diffuse +/* kS * */specular) * mainLightShadowAttenuation;
 }
 
 #endif

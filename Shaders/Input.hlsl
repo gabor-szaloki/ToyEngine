@@ -7,15 +7,20 @@
 
 cbuffer PerFrameConstantBuffer : register(b0)
 {
-	float4x4 _View;
-	float4x4 _Projection;
 	float4 _AmbientLightColor;
 	float4 _MainLightColor;
 	float4 _MainLightDirection;
+	float4x4 _MainLightShadowMatrix;
+}
+
+cbuffer PerCameraConstantBuffer : register(b1)
+{
+	float4x4 _View;
+	float4x4 _Projection;
 	float3 _CameraWorldPosition;
 }
 
-cbuffer PerObjectConstantBuffer : register(b1)
+cbuffer PerObjectConstantBuffer : register(b2)
 {
 	float4x4 _World;
 }
@@ -27,5 +32,8 @@ cbuffer PerObjectConstantBuffer : register(b1)
 Texture2D _BaseTexture : register(t0);
 Texture2D _NormalTexture : register(t1);
 SamplerState _Sampler : register(s0);
+
+Texture2D<float> _MainLightShadowmap : register(t2);
+SamplerComparisonState _ShadowCmpSampler : register(s1);
 
 #endif
