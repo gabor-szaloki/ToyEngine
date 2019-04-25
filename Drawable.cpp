@@ -17,7 +17,7 @@ Drawable::~Drawable()
 	SAFE_RELEASE(indexBuffer);
 }
 
-void Drawable::Draw(ID3D11DeviceContext *context, ID3D11Buffer *perObjectCB)
+void Drawable::Draw(ID3D11DeviceContext *context, ID3D11Buffer *perObjectCB, bool shadowPass)
 {
 	UINT stride = sizeof(StandardVertexData);
 	UINT offset = 0;
@@ -33,7 +33,7 @@ void Drawable::Draw(ID3D11DeviceContext *context, ID3D11Buffer *perObjectCB)
 	context->VSSetConstantBuffers(1, 1, &perObjectCB);
 	context->PSSetConstantBuffers(1, 1, &perObjectCB);
 
-	material->SetToContext(context);
+	material->SetToContext(context, shadowPass);
 
 	context->DrawIndexed(indexCount, 0, 0);
 }

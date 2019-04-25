@@ -18,7 +18,7 @@ struct VSInputStandard
 	float2 uv : TEXCOORD;
 };
 
-struct VSOutputStandard
+struct VSOutputStandardForward
 {
 	float4 position : SV_POSITION;
 	float3 normal : NORMAL;
@@ -29,13 +29,20 @@ struct VSOutputStandard
 	float3 worldPos : TEXCOORD1;
 };
 
+struct VSOutputStandardShadow
+{
+	float4 position : SV_POSITION;
+};
+
 //--------------------------------------------------------------------------------------
 // Shader functions
 //--------------------------------------------------------------------------------------
 
-VSOutputStandard StandardVS(VSInputStandard v)
+// Forward Pass
+
+VSOutputStandardForward StandardForwardVS(VSInputStandard v)
 {
-	VSOutputStandard o;
+	VSOutputStandardForward o;
 
 	float4 worldPos = mul(_World, v.position);
 	float4 viewPos = mul(_View, worldPos);
@@ -55,7 +62,7 @@ VSOutputStandard StandardVS(VSInputStandard v)
 	return o;
 }
 
-float4 StandardOpaquePS(VSOutputStandard i) : SV_TARGET
+float4 StandardOpaqueForwardPS(VSOutputStandardForward i) : SV_TARGET
 {
 	float4 c = 1;
 
@@ -64,4 +71,22 @@ float4 StandardOpaquePS(VSOutputStandard i) : SV_TARGET
 	c.rgb = Lighting(s, i.worldPos);
 	
 	return c;
+}
+
+// Shadow Pass
+
+VSOutputStandardShadow StandardShadowVS(VSInputStandard v)
+{
+	VSOutputStandardShadow o;
+
+	float4 worldPos = mul(_World, v.position);
+	float4 viewPos = mul(_View, worldPos);
+	float4 clipPos = mul(_Projection, viewPos);
+	o.position = clipPos;
+
+	return o;
+}
+
+void StandardOpaqueShadowPS()
+{
 }

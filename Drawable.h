@@ -17,7 +17,7 @@ public:
 	void operator delete(void* p) { _mm_free(p); }
 
 	virtual void Init(ID3D11Device *device, ID3D11DeviceContext *context) = 0;
-	virtual void Draw(ID3D11DeviceContext *context, ID3D11Buffer *perObjectCB);
+	virtual void Draw(ID3D11DeviceContext *context, ID3D11Buffer *perObjectCB, bool shadowPass);
 
 protected:
 

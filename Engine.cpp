@@ -28,12 +28,14 @@ Engine::Engine()
 	mainLightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	mainLightYaw = -XM_PI / 3;
 	mainLightPitch = XM_PI / 3;
+	shadowResolution = 1024;
 
 	ZeroMemory(&guiState, sizeof(GuiState));
 	guiState.enabled = true;
 	guiState.showEngineSettingsWindow = true;
 	guiState.showLightSettingsWindow = true;
 	guiState.showStatsWindow = true;
+	guiState.showShadowmapDebugWindow = false;
 
 	showWireframe = false;
 	anisotropicFilteringEnabled = true;
@@ -92,16 +94,15 @@ void Engine::InitRenderTargets(float width, float height)
 {
 	// Setup viewport
 
-	D3D11_VIEWPORT viewport;
-	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
-	viewport.MinDepth = 0;
-	viewport.MaxDepth = 1;
-	viewport.TopLeftX = 0;
-	viewport.TopLeftY = 0;
-	viewport.Width = width;
-	viewport.Height = height;
+	ZeroMemory(&forwardPassViewport, sizeof(D3D11_VIEWPORT));
+	forwardPassViewport.MinDepth = 0;
+	forwardPassViewport.MaxDepth = 1;
+	forwardPassViewport.TopLeftX = 0;
+	forwardPassViewport.TopLeftY = 0;
+	forwardPassViewport.Width = width;
+	forwardPassViewport.Height = height;
 
-	context->RSSetViewports(1, &viewport);
+	context->RSSetViewports(1, &forwardPassViewport);
 	camera->SetProjectionParams(width, height, camera->GetFOV(), camera->GetNearPlane(), camera->GetFarPlane());
 
 	// Create backbuffer render target view
@@ -156,13 +157,84 @@ void Engine::InitRenderTargets(float width, float height)
 	wireframeRD.FillMode = D3D11_FILL_WIREFRAME;
 	wireframeRD.CullMode = D3D11_CULL_NONE;
 	device->CreateRasterizerState(&wireframeRD, &wireframeRasterizerState);
+
+	InitShadowmap();
 }
 
 void Engine::ReleaseRenderTargets()
 {
+	ReleaseShadowmap();
+
 	SAFE_RELEASE(backbuffer);
 	SAFE_RELEASE(depthStencilView);
 	SAFE_RELEASE(depthStencilState);
+}
+
+void Engine::InitShadowmap()
+{
+	D3D11_TEXTURE2D_DESC td;
+	ZeroMemory(&td, sizeof(td));
+	td.Width = shadowResolution;
+	td.Height = shadowResolution;
+	td.MipLevels = 1;
+	td.ArraySize = 1;
+	td.Format = DXGI_FORMAT_R32_TYPELESS;
+	td.SampleDesc.Count = 1;
+	td.SampleDesc.Quality = 0;
+	td.Usage = D3D11_USAGE_DEFAULT;
+	td.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_DEPTH_STENCIL;
+	td.CPUAccessFlags = 0;
+	td.MiscFlags = 0;
+
+	ID3D11Texture2D *shadowmapTexture;
+	HRESULT result = device->CreateTexture2D(&td, nullptr, &shadowmapTexture);
+	if (FAILED(result))
+	{
+		OutputDebugString("issue creating shadowmap texture\n");
+		throw;
+	}
+
+	D3D11_DEPTH_STENCIL_VIEW_DESC dsvd;
+	ZeroMemory(&dsvd, sizeof(D3D11_DEPTH_STENCIL_VIEW_DESC));
+	dsvd.Format = DXGI_FORMAT_D32_FLOAT;
+	dsvd.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	dsvd.Texture2D.MipSlice = 0;
+	result = device->CreateDepthStencilView(shadowmapTexture, &dsvd, &shadowmapDSV);
+	if (FAILED(result))
+	{
+		OutputDebugString("issue creating shadowmap DSV\n");
+		throw;
+	}
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+	ZeroMemory(&srvDesc, sizeof(srvDesc));
+	srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = 1;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+
+	result = device->CreateShaderResourceView(shadowmapTexture, &srvDesc, &shadowmapSRV);
+	if (FAILED(result))
+	{
+		OutputDebugString("issue creating shadowmap SRV\n");
+		throw;
+	}
+
+	ZeroMemory(&shadowPassViewport, sizeof(D3D11_VIEWPORT));
+	shadowPassViewport.MinDepth = 0;
+	shadowPassViewport.MaxDepth = 1;
+	shadowPassViewport.TopLeftX = 0;
+	shadowPassViewport.TopLeftY = 0;
+	shadowPassViewport.Width = shadowResolution;
+	shadowPassViewport.Height = shadowResolution;
+
+	shadowmapTexture->Release();
+}
+
+void Engine::ReleaseShadowmap()
+{
+	SAFE_RELEASE(shadowmapSRV);
+	SAFE_RELEASE(shadowmapDSV);
 }
 
 void Engine::InitImGui()
@@ -191,46 +263,9 @@ void Engine::ReleaseImGui()
 
 void Engine::InitPipeline()
 {
+	InitShaders();
+
 	HRESULT hr;
-	ID3DBlob *vsBlob, *psBlob, *errorBlob;
-
-	// Shaders
-	{
-		hr = D3DCompileFromFile(L"Shaders\\Standard.shader", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "StandardVS", "vs_4_0", 0, 0, &vsBlob, &errorBlob);
-		if (errorBlob)
-		{
-			OutputDebugString(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()));
-			errorBlob = nullptr;
-		}
-		if (FAILED(hr))
-			throw;
-
-		hr = D3DCompileFromFile(L"Shaders\\Standard.shader", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "StandardOpaquePS", "ps_4_0", 0, 0, &psBlob, &errorBlob);
-		if (errorBlob)
-		{
-			OutputDebugString(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()));
-			errorBlob = nullptr;
-		}
-		if (FAILED(hr))
-			throw;
-
-		hr = device->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &standardVS);
-		hr = device->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &standardOpaquePS);
-	}
-
-	// Input layout
-	{
-		D3D11_INPUT_ELEMENT_DESC ied[] =
-		{
-			{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-			{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
-			{"TANGENT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
-			{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 40, D3D11_INPUT_PER_VERTEX_DATA, 0},
-			{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 56, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		};
-
-		hr = device->CreateInputLayout(ied, ARRAYSIZE(ied), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &standardInputLayout);
-	}
 
 	// Constant buffers
 	{
@@ -278,9 +313,49 @@ void Engine::ReleasePipeline()
 	SAFE_RELEASE(samplerAnisotropicWrap);
 	SAFE_RELEASE(perFrameCB);
 	SAFE_RELEASE(perObjectCB);
+
+	ReleaseShaders();
+}
+
+void Engine::InitShaders()
+{
+	ID3DBlob *vsBlob;
+
+	// Shaders
+	{
+		// Forward Pass
+		standardForwardVS = CompileVertexShader(L"Shaders\\Standard.shader", "StandardForwardVS", &vsBlob);
+		standardOpaqueForwardPS = CompilePixelShader(L"Shaders\\Standard.shader", "StandardOpaqueForwardPS");
+
+		// Shadow Pass
+		standardShadowVS = CompileVertexShader(L"Shaders\\Standard.shader", "StandardShadowVS");
+		standardOpaqueShadowPS = CompilePixelShader(L"Shaders\\Standard.shader", "StandardOpaqueShadowPS");
+	}
+
+	// Input layout
+	{
+		D3D11_INPUT_ELEMENT_DESC ied[] =
+		{
+			{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{"TANGENT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 40, D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 56, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		};
+
+		HRESULT hr = device->CreateInputLayout(ied, ARRAYSIZE(ied), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &standardInputLayout);
+	}
+
+	SAFE_RELEASE(vsBlob);
+}
+
+void Engine::ReleaseShaders()
+{
 	SAFE_RELEASE(standardInputLayout);
-	SAFE_RELEASE(standardVS);
-	SAFE_RELEASE(standardOpaquePS);
+	SAFE_RELEASE(standardForwardVS);
+	SAFE_RELEASE(standardShadowVS);
+	SAFE_RELEASE(standardOpaqueForwardPS);
+	SAFE_RELEASE(standardOpaqueShadowPS);
 }
 
 void Engine::InitScene()
@@ -295,10 +370,16 @@ void Engine::InitScene()
 	auto* blueTilesNormalTexture = LoadTextureFromPNG("Textures\\Tiles20_nrm.png");
 	textureRVs.push_back(blueTilesNormalTexture);
 
-	Material *test = new Material(standardVS, standardOpaquePS, testBaseTexture, testNormalTexture);
+	Material *test = new Material(
+		standardForwardVS, standardOpaqueForwardPS, 
+		standardShadowVS, standardOpaqueShadowPS,
+		testBaseTexture, testNormalTexture);
 	materials.push_back(test);
 
-	Material *blueTiles = new Material(standardVS, standardOpaquePS, blueTilesBaseTexture, blueTilesNormalTexture);
+	Material *blueTiles = new Material(
+		standardForwardVS, standardOpaqueForwardPS,
+		standardShadowVS, standardOpaqueShadowPS,
+		blueTilesBaseTexture, blueTilesNormalTexture);
 	materials.push_back(blueTiles);
 
 	floor = new Primitives::Plane();
@@ -397,6 +478,7 @@ void Engine::UpdateGUI()
 			if (ImGui::MenuItem("Engine settings", nullptr)) { guiState.showEngineSettingsWindow = true; }
 			if (ImGui::MenuItem("Light settings", nullptr)) { guiState.showLightSettingsWindow = true; }
 			if (ImGui::MenuItem("Stats", nullptr)) { guiState.showStatsWindow = true; }
+			if (ImGui::MenuItem("Shadowmap debug", nullptr)) { guiState.showShadowmapDebugWindow = true; }
 			ImGui::Separator();
 			if (ImGui::MenuItem("ImGui demo window", nullptr)) { guiState.showDemoWindow = true; }
 			ImGui::EndMenu();
@@ -429,6 +511,8 @@ void Engine::UpdateGUI()
 		ImGui::SliderAngle("Pitch", &mainLightPitch, 0.0f, 90.0f);
 		ImGui::SliderFloat("Intensity##main", &mainLightIntensity, 0.0f, 2.0f);
 		ImGui::ColorEdit3("Color##main", reinterpret_cast<float*>(&mainLightColor));
+		if (ImGui::Button("Show shadowmap"))
+			guiState.showShadowmapDebugWindow = true;
 		ImGui::End();
 	}
 
@@ -440,6 +524,21 @@ void Engine::UpdateGUI()
 		ImGui::Text("Frame time:    %.1f ms", 1000.0f / fps);
 		ImGui::End();
 	}
+
+	if (guiState.showShadowmapDebugWindow)
+	{
+		ImGui::Begin("Shadowmap debug", &guiState.showShadowmapDebugWindow, ImGuiWindowFlags_HorizontalScrollbar);
+		static float zoom = 512.0f / shadowResolution;
+		ImGui::SliderFloat("Zoom", &zoom, 0.1f, 5.0f);
+		ImGui::SameLine();
+		if (ImGui::Button("Default"))
+			zoom = 512.0f / shadowResolution;
+		ImGui::SameLine();
+		if (ImGui::Button("1.000x"))
+			zoom = 1.0f;
+		ImGui::Image((void *)shadowmapSRV, ImVec2(zoom * shadowResolution, zoom * shadowResolution));
+		ImGui::End();
+	}
 	
 	// Rendering
 	ImGui::Render();
@@ -447,10 +546,6 @@ void Engine::UpdateGUI()
 
 void Engine::RenderFrame()
 {
-	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-	context->ClearRenderTargetView(backbuffer, clearColor);
-	context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
 	context->IASetInputLayout(standardInputLayout);
 
 	PerFrameConstantBufferData perFrameCBData;
@@ -461,24 +556,47 @@ void Engine::RenderFrame()
 	XMMATRIX lightMatrix = XMMatrixRotationRollPitchYaw(mainLightPitch, mainLightYaw, 0.0f);
 	XMStoreFloat4(&perFrameCBData.mainLightDirection, lightMatrix.r[2]);
 	XMStoreFloat3(&perFrameCBData.cameraWorldPosition, camera->GetEye());
-	
+
 	context->UpdateSubresource(perFrameCB, 0, nullptr, &perFrameCBData, 0, 0);
 	context->VSSetConstantBuffers(0, 1, &perFrameCB);
 	context->PSSetConstantBuffers(0, 1, &perFrameCB);
 
 	context->PSSetSamplers(0, 1, anisotropicFilteringEnabled ? &samplerAnisotropicWrap : &samplerLinearWrap);
 
-	context->VSSetShader(standardVS, nullptr, 0);
-	context->PSSetShader(standardOpaquePS, nullptr, 0);
-
 	context->RSSetState(showWireframe ? wireframeRasterizerState : nullptr);
 
-	for (size_t i = 0; i < drawables.size(); i++)
-		drawables[i]->Draw(context, perObjectCB);
+	ShadowPass();
+	ForwardPass();
 
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
 	swapchain->Present(vsync, 0);
+}
+
+void Engine::ShadowPass()
+{
+	context->RSSetViewports(1, &shadowPassViewport);
+	context->OMSetRenderTargets(0, nullptr, shadowmapDSV);
+
+	const float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	context->ClearRenderTargetView(backbuffer, clearColor);
+	context->ClearDepthStencilView(shadowmapDSV, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	for (size_t i = 0; i < drawables.size(); i++)
+		drawables[i]->Draw(context, perObjectCB, true);
+}
+
+void Engine::ForwardPass()
+{
+	context->RSSetViewports(1, &forwardPassViewport);
+	context->OMSetRenderTargets(1, &backbuffer, depthStencilView);
+
+	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	context->ClearRenderTargetView(backbuffer, clearColor);
+	context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+	for (size_t i = 0; i < drawables.size(); i++)
+		drawables[i]->Draw(context, perObjectCB, false);
 }
 
 ID3D11ShaderResourceView *Engine::LoadTextureFromPNG(const char *filename)
@@ -535,4 +653,52 @@ ID3D11ShaderResourceView *Engine::LoadTextureFromPNG(const char *filename)
 XMFLOAT4 Engine::GetFinalLightColor(XMFLOAT4 color, float intensity)
 {
 	return XMFLOAT4(color.x * intensity, color.y * intensity, color.z * intensity, 1.0f);
+}
+
+ID3D11VertexShader *Engine::CompileVertexShader(LPCWSTR fileName, LPCSTR entryPoint, ID3DBlob **outBlob)
+{
+	ID3DBlob *blob, *errorBlob;
+
+	HRESULT hr = D3DCompileFromFile(fileName, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, entryPoint, "vs_4_0", 0, 0, &blob, &errorBlob);
+	if (errorBlob != nullptr)
+	{
+		OutputDebugString(reinterpret_cast<const char *>(errorBlob->GetBufferPointer()));
+		SAFE_RELEASE(errorBlob);
+	}
+	if (FAILED(hr))
+		return nullptr;
+
+	if (outBlob != nullptr)
+		*outBlob = blob;
+
+	ID3D11VertexShader *shader;
+	hr = device->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, &shader);
+	if (FAILED(hr))
+		return nullptr;
+
+	return shader;
+}
+
+ID3D11PixelShader *Engine::CompilePixelShader(LPCWSTR fileName, LPCSTR entryPoint, ID3DBlob **outBlob)
+{
+	ID3DBlob *blob, *errorBlob;
+
+	HRESULT hr = D3DCompileFromFile(fileName, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, entryPoint, "ps_4_0", 0, 0, &blob, &errorBlob);
+	if (errorBlob)
+	{
+		OutputDebugString(reinterpret_cast<const char *>(errorBlob->GetBufferPointer()));
+		SAFE_RELEASE(errorBlob);
+	}
+	if (FAILED(hr))
+		return nullptr;
+
+	if (outBlob != nullptr)
+		*outBlob = blob;
+	
+	ID3D11PixelShader *shader;
+	hr = device->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, &shader);
+	if (FAILED(hr))
+		return nullptr;
+
+	return shader;
 }
