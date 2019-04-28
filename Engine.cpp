@@ -592,7 +592,7 @@ void Engine::UpdateGUI()
 		ImGui::DragFloat("Shadow distance", &shadowDistance, 0.1f, 1.0f, 100.0f);
 		ImGui::DragFloat("Directional distance", &directionalShadowDistance, 0.1f, 1.0f, 100.0f);
 		if (ImGui::InputInt("Resolution", &shadowResolution, 512, 1024))
-			SetShadowResolution((int)fmaxf(shadowResolution, 128));
+			SetShadowResolution((int)fmaxf((float)shadowResolution, 128));
 		bool setShadowBias = false;
 		setShadowBias |= ImGui::InputInt("Depth bias", &shadowDepthBias, 1000, 10000);
 		setShadowBias |= ImGui::InputFloat("Slope scaled depth bias", &shadowSlopeScaledDepthBias, 0.1f, 0.5f, 3);
@@ -640,16 +640,15 @@ void Engine::RenderFrame()
 	PerFrameConstantBufferData perFrameCBData;
 	perFrameCBData.ambientLightColor = GetFinalLightColor(ambientLightColor, ambientLightIntensity);
 	perFrameCBData.mainLightColor = GetFinalLightColor(mainLight->GetColor(), mainLight->GetIntensity());
-	// TODO: move shadow frustum with camera frustum
-	//XMMATRIX mainLightTranslateMatrix = XMMatrixTranslationFromVector(camera->GetEye() + camera->GetForward() * shadowDistance * 0.5f);
-	XMMATRIX inverseLightViewMatrix = XMMatrixRotationRollPitchYaw(mainLight->GetPitch(), mainLight->GetYaw(), 0.0f);
+	XMMATRIX mainLightTranslateMatrix = XMMatrixTranslationFromVector(camera->GetEye() + camera->GetForward() * shadowDistance * 0.5f);
+	XMMATRIX inverseLightViewMatrix = XMMatrixRotationRollPitchYaw(mainLight->GetPitch(), mainLight->GetYaw(), 0.0f) * mainLightTranslateMatrix;
 	XMStoreFloat4(&perFrameCBData.mainLightDirection, inverseLightViewMatrix.r[2]);
 	XMMATRIX lightViewMatrix = XMMatrixInverse(nullptr, inverseLightViewMatrix);
 	XMMATRIX lightProjectionMatrix = XMMatrixOrthographicLH(shadowDistance, shadowDistance, -directionalShadowDistance, directionalShadowDistance);
 	// TODO: precalc shadow matrix on cpu
-	//perFrameCBData.mainLightShadowMatrix = GetShadowMatrix(lightViewMatrix, lightProjectionMatrix);
-	perFrameCBData.mainLightView = lightViewMatrix;
-	perFrameCBData.mainLightProjection = lightProjectionMatrix;
+	perFrameCBData.mainLightShadowMatrix = GetShadowMatrix(lightViewMatrix, lightProjectionMatrix);
+	//perFrameCBData.mainLightView = lightViewMatrix;
+	//perFrameCBData.mainLightProjection = lightProjectionMatrix;
 
 	context->UpdateSubresource(perFrameCB, 0, nullptr, &perFrameCBData, 0, 0);
 	context->VSSetConstantBuffers(0, 1, &perFrameCB);
@@ -716,11 +715,8 @@ void Engine::ForwardPass()
 
 XMMATRIX Engine::GetShadowMatrix(XMMATRIX lightView, XMMATRIX lightProjection)
 {
-	XMMATRIX shadowProjectionMatrix = lightProjection;
-	shadowProjectionMatrix = XMMatrixTranspose(shadowProjectionMatrix);
-	shadowProjectionMatrix.r[2] *= -1;
-	shadowProjectionMatrix = XMMatrixTranspose(shadowProjectionMatrix);
-	return shadowProjectionMatrix * lightView;
+	//return lightView * lightProjection; // ??????
+	return XMMatrixMultiply(lightView, lightProjection);
 }
 
 ID3D11ShaderResourceView *Engine::LoadTextureFromPNG(const char *filename)

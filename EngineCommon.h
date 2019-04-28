@@ -16,9 +16,7 @@ struct PerFrameConstantBufferData
 	XMFLOAT4 ambientLightColor;
 	XMFLOAT4 mainLightColor;
 	XMFLOAT4 mainLightDirection;
-	//XMMATRIX mainLightShadowMatrix;
-	XMMATRIX mainLightView;
-	XMMATRIX mainLightProjection;
+	XMMATRIX mainLightShadowMatrix;
 };
 
 struct PerCameraConstantBufferData

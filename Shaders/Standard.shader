@@ -60,8 +60,7 @@ VSOutputStandardForward StandardForwardVS(VSInputStandard v)
 
 	o.worldPos = worldPos.xyz;
 
-	o.lightSpacePos = mul(_MainLightView, worldPos);
-	o.lightSpacePos = mul(_MainLightProjection, o.lightSpacePos);
+	o.lightSpacePos = mul(_MainLightShadowMatrix, worldPos);
 
 	return o;
 }
