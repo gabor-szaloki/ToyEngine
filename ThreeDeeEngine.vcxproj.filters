@@ -134,5 +134,11 @@
     <Text Include="Shaders\Input.hlsl">
       <Filter>Shaders</Filter>
     </Text>
+    <Text Include="Shaders\ShadowSamplingTent.hlsl">
+      <Filter>Shaders</Filter>
+    </Text>
+    <Text Include="Shaders\Shadow.hlsl">
+      <Filter>Shaders</Filter>
+    </Text>
   </ItemGroup>
 </Project>

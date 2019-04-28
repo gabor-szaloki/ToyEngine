@@ -11,6 +11,7 @@ cbuffer PerFrameConstantBuffer : register(b0)
 	float4 _MainLightColor;
 	float4 _MainLightDirection;
 	float4x4 _MainLightShadowMatrix;
+	float4 _MainLightShadowResolution;
 }
 
 cbuffer PerCameraConstantBuffer : register(b1)

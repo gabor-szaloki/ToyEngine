@@ -4,6 +4,7 @@
 
 #include "Surface.hlsl"
 #include "Lighting.hlsl"
+#include "Shadow.hlsl"
 
 //--------------------------------------------------------------------------------------
 // Input/Output structures
@@ -71,12 +72,14 @@ float4 StandardOpaqueForwardPS(VSOutputStandardForward i) : SV_TARGET
 
 	SurfaceOutput s = Surface(i.normal, i.tangent, i.binormal, i.uv, i.color);
 
-	float2 shadowTexCoords;
+	/*float2 shadowTexCoords;
 	shadowTexCoords.x = 0.5f + (i.lightSpacePos.x / i.lightSpacePos.w * 0.5f);
 	shadowTexCoords.y = 0.5f - (i.lightSpacePos.y / i.lightSpacePos.w * 0.5f);
 	float pixelDepth = i.lightSpacePos.z / i.lightSpacePos.w;
 	float mainLightShadowAttenuation = _MainLightShadowmap.SampleCmpLevelZero(
-		_ShadowCmpSampler, shadowTexCoords, pixelDepth);
+		_ShadowCmpSampler, shadowTexCoords, pixelDepth);*/
+
+	float mainLightShadowAttenuation = SampleMainLightShadow(i.lightSpacePos);
 
 	c.rgb = Lighting(s, i.worldPos, mainLightShadowAttenuation);
 	

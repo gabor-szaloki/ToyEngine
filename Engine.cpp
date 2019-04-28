@@ -498,10 +498,9 @@ void Engine::RenderFrame()
 	XMStoreFloat4(&perFrameCBData.mainLightDirection, inverseLightViewMatrix.r[2]);
 	XMMATRIX lightViewMatrix = XMMatrixInverse(nullptr, inverseLightViewMatrix);
 	XMMATRIX lightProjectionMatrix = XMMatrixOrthographicLH(shadowDistance, shadowDistance, -directionalShadowDistance, directionalShadowDistance);
-	// TODO: precalc shadow matrix on cpu
 	perFrameCBData.mainLightShadowMatrix = GetShadowMatrix(lightViewMatrix, lightProjectionMatrix);
-	//perFrameCBData.mainLightView = lightViewMatrix;
-	//perFrameCBData.mainLightProjection = lightProjectionMatrix;
+	float invShadowResolution = 1.0f / shadowResolution;
+	perFrameCBData.mainLightShadowResolution = XMFLOAT4(invShadowResolution, invShadowResolution, shadowResolution, shadowResolution);
 
 	context->UpdateSubresource(perFrameCB, 0, nullptr, &perFrameCBData, 0, 0);
 	context->VSSetConstantBuffers(0, 1, &perFrameCB);
