@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "EngineCommon.h"
+#include "Gui.h"
 #include "Camera.h"
 #include "Light.h"
 #include "Drawable.h"
@@ -24,8 +25,6 @@ public:
 	void ReleaseRenderTargets();
 	void InitShadowmap();
 	void ReleaseShadowmap();
-	void InitImGui();
-	void ReleaseImGui();
 	void InitPipeline();
 	void ReleasePipeline();
 	void InitShaders();
@@ -33,19 +32,19 @@ public:
 	void InitScene();
 	void ReleaseScene();
 
+	void RecompileShaders();
 	void Resize(HWND hWnd, float width, float height);
+
 	void SetShadowResolution(int shadowResolution);
 	void SetShadowBias(int depthBias, float slopeScaledDepthBias);
-	void RecompileShaders();
 
 	void Update(float deltaTime);
-	void UpdateGUI();
 	void RenderFrame();
 
 	float GetTime() { return time; }
 	float GetDeltaTime() { return deltaTime; }
 
-	void ToggleGUI() { guiState.enabled = !guiState.enabled; }
+	void ToggleGUI() { gui->SetActive(!gui->IsActive()); }
 
 	struct CameraInputState
 	{
@@ -63,7 +62,11 @@ public:
 
 private:
 
+	friend class Gui;
+
 	float time, deltaTime;
+
+	Gui *gui;
 
 	Camera *camera;
 	float cameraMoveSpeed, cameraTurnSpeed;
@@ -118,17 +121,6 @@ private:
 	std::vector<Drawable*> drawables;
 	std::vector<Material*> materials;
 	std::vector<ID3D11ShaderResourceView*> textureRVs;
-
-	struct GuiState
-	{
-		bool enabled;
-		bool showDemoWindow;
-		bool showEngineSettingsWindow;
-		bool showLightSettingsWindow;
-		bool showStatsWindow;
-		bool showShadowmapDebugWindow;
-	};
-	GuiState guiState;
 
 	void ShadowPass(XMMATRIX lightViewMatrix, XMMATRIX lightProjectionMatrix);
 	void ForwardPass();

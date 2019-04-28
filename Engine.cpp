@@ -2,10 +2,6 @@
 
 #include "Privitives.h"
 
-#include "ImGui/imgui.h"
-#include "ImGui/imgui_impl_win32.h"
-#include "ImGui/imgui_impl_dx11.h"
-
 #include "LodePNG/lodepng.h"
 
 Engine *gEngine;
@@ -13,6 +9,8 @@ Engine *gEngine;
 Engine::Engine()
 {
 	time = deltaTime = 0.0f;
+
+	gui = new Gui();
 	
 	camera = new Camera();
 	camera->SetEye(XMVectorSet(2.0f, 3.5f, -3.0f, 0.0f));
@@ -34,13 +32,6 @@ Engine::Engine()
 	mainLight = new Light();
 	mainLight->SetRotation(-XM_PI / 3, XM_PI / 3);
 
-	ZeroMemory(&guiState, sizeof(GuiState));
-	guiState.enabled = true;
-	guiState.showEngineSettingsWindow = true;
-	guiState.showLightSettingsWindow = true;
-	guiState.showStatsWindow = true;
-	guiState.showShadowmapDebugWindow = false;
-
 	showWireframe = false;
 	anisotropicFilteringEnabled = true;
 	vsync = 1;
@@ -50,6 +41,7 @@ Engine::~Engine()
 {
 	delete mainLight;
 	delete camera;
+	delete gui;
 }
 
 void Engine::Init(HWND hWnd, float viewportWidth, float viewportHeight)
@@ -58,16 +50,18 @@ void Engine::Init(HWND hWnd, float viewportWidth, float viewportHeight)
 
 	InitDevice();
 	InitRenderTargets(viewportWidth, viewportHeight);
-	InitImGui();
 	InitPipeline();
 	InitScene();
+	
+	gui->Init(hWnd, device, context);
 }
 
 void Engine::Release()
 {
+	gui->Release();
+
 	ReleaseScene();
 	ReleasePipeline();
-	ReleaseImGui();
 	ReleaseRenderTargets();
 	ReleaseDevice();
 }
@@ -257,30 +251,6 @@ void Engine::ReleaseShadowmap()
 	SAFE_RELEASE(shadowmapDSV);
 }
 
-void Engine::InitImGui()
-{
-	// Setup Dear ImGui context
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-
-	// Setup Dear ImGui style
-	ImGui::StyleColorsDark();
-	//ImGui::StyleColorsClassic();
-
-	// Setup Platform/Renderer bindings
-	ImGui_ImplWin32_Init(hWnd);
-	ImGui_ImplDX11_Init(device, context);
-}
-
-void Engine::ReleaseImGui()
-{
-	ImGui_ImplDX11_Shutdown();
-	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext();
-}
-
 void Engine::InitPipeline()
 {
 	InitShaders();
@@ -459,6 +429,12 @@ void Engine::ReleaseScene()
 	textureRVs.clear();
 }
 
+void Engine::RecompileShaders()
+{
+	ReleaseShaders();
+	InitShaders();
+}
+
 void Engine::Resize(HWND hWnd, float width, float height)
 {
 	context->OMSetRenderTargets(0, 0, 0);
@@ -480,12 +456,6 @@ void Engine::SetShadowBias(int depthBias, float slopeScaledDepthBias)
 	shadowSlopeScaledDepthBias = slopeScaledDepthBias;
 	ReleaseShadowmap();
 	InitShadowmap();
-}
-
-void Engine::RecompileShaders()
-{
-	ReleaseShaders();
-	InitShaders();
 }
 
 void Engine::Update(float deltaTime)
@@ -513,124 +483,7 @@ void Engine::Update(float deltaTime)
 	sphere->worldTransform = XMMatrixRotationY(time * 0.05f) * XMMatrixTranslation(1.5f, 1.5f, 0.0f);
 
 	// Update ImGui
-	UpdateGUI();
-}
-
-void Engine::UpdateGUI()
-{
-	// Start the Dear ImGui frame
-	ImGui_ImplDX11_NewFrame();
-	ImGui_ImplWin32_NewFrame();
-	ImGui::NewFrame();
-
-	if (!guiState.enabled)
-	{
-		ImGui::Render();
-		return;
-	}
-
-	if (ImGui::BeginMainMenuBar())
-	{
-		if (ImGui::BeginMenu("App"))
-		{
-			if (ImGui::MenuItem("Toggle fullscreen", "F11")) { PostMessage(hWnd, WM_KEYDOWN, VK_F11, 0); }
-			if (ImGui::MenuItem("Exit", "ALT+F4")) { PostMessage(hWnd, WM_CLOSE, 0, 0); }
-			ImGui::EndMenu();
-		}
-		if (ImGui::BeginMenu("Window"))
-		{
-			if (ImGui::MenuItem("Engine settings", nullptr)) { guiState.showEngineSettingsWindow = true; }
-			if (ImGui::MenuItem("Light settings", nullptr)) { guiState.showLightSettingsWindow = true; }
-			if (ImGui::MenuItem("Stats", nullptr)) { guiState.showStatsWindow = true; }
-			if (ImGui::MenuItem("Shadowmap debug", nullptr)) { guiState.showShadowmapDebugWindow = true; }
-			ImGui::Separator();
-			if (ImGui::MenuItem("ImGui demo window", nullptr)) { guiState.showDemoWindow = true; }
-			ImGui::EndMenu();
-		}
-		ImGui::EndMainMenuBar();
-	}
-
-	if (guiState.showDemoWindow)
-		ImGui::ShowDemoWindow(&guiState.showDemoWindow);
-
-	if (guiState.showEngineSettingsWindow)
-	{
-		ImGui::Begin("Engine settings", &guiState.showEngineSettingsWindow, ImGuiWindowFlags_None);
-		ImGui::Checkbox("Show wireframe", &showWireframe);
-		ImGui::Checkbox("Anisotropic filtering", &anisotropicFilteringEnabled);
-		bool vsyncEnabled = vsync > 0;
-		ImGui::Checkbox("V-Sync", &vsyncEnabled);
-		vsync = vsyncEnabled ? 1 : 0;
-		//if (ImGui::Button("Recompile shaders"))
-		//	RecompileShaders();
-		ImGui::End();
-	}
-
-	if (guiState.showLightSettingsWindow)
-	{
-		ImGui::Begin("Light settings", &guiState.showLightSettingsWindow, ImGuiWindowFlags_None);
-
-		ImGui::Text("Ambient light");
-		ImGui::DragFloat("Intensity##ambient", &ambientLightIntensity, 0.001f, 0.0f, 1.0f);
-		ImGui::ColorEdit3("Color##ambient", reinterpret_cast<float*>(&ambientLightColor));
-
-		ImGui::Text("Main light");
-		float mainLightYaw = mainLight->GetYaw();
-		float mainLightPitch = mainLight->GetPitch();
-		float mainLightIntensity = mainLight->GetIntensity();
-		XMFLOAT4 mainLightColor = mainLight->GetColor();
-		if (ImGui::SliderAngle("Yaw", &mainLightYaw, -180.0f, 180.0f))
-			mainLight->SetYaw(mainLightYaw);
-		if (ImGui::SliderAngle("Pitch", &mainLightPitch, 0.0f, 90.0f))
-			mainLight->SetPitch(mainLightPitch);
-		if (ImGui::DragFloat("Intensity##main", &mainLightIntensity, 0.001f, 0.0f, 2.0f))
-			mainLight->SetIntensity(mainLightIntensity);
-		if (ImGui::ColorEdit3("Color##main", reinterpret_cast<float *>(&mainLightColor)))
-			mainLight->SetColor(mainLightColor);
-
-		ImGui::Text("Main light shadows");
-		ImGui::DragFloat("Shadow distance", &shadowDistance, 0.1f, 1.0f, 100.0f);
-		ImGui::DragFloat("Directional distance", &directionalShadowDistance, 0.1f, 1.0f, 100.0f);
-		if (ImGui::InputInt("Resolution", &shadowResolution, 512, 1024))
-			SetShadowResolution((int)fmaxf((float)shadowResolution, 128));
-		bool setShadowBias = false;
-		setShadowBias |= ImGui::InputInt("Depth bias", &shadowDepthBias, 1000, 10000);
-		setShadowBias |= ImGui::InputFloat("Slope scaled depth bias", &shadowSlopeScaledDepthBias, 0.1f, 0.5f, 3);
-		if (setShadowBias)
-			SetShadowBias(shadowDepthBias, shadowSlopeScaledDepthBias);
-
-		if (ImGui::Button("Show shadowmap"))
-			guiState.showShadowmapDebugWindow = true;
-		
-		ImGui::End();
-	}
-
-	if (guiState.showStatsWindow)
-	{
-		ImGui::Begin("Stats", &guiState.showEngineSettingsWindow, ImGuiWindowFlags_None);
-		float fps = ImGui::GetIO().Framerate;
-		ImGui::Text("FPS:           %.0f", fps);
-		ImGui::Text("Frame time:    %.1f ms", 1000.0f / fps);
-		ImGui::End();
-	}
-
-	if (guiState.showShadowmapDebugWindow)
-	{
-		ImGui::Begin("Shadowmap debug", &guiState.showShadowmapDebugWindow, ImGuiWindowFlags_HorizontalScrollbar);
-		static float zoom = 512.0f / shadowResolution;
-		ImGui::SliderFloat("Zoom", &zoom, 0.1f, 5.0f);
-		ImGui::SameLine();
-		if (ImGui::Button("Default"))
-			zoom = 512.0f / shadowResolution;
-		ImGui::SameLine();
-		if (ImGui::Button("1.000x"))
-			zoom = 1.0f;
-		ImGui::Image((void *)shadowmapSRV, ImVec2(zoom * shadowResolution, zoom * shadowResolution));
-		ImGui::End();
-	}
-	
-	// Rendering
-	ImGui::Render();
+	gui->Update();
 }
 
 void Engine::RenderFrame()
@@ -660,7 +513,7 @@ void Engine::RenderFrame()
 	ShadowPass(lightViewMatrix, lightProjectionMatrix);
 	ForwardPass();
 
-	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+	gui->Render();
 
 	swapchain->Present(vsync, 0);
 }
