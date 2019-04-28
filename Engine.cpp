@@ -25,9 +25,11 @@ Engine::Engine()
 	ambientLightIntensity = 0.5f;
 	ambientLightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	
-	shadowResolution = 1024;
+	shadowResolution = 2048;
 	shadowDistance = 20.0f;
 	directionalShadowDistance = 20.0f;
+	shadowDepthBias = 50000;
+	shadowSlopeScaledDepthBias = 1.0f;
 
 	mainLight = new Light();
 	mainLight->SetRotation(-XM_PI / 3, XM_PI / 3);
@@ -231,11 +233,26 @@ void Engine::InitShadowmap()
 	shadowPassViewport.Width = (float)shadowResolution;
 	shadowPassViewport.Height = (float)shadowResolution;
 
+	D3D11_RASTERIZER_DESC shadowPassRD;
+	ZeroMemory(&shadowPassRD, sizeof(D3D11_RASTERIZER_DESC));
+	shadowPassRD.FillMode = D3D11_FILL_SOLID;
+	shadowPassRD.CullMode = D3D11_CULL_BACK;
+	shadowPassRD.DepthBias = 1024 * shadowDepthBias / shadowResolution;
+	shadowPassRD.SlopeScaledDepthBias = shadowSlopeScaledDepthBias;
+	result = device->CreateRasterizerState(&shadowPassRD, &shadowPassRasterizerState);
+	if (FAILED(result))
+	{
+		OutputDebugString("issue creating shadow pass rasterizer state\n");
+		throw;
+	}
+
 	shadowmapTexture->Release();
 }
 
 void Engine::ReleaseShadowmap()
 {
+	SAFE_RELEASE(shadowPassRasterizerState);
+
 	SAFE_RELEASE(shadowmapSRV);
 	SAFE_RELEASE(shadowmapDSV);
 }
@@ -450,6 +467,21 @@ void Engine::Resize(HWND hWnd, float width, float height)
 	InitRenderTargets(width, height);
 }
 
+void Engine::SetShadowResolution(int shadowResolution)
+{
+	this->shadowResolution = shadowResolution;
+	ReleaseShadowmap();
+	InitShadowmap();
+}
+
+void Engine::SetShadowBias(int depthBias, float slopeScaledDepthBias)
+{
+	shadowDepthBias = depthBias;
+	shadowSlopeScaledDepthBias = slopeScaledDepthBias;
+	ReleaseShadowmap();
+	InitShadowmap();
+}
+
 void Engine::RecompileShaders()
 {
 	ReleaseShaders();
@@ -555,14 +587,18 @@ void Engine::UpdateGUI()
 			mainLight->SetIntensity(mainLightIntensity);
 		if (ImGui::ColorEdit3("Color##main", reinterpret_cast<float *>(&mainLightColor)))
 			mainLight->SetColor(mainLightColor);
+
+		ImGui::Text("Main light shadows");
 		ImGui::SliderFloat("Shadow distance", &shadowDistance, 1.0f, 100.0f);
-		ImGui::DragFloat("Directional shadow distance", &directionalShadowDistance, 0.1f, 1.0f, 100.0f, "%.1f");
-		if (ImGui::InputInt("Shadow resolution", &shadowResolution, 512, 1024))
-		{
-			shadowResolution = fmaxf(shadowResolution, 128);
-			ReleaseShadowmap();
-			InitShadowmap();
-		}
+		ImGui::DragFloat("Directional distance", &directionalShadowDistance, 0.1f, 1.0f, 100.0f, "%.1f");
+		if (ImGui::InputInt("Resolution", &shadowResolution, 512, 1024))
+			SetShadowResolution((int)fmaxf(shadowResolution, 128));
+		bool setShadowBias = false;
+		setShadowBias |= ImGui::InputInt("Depth bias", &shadowDepthBias, 1000, 10000);
+		setShadowBias |= ImGui::InputFloat("Slope scaled depth bias", &shadowSlopeScaledDepthBias, 0.1f, 0.5f, 3);
+		if (setShadowBias)
+			SetShadowBias(shadowDepthBias, shadowSlopeScaledDepthBias);
+
 		if (ImGui::Button("Show shadowmap"))
 			guiState.showShadowmapDebugWindow = true;
 		
@@ -622,8 +658,6 @@ void Engine::RenderFrame()
 	context->PSSetSamplers(0, 1, anisotropicFilteringEnabled ? &samplerAnisotropicWrap : &samplerLinearWrap);
 	context->PSSetSamplers(1, 1, &samplerShadowCmp);
 
-	context->RSSetState(showWireframe ? wireframeRasterizerState : nullptr);
-
 	ShadowPass(lightViewMatrix, lightProjectionMatrix);
 	ForwardPass();
 
@@ -634,6 +668,7 @@ void Engine::RenderFrame()
 
 void Engine::ShadowPass(XMMATRIX lightViewMatrix, XMMATRIX lightProjectionMatrix)
 {
+	context->RSSetState(shadowPassRasterizerState);
 	context->RSSetViewports(1, &shadowPassViewport);
 	context->OMSetRenderTargets(0, nullptr, shadowmapDSV);
 
@@ -656,6 +691,7 @@ void Engine::ShadowPass(XMMATRIX lightViewMatrix, XMMATRIX lightProjectionMatrix
 
 void Engine::ForwardPass()
 {
+	context->RSSetState(showWireframe ? wireframeRasterizerState : nullptr);
 	context->RSSetViewports(1, &forwardPassViewport);
 	context->OMSetRenderTargets(1, &backbuffer, depthStencilView);
 

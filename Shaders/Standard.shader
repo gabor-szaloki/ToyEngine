@@ -77,7 +77,7 @@ float4 StandardOpaqueForwardPS(VSOutputStandardForward i) : SV_TARGET
 	shadowTexCoords.y = 0.5f - (i.lightSpacePos.y / i.lightSpacePos.w * 0.5f);
 	float pixelDepth = i.lightSpacePos.z / i.lightSpacePos.w;
 	float mainLightShadowAttenuation = _MainLightShadowmap.SampleCmpLevelZero(
-		_ShadowCmpSampler, shadowTexCoords, pixelDepth - 0.005); // TODO: normal bias
+		_ShadowCmpSampler, shadowTexCoords, pixelDepth);
 
 	c.rgb = Lighting(s, i.worldPos, mainLightShadowAttenuation);
 	

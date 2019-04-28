@@ -34,6 +34,8 @@ public:
 	void ReleaseScene();
 
 	void Resize(HWND hWnd, float width, float height);
+	void SetShadowResolution(int shadowResolution);
+	void SetShadowBias(int depthBias, float slopeScaledDepthBias);
 	void RecompileShaders();
 
 	void Update(float deltaTime);
@@ -68,10 +70,12 @@ private:
 
 	float ambientLightIntensity;
 	XMFLOAT4 ambientLightColor;
+	Light *mainLight;
 	int shadowResolution;
 	float shadowDistance;
 	float directionalShadowDistance;
-	Light *mainLight;
+	int shadowDepthBias;
+	float shadowSlopeScaledDepthBias;
 
 	HWND hWnd;
 
@@ -84,12 +88,13 @@ private:
 	ID3D11DepthStencilView *depthStencilView;
 	ID3D11DepthStencilState *depthStencilState;
 	D3D11_VIEWPORT forwardPassViewport;
+	ID3D11RasterizerState *wireframeRasterizerState;
 
 	// Shadow Pass
-	ID3D11RasterizerState *wireframeRasterizerState;
 	ID3D11DepthStencilView *shadowmapDSV;
 	ID3D11ShaderResourceView *shadowmapSRV;
 	D3D11_VIEWPORT shadowPassViewport;
+	ID3D11RasterizerState *shadowPassRasterizerState;
 
 	ID3D11Buffer *perFrameCB;
 	ID3D11Buffer *perCameraCB;
