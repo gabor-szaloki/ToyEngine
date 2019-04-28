@@ -571,7 +571,7 @@ void Engine::UpdateGUI()
 		ImGui::Begin("Light settings", &guiState.showLightSettingsWindow, ImGuiWindowFlags_None);
 
 		ImGui::Text("Ambient light");
-		ImGui::SliderFloat("Intensity##ambient", &ambientLightIntensity, 0.0f, 1.0f);
+		ImGui::DragFloat("Intensity##ambient", &ambientLightIntensity, 0.001f, 0.0f, 1.0f);
 		ImGui::ColorEdit3("Color##ambient", reinterpret_cast<float*>(&ambientLightColor));
 
 		ImGui::Text("Main light");
@@ -583,14 +583,14 @@ void Engine::UpdateGUI()
 			mainLight->SetYaw(mainLightYaw);
 		if (ImGui::SliderAngle("Pitch", &mainLightPitch, 0.0f, 90.0f))
 			mainLight->SetPitch(mainLightPitch);
-		if (ImGui::SliderFloat("Intensity##main", &mainLightIntensity, 0.0f, 2.0f))
+		if (ImGui::DragFloat("Intensity##main", &mainLightIntensity, 0.001f, 0.0f, 2.0f))
 			mainLight->SetIntensity(mainLightIntensity);
 		if (ImGui::ColorEdit3("Color##main", reinterpret_cast<float *>(&mainLightColor)))
 			mainLight->SetColor(mainLightColor);
 
 		ImGui::Text("Main light shadows");
-		ImGui::SliderFloat("Shadow distance", &shadowDistance, 1.0f, 100.0f);
-		ImGui::DragFloat("Directional distance", &directionalShadowDistance, 0.1f, 1.0f, 100.0f, "%.1f");
+		ImGui::DragFloat("Shadow distance", &shadowDistance, 0.1f, 1.0f, 100.0f);
+		ImGui::DragFloat("Directional distance", &directionalShadowDistance, 0.1f, 1.0f, 100.0f);
 		if (ImGui::InputInt("Resolution", &shadowResolution, 512, 1024))
 			SetShadowResolution((int)fmaxf(shadowResolution, 128));
 		bool setShadowBias = false;
