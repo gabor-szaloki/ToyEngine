@@ -500,7 +500,7 @@ void Engine::RenderFrame()
 	XMMATRIX lightProjectionMatrix = XMMatrixOrthographicLH(shadowDistance, shadowDistance, -directionalShadowDistance, directionalShadowDistance);
 	perFrameCBData.mainLightShadowMatrix = GetShadowMatrix(lightViewMatrix, lightProjectionMatrix);
 	float invShadowResolution = 1.0f / shadowResolution;
-	perFrameCBData.mainLightShadowResolution = XMFLOAT4(invShadowResolution, invShadowResolution, shadowResolution, shadowResolution);
+	perFrameCBData.mainLightShadowResolution = XMFLOAT4(invShadowResolution, invShadowResolution, (float)shadowResolution, (float)shadowResolution);
 
 	context->UpdateSubresource(perFrameCB, 0, nullptr, &perFrameCBData, 0, 0);
 	context->VSSetConstantBuffers(0, 1, &perFrameCB);
