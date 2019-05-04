@@ -77,9 +77,9 @@ void Engine::InitDevice()
 	scd.SampleDesc.Count = 1;
 	scd.Windowed = true;
 
-	HRESULT hr = D3D11CreateDeviceAndSwapChain(
+	ThrowIfFailed(D3D11CreateDeviceAndSwapChain(
 		nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, nullptr, 0, D3D11_SDK_VERSION,
-		&scd, &swapchain, &device, nullptr, &context);
+		&scd, &swapchain, &device, nullptr, &context), "Error creating device and swapchain\n");
 }
 
 void Engine::ReleaseDevice()
@@ -107,8 +107,8 @@ void Engine::InitRenderTargets(float width, float height)
 	// Create backbuffer render target view
 
 	ID3D11Texture2D *backBufferTexture;
-	swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&backBufferTexture);
-	device->CreateRenderTargetView(backBufferTexture, nullptr, &backbuffer);
+	ThrowIfFailed(swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&backBufferTexture), "Error creating backbuffer texture\n");
+	ThrowIfFailed(device->CreateRenderTargetView(backBufferTexture, nullptr, &backbuffer), "Error creating backbuffer\n");
 	backBufferTexture->Release();
 
 	// Create depth stencil view
@@ -127,14 +127,14 @@ void Engine::InitRenderTargets(float width, float height)
 	td.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 	td.CPUAccessFlags = 0;
 	td.MiscFlags = 0;
-	device->CreateTexture2D(&td, nullptr, &depthStencilTexture);
+	ThrowIfFailed(device->CreateTexture2D(&td, nullptr, &depthStencilTexture), "Error creating depth stencil texture\n");
 
 	D3D11_DEPTH_STENCIL_VIEW_DESC dsvd;
 	ZeroMemory(&dsvd, sizeof(D3D11_DEPTH_STENCIL_VIEW_DESC));
 	dsvd.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
 	dsvd.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	dsvd.Texture2D.MipSlice = 0;
-	device->CreateDepthStencilView(depthStencilTexture, &dsvd, &depthStencilView);
+	ThrowIfFailed(device->CreateDepthStencilView(depthStencilTexture, &dsvd, &depthStencilView), "Error creating depth stencil view\n");
 	depthStencilTexture->Release();
 
 	// Create depth stencil state
@@ -145,8 +145,8 @@ void Engine::InitRenderTargets(float width, float height)
 	dsd.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 	dsd.DepthFunc = D3D11_COMPARISON_LESS;
 	dsd.StencilEnable = false;
+	ThrowIfFailed(device->CreateDepthStencilState(&dsd, &depthStencilState), "Error creating depth stencil state\n");
 
-	device->CreateDepthStencilState(&dsd, &depthStencilState);
 	context->OMSetDepthStencilState(depthStencilState, 1);
 
 	context->OMSetRenderTargets(1, &backbuffer, depthStencilView);
@@ -155,7 +155,7 @@ void Engine::InitRenderTargets(float width, float height)
 	ZeroMemory(&wireframeRD, sizeof(D3D11_RASTERIZER_DESC));
 	wireframeRD.FillMode = D3D11_FILL_WIREFRAME;
 	wireframeRD.CullMode = D3D11_CULL_NONE;
-	device->CreateRasterizerState(&wireframeRD, &wireframeRasterizerState);
+	ThrowIfFailed(device->CreateRasterizerState(&wireframeRD, &wireframeRasterizerState), "Error creating wireframe rasterizer state");
 
 	InitShadowmap();
 }
@@ -186,24 +186,14 @@ void Engine::InitShadowmap()
 	td.MiscFlags = 0;
 
 	ID3D11Texture2D *shadowmapTexture;
-	HRESULT result = device->CreateTexture2D(&td, nullptr, &shadowmapTexture);
-	if (FAILED(result))
-	{
-		OutputDebugString("issue creating shadowmap texture\n");
-		throw;
-	}
+	ThrowIfFailed(device->CreateTexture2D(&td, nullptr, &shadowmapTexture), "Error creating shadowmap texture\n");
 
 	D3D11_DEPTH_STENCIL_VIEW_DESC dsvd;
 	ZeroMemory(&dsvd, sizeof(D3D11_DEPTH_STENCIL_VIEW_DESC));
 	dsvd.Format = DXGI_FORMAT_D32_FLOAT;
 	dsvd.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	dsvd.Texture2D.MipSlice = 0;
-	result = device->CreateDepthStencilView(shadowmapTexture, &dsvd, &shadowmapDSV);
-	if (FAILED(result))
-	{
-		OutputDebugString("issue creating shadowmap DSV\n");
-		throw;
-	}
+	ThrowIfFailed(device->CreateDepthStencilView(shadowmapTexture, &dsvd, &shadowmapDSV), "Error creating shadowmap DSV\n");
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
 	ZeroMemory(&srvDesc, sizeof(srvDesc));
@@ -211,13 +201,7 @@ void Engine::InitShadowmap()
 	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MipLevels = 1;
 	srvDesc.Texture2D.MostDetailedMip = 0;
-
-	result = device->CreateShaderResourceView(shadowmapTexture, &srvDesc, &shadowmapSRV);
-	if (FAILED(result))
-	{
-		OutputDebugString("issue creating shadowmap SRV\n");
-		throw;
-	}
+	ThrowIfFailed(device->CreateShaderResourceView(shadowmapTexture, &srvDesc, &shadowmapSRV), "Error creating shadowmap SRV\n");
 
 	ZeroMemory(&shadowPassViewport, sizeof(D3D11_VIEWPORT));
 	shadowPassViewport.MinDepth = 0;
@@ -233,12 +217,7 @@ void Engine::InitShadowmap()
 	shadowPassRD.CullMode = D3D11_CULL_BACK;
 	shadowPassRD.DepthBias = 1024 * shadowDepthBias / shadowResolution;
 	shadowPassRD.SlopeScaledDepthBias = shadowSlopeScaledDepthBias;
-	result = device->CreateRasterizerState(&shadowPassRD, &shadowPassRasterizerState);
-	if (FAILED(result))
-	{
-		OutputDebugString("issue creating shadow pass rasterizer state\n");
-		throw;
-	}
+	ThrowIfFailed(device->CreateRasterizerState(&shadowPassRD, &shadowPassRasterizerState), "Error creating shadow pass rasterizer state\n");
 
 	shadowmapTexture->Release();
 }
@@ -255,8 +234,6 @@ void Engine::InitPipeline()
 {
 	InitShaders();
 
-	HRESULT hr;
-
 	// Constant buffers
 	{
 		D3D11_BUFFER_DESC bd;
@@ -266,13 +243,13 @@ void Engine::InitPipeline()
 		bd.CPUAccessFlags = 0;
 
 		bd.ByteWidth = sizeof(PerFrameConstantBufferData);
-		hr = device->CreateBuffer(&bd, nullptr, &perFrameCB);
+		ThrowIfFailed(device->CreateBuffer(&bd, nullptr, &perFrameCB), "Error creating per frame constant buffer\n");
 
 		bd.ByteWidth = sizeof(PerCameraConstantBufferData);
-		hr = device->CreateBuffer(&bd, nullptr, &perCameraCB);
+		ThrowIfFailed(device->CreateBuffer(&bd, nullptr, &perCameraCB), "Error creating per camera constant buffer\n");
 
 		bd.ByteWidth = sizeof(PerObjectConstantBufferData);
-		hr = device->CreateBuffer(&bd, nullptr, &perObjectCB);
+		ThrowIfFailed(device->CreateBuffer(&bd, nullptr, &perObjectCB), "Error creating per object constant buffer\n");
 	}
 
 	// Samplers
@@ -289,14 +266,12 @@ void Engine::InitPipeline()
 
 		// linear
 		sd.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-		if (FAILED(device->CreateSamplerState(&sd, &samplerLinearWrap)))
-			throw;
+		ThrowIfFailed(device->CreateSamplerState(&sd, &samplerLinearWrap), "Error creating linear sampler state\n");
 
 		// anisotropic
 		sd.Filter = D3D11_FILTER_ANISOTROPIC;
 		sd.MaxAnisotropy = 16;
-		if (FAILED(device->CreateSamplerState(&sd, &samplerAnisotropicWrap)))
-			throw;
+		ThrowIfFailed(device->CreateSamplerState(&sd, &samplerAnisotropicWrap), "Error creating anisotropic sampler state\n");
 
 		// shadow cmp
 		ZeroMemory(&sd, sizeof(D3D11_SAMPLER_DESC));
@@ -313,8 +288,7 @@ void Engine::InitPipeline()
 		sd.MaxAnisotropy = 0;
 		sd.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
 		sd.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
-		if (FAILED(device->CreateSamplerState(&sd, &samplerShadowCmp)))
-			throw;
+		ThrowIfFailed(device->CreateSamplerState(&sd, &samplerShadowCmp), "Error creating shadow comparison sampler state\n");
 	}
 }
 
@@ -355,7 +329,8 @@ void Engine::InitShaders()
 			{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 56, D3D11_INPUT_PER_VERTEX_DATA, 0},
 		};
 
-		HRESULT hr = device->CreateInputLayout(ied, ARRAYSIZE(ied), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &standardInputLayout);
+		ThrowIfFailed(device->CreateInputLayout(ied, ARRAYSIZE(ied), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &standardInputLayout),
+			"Error creating standard input layout");
 	}
 
 	SAFE_RELEASE(vsBlob);
@@ -597,9 +572,7 @@ ID3D11ShaderResourceView *Engine::LoadTextureFromPNG(const char *filename)
 	td.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
 
 	ID3D11Texture2D *texture2d;
-	HRESULT result = device->CreateTexture2D(&td, nullptr, &texture2d);
-	if (FAILED(result))
-		OutputDebugString("issue creating texture\n");
+	ThrowIfFailed(device->CreateTexture2D(&td, nullptr, &texture2d), "Error creating texture\n");
 
 	context->UpdateSubresource(texture2d, 0, nullptr, &pngData[0], td.Width * 4, 0);
 
@@ -611,9 +584,7 @@ ID3D11ShaderResourceView *Engine::LoadTextureFromPNG(const char *filename)
 	srvDesc.Texture2D.MostDetailedMip = 0;
 
 	ID3D11ShaderResourceView *textureRV;
-	result = device->CreateShaderResourceView(texture2d, &srvDesc, &textureRV);
-	if (FAILED(result))
-		OutputDebugString("issue creating shaderResourceView \n");
+	ThrowIfFailed(device->CreateShaderResourceView(texture2d, &srvDesc, &textureRV), "Error creating texture shaderResourceView\n");
 
 	context->GenerateMips(textureRV);
 

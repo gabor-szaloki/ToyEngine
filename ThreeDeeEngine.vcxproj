@@ -116,6 +116,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Common.cpp" />
     <ClCompile Include="Drawable.cpp" />
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="Gui.cpp" />
