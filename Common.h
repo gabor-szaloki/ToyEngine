@@ -6,7 +6,7 @@
 #pragma comment(lib,"d3dcompiler.lib")
 #include <DirectXMath.h>
 
-#define SAFE_RELEASE(resource) { if (resource != nullptr) { resource->Release(); } }
+#define SAFE_RELEASE(resource) { if (resource != nullptr) { resource->Release(); resource = nullptr; } }
 #define GET_X_LPARAM(lp) ((int)(short)LOWORD(lp))
 #define GET_Y_LPARAM(lp) ((int)(short)HIWORD(lp))
 
