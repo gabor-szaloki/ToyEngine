@@ -10,13 +10,14 @@
 #define SOFT_SHADOW_SAMPLES_FUNC SampleShadow_ComputeSamples_Tent_5x5
 #endif
 
-float SampleMainLightShadow(float4 lightSpacePos)
+float SampleMainLightShadow(float4 shadowCoords)
 {
-	float2 shadowmapUV;
-	shadowmapUV.x = 0.5f + (lightSpacePos.x / lightSpacePos.w * 0.5f);
-	shadowmapUV.y = 0.5f - (lightSpacePos.y / lightSpacePos.w * 0.5f);
+	float2 shadowmapUV = shadowCoords.xy / shadowCoords.w;
+	float pixelDepth = shadowCoords.z / shadowCoords.w;
 
-	float pixelDepth = lightSpacePos.z / lightSpacePos.w;
+	// This would be needed if the texture uv scale-bias would not be precalculated in the shadow matrix to save a MAD here
+	//shadowmapUV.x = 0.5f + shadowmapUV.x * 0.5f;
+	//shadowmapUV.y = 0.5f - shadowmapUV.y * 0.5f;
 
 #ifdef SOFT_SHADOWS
 	float fetchesWeights[SOFT_SHADOW_SAMPLES];

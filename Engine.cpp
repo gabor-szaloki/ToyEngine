@@ -542,8 +542,10 @@ void Engine::ForwardPass()
 
 XMMATRIX Engine::GetShadowMatrix(XMMATRIX lightView, XMMATRIX lightProjection)
 {
-	//return lightView * lightProjection; // ??????
-	return XMMatrixMultiply(lightView, lightProjection);
+	// lightView * lightProjection does not seem to work, only XMMatrixMultiply // ??????
+	XMMATRIX worldToLightSpace = XMMatrixMultiply(lightView, lightProjection);
+	XMMATRIX textureScaleBias = XMMatrixMultiply(XMMatrixScaling(0.5f, -0.5f, 1.0f),  XMMatrixTranslation(0.5f, 0.5f, 0.0f));
+	return XMMatrixMultiply(worldToLightSpace, textureScaleBias);
 }
 
 ID3D11ShaderResourceView *Engine::LoadTextureFromPNG(const char *filename)
