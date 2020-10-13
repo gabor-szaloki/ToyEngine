@@ -19,7 +19,7 @@ bool ctrl = false;
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
+int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
 {
 	showCmd = nShowCmd;
 
@@ -61,7 +61,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			DispatchMessage(&msg);
 
 			if (msg.message == WM_QUIT)
-				goto quit;
+			{
+				gEngine->Release();
+				delete gEngine;
+				return (int)msg.wParam;
+			}
 		}
 
 		auto currentTime = std::chrono::high_resolution_clock::now();
@@ -72,10 +76,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		gEngine->RenderFrame();
 	}
 
-quit:
-	gEngine->Release();
-	delete gEngine;
-	return msg.wParam;
+	return 0;
 }
 
 
@@ -97,7 +98,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	{
 	case WM_RBUTTONUP:
 		rightMouseButtonHeldDown = false;
-		SetCapture(nullptr);
+		ReleaseCapture();
 		ShowCursor(true);
 		break;
 	case WM_RBUTTONDOWN:
