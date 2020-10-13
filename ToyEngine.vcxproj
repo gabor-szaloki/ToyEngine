@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{562E8108-9C6C-4A33-979B-D4DF397DC153}</ProjectGuid>
-    <RootNamespace>ThreeDeeEngine</RootNamespace>
+    <RootNamespace>ToyEngine</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

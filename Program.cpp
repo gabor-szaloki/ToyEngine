@@ -39,7 +39,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	HWND hWnd = CreateWindowEx(0,
 		"WindowClass1", // window class
-		"ThreeDee", // title
+		"ToyEngine", // title
 		WS_OVERLAPPEDWINDOW, // window style
 		//WS_POPUP, // window style
 		DEFAULT_WINDOWED_POS_X, DEFAULT_WINDOWED_POS_Y, wr.right - wr.left, wr.bottom - wr.top, // x, y, w, h

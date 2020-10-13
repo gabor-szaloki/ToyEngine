@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.271
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ThreeDeeEngine", "ThreeDeeEngine.vcxproj", "{562E8108-9C6C-4A33-979B-D4DF397DC153}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToyEngine", "ToyEngine.vcxproj", "{562E8108-9C6C-4A33-979B-D4DF397DC153}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
