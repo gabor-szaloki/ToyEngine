@@ -1,6 +1,6 @@
 #include "Drawable.h"
 
-#include "LodePNG/lodepng.h"
+#include "3rdParty/LodePNG/lodepng.h"
 
 Drawable::Drawable()
 {

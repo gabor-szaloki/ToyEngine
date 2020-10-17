@@ -18,6 +18,72 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Source\3rdParty\ImGui\imgui.cpp" />
+    <ClCompile Include="Source\3rdParty\ImGui\imgui_demo.cpp" />
+    <ClCompile Include="Source\3rdParty\ImGui\imgui_draw.cpp" />
+    <ClCompile Include="Source\3rdParty\ImGui\imgui_impl_dx11.cpp" />
+    <ClCompile Include="Source\3rdParty\ImGui\imgui_impl_win32.cpp" />
+    <ClCompile Include="Source\3rdParty\ImGui\imgui_widgets.cpp" />
+    <ClCompile Include="Source\3rdParty\LodePNG\lodepng.cpp" />
+    <ClCompile Include="Source\Common.cpp" />
+    <ClCompile Include="Source\Program.cpp" />
+    <ClCompile Include="Source\Renderer\Camera.cpp" />
+    <ClCompile Include="Source\Renderer\Drawable.cpp" />
+    <ClCompile Include="Source\Renderer\Engine.cpp" />
+    <ClCompile Include="Source\Renderer\Gui.cpp" />
+    <ClCompile Include="Source\Renderer\Light.cpp" />
+    <ClCompile Include="Source\Renderer\Material.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Source\3rdParty\ImGui\imconfig.h" />
+    <ClInclude Include="Source\3rdParty\ImGui\imgui.h" />
+    <ClInclude Include="Source\3rdParty\ImGui\imgui_impl_dx11.h" />
+    <ClInclude Include="Source\3rdParty\ImGui\imgui_impl_win32.h" />
+    <ClInclude Include="Source\3rdParty\ImGui\imgui_internal.h" />
+    <ClInclude Include="Source\3rdParty\ImGui\imstb_rectpack.h" />
+    <ClInclude Include="Source\3rdParty\ImGui\imstb_textedit.h" />
+    <ClInclude Include="Source\3rdParty\ImGui\imstb_truetype.h" />
+    <ClInclude Include="Source\3rdParty\LodePNG\lodepng.h" />
+    <ClInclude Include="Source\Common.h" />
+    <ClInclude Include="Source\Renderer\Camera.h" />
+    <ClInclude Include="Source\Renderer\Drawable.h" />
+    <ClInclude Include="Source\Renderer\Engine.h" />
+    <ClInclude Include="Source\Renderer\EngineCommon.h" />
+    <ClInclude Include="Source\Renderer\Gui.h" />
+    <ClInclude Include="Source\Renderer\Light.h" />
+    <ClInclude Include="Source\Renderer\Material.h" />
+    <ClInclude Include="Source\Renderer\Privitives.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Source\3rdParty\ImGui\LICENSE.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Source\Shaders\BRDF.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Source\Shaders\Standard.shader" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Source\Shaders\Common.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Source\Shaders\Input.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Source\Shaders\Lighting.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Source\Shaders\Shadow.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Source\Shaders\ShadowSamplingTent.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Source\Shaders\Surface.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{562E8108-9C6C-4A33-979B-D4DF397DC153}</ProjectGuid>
@@ -91,6 +157,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)\Source</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -115,83 +182,13 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)\Source</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="Common.cpp" />
-    <ClCompile Include="Drawable.cpp" />
-    <ClCompile Include="Engine.cpp" />
-    <ClCompile Include="Gui.cpp" />
-    <ClCompile Include="ImGui\imgui.cpp" />
-    <ClCompile Include="ImGui\imgui_demo.cpp" />
-    <ClCompile Include="ImGui\imgui_draw.cpp" />
-    <ClCompile Include="ImGui\imgui_impl_dx11.cpp" />
-    <ClCompile Include="ImGui\imgui_impl_win32.cpp" />
-    <ClCompile Include="ImGui\imgui_widgets.cpp" />
-    <ClCompile Include="Light.cpp" />
-    <ClCompile Include="LodePNG\lodepng.cpp" />
-    <ClCompile Include="Material.cpp" />
-    <ClCompile Include="Program.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Shaders\Standard.shader">
-      <FileType>Document</FileType>
-    </Text>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Camera.h" />
-    <ClInclude Include="Common.h" />
-    <ClInclude Include="Drawable.h" />
-    <ClInclude Include="Engine.h" />
-    <ClInclude Include="EngineCommon.h" />
-    <ClInclude Include="Gui.h" />
-    <ClInclude Include="ImGui\imconfig.h" />
-    <ClInclude Include="ImGui\imgui.h" />
-    <ClInclude Include="ImGui\imgui_impl_dx11.h" />
-    <ClInclude Include="ImGui\imgui_impl_win32.h" />
-    <ClInclude Include="ImGui\imgui_internal.h" />
-    <ClInclude Include="ImGui\imstb_rectpack.h" />
-    <ClInclude Include="ImGui\imstb_textedit.h" />
-    <ClInclude Include="ImGui\imstb_truetype.h" />
-    <ClInclude Include="Light.h" />
-    <ClInclude Include="LodePNG\lodepng.h" />
-    <ClInclude Include="Material.h" />
-    <ClInclude Include="Privitives.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Shaders\BRDF.hlsl">
-      <FileType>Document</FileType>
-    </Text>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Shaders\Common.hlsl">
-      <FileType>Document</FileType>
-    </Text>
-    <Text Include="Shaders\Lighting.hlsl">
-      <FileType>Document</FileType>
-    </Text>
-    <Text Include="Shaders\Surface.hlsl">
-      <FileType>Document</FileType>
-    </Text>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Shaders\Input.hlsl">
-      <FileType>Document</FileType>
-    </Text>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Shaders\Shadow.hlsl">
-      <FileType>Document</FileType>
-    </Text>
-    <Text Include="Shaders\ShadowSamplingTent.hlsl">
-      <FileType>Document</FileType>
-    </Text>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

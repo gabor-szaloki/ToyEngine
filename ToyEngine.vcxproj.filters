@@ -2,146 +2,156 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+      <UniqueIdentifier>{312e91cf-1c69-416c-905a-96b2e6030187}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Shaders">
-      <UniqueIdentifier>{bb3a0707-e6f7-459a-b2da-75e3abf82f95}</UniqueIdentifier>
+    <Filter Include="Source\Renderer">
+      <UniqueIdentifier>{0a491fcc-de52-4033-968e-3a7818001e28}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ImGui">
-      <UniqueIdentifier>{d8bfd312-d824-4705-aa97-628e1e97c4cf}</UniqueIdentifier>
+    <Filter Include="Source\Shaders">
+      <UniqueIdentifier>{e90f1a98-579d-4de1-ba88-6dd16817e971}</UniqueIdentifier>
     </Filter>
-    <Filter Include="LodePNG">
-      <UniqueIdentifier>{5e911f23-30f0-49ed-9d30-70c87b5c0f23}</UniqueIdentifier>
+    <Filter Include="Source\3rdParty">
+      <UniqueIdentifier>{5022766f-95a4-415f-9581-921d95ed3bac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\3rdParty\ImGui">
+      <UniqueIdentifier>{ad4e9038-ee50-438f-ad47-4bb1ea24ec01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\3rdParty\LodePNG">
+      <UniqueIdentifier>{edb62074-b541-4481-b658-a6fc58a984bc}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Program.cpp">
+    <ClCompile Include="Source\Common.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="Engine.cpp">
+    <ClCompile Include="Source\Program.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="Drawable.cpp">
-      <Filter>Source</Filter>
+    <ClCompile Include="Source\3rdParty\ImGui\imgui.cpp">
+      <Filter>Source\3rdParty\ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="Camera.cpp">
-      <Filter>Source</Filter>
+    <ClCompile Include="Source\3rdParty\ImGui\imgui_demo.cpp">
+      <Filter>Source\3rdParty\ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="ImGui\imgui.cpp">
-      <Filter>ImGui</Filter>
+    <ClCompile Include="Source\3rdParty\ImGui\imgui_draw.cpp">
+      <Filter>Source\3rdParty\ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="ImGui\imgui_demo.cpp">
-      <Filter>ImGui</Filter>
+    <ClCompile Include="Source\3rdParty\ImGui\imgui_impl_dx11.cpp">
+      <Filter>Source\3rdParty\ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="ImGui\imgui_draw.cpp">
-      <Filter>ImGui</Filter>
+    <ClCompile Include="Source\3rdParty\ImGui\imgui_impl_win32.cpp">
+      <Filter>Source\3rdParty\ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="ImGui\imgui_impl_dx11.cpp">
-      <Filter>ImGui</Filter>
+    <ClCompile Include="Source\3rdParty\ImGui\imgui_widgets.cpp">
+      <Filter>Source\3rdParty\ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="ImGui\imgui_impl_win32.cpp">
-      <Filter>ImGui</Filter>
+    <ClCompile Include="Source\3rdParty\LodePNG\lodepng.cpp">
+      <Filter>Source\3rdParty\LodePNG</Filter>
     </ClCompile>
-    <ClCompile Include="ImGui\imgui_widgets.cpp">
-      <Filter>ImGui</Filter>
+    <ClCompile Include="Source\Renderer\Camera.cpp">
+      <Filter>Source\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="LodePNG\lodepng.cpp">
-      <Filter>LodePNG</Filter>
+    <ClCompile Include="Source\Renderer\Drawable.cpp">
+      <Filter>Source\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Material.cpp">
-      <Filter>Source</Filter>
+    <ClCompile Include="Source\Renderer\Engine.cpp">
+      <Filter>Source\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Light.cpp">
-      <Filter>Source</Filter>
+    <ClCompile Include="Source\Renderer\Gui.cpp">
+      <Filter>Source\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Gui.cpp">
-      <Filter>Source</Filter>
+    <ClCompile Include="Source\Renderer\Light.cpp">
+      <Filter>Source\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Common.cpp">
-      <Filter>Source</Filter>
+    <ClCompile Include="Source\Renderer\Material.cpp">
+      <Filter>Source\Renderer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Engine.h">
+    <ClInclude Include="Source\Common.h">
       <Filter>Source</Filter>
     </ClInclude>
-    <ClInclude Include="Common.h">
-      <Filter>Source</Filter>
+    <ClInclude Include="Source\3rdParty\ImGui\imconfig.h">
+      <Filter>Source\3rdParty\ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="Drawable.h">
-      <Filter>Source</Filter>
+    <ClInclude Include="Source\3rdParty\ImGui\imgui.h">
+      <Filter>Source\3rdParty\ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="Camera.h">
-      <Filter>Source</Filter>
+    <ClInclude Include="Source\3rdParty\ImGui\imgui_impl_dx11.h">
+      <Filter>Source\3rdParty\ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="EngineCommon.h">
-      <Filter>Source</Filter>
+    <ClInclude Include="Source\3rdParty\ImGui\imgui_impl_win32.h">
+      <Filter>Source\3rdParty\ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="ImGui\imconfig.h">
-      <Filter>ImGui</Filter>
+    <ClInclude Include="Source\3rdParty\ImGui\imgui_internal.h">
+      <Filter>Source\3rdParty\ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="ImGui\imgui.h">
-      <Filter>ImGui</Filter>
+    <ClInclude Include="Source\3rdParty\ImGui\imstb_rectpack.h">
+      <Filter>Source\3rdParty\ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="ImGui\imgui_impl_dx11.h">
-      <Filter>ImGui</Filter>
+    <ClInclude Include="Source\3rdParty\ImGui\imstb_textedit.h">
+      <Filter>Source\3rdParty\ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="ImGui\imgui_impl_win32.h">
-      <Filter>ImGui</Filter>
+    <ClInclude Include="Source\3rdParty\ImGui\imstb_truetype.h">
+      <Filter>Source\3rdParty\ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="ImGui\imgui_internal.h">
-      <Filter>ImGui</Filter>
+    <ClInclude Include="Source\3rdParty\LodePNG\lodepng.h">
+      <Filter>Source\3rdParty\LodePNG</Filter>
     </ClInclude>
-    <ClInclude Include="ImGui\imstb_rectpack.h">
-      <Filter>ImGui</Filter>
+    <ClInclude Include="Source\Renderer\Camera.h">
+      <Filter>Source\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="ImGui\imstb_textedit.h">
-      <Filter>ImGui</Filter>
+    <ClInclude Include="Source\Renderer\Drawable.h">
+      <Filter>Source\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="ImGui\imstb_truetype.h">
-      <Filter>ImGui</Filter>
+    <ClInclude Include="Source\Renderer\Engine.h">
+      <Filter>Source\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="LodePNG\lodepng.h">
-      <Filter>LodePNG</Filter>
+    <ClInclude Include="Source\Renderer\EngineCommon.h">
+      <Filter>Source\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Material.h">
-      <Filter>Source</Filter>
+    <ClInclude Include="Source\Renderer\Gui.h">
+      <Filter>Source\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Privitives.h">
-      <Filter>Source</Filter>
+    <ClInclude Include="Source\Renderer\Light.h">
+      <Filter>Source\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Light.h">
-      <Filter>Source</Filter>
+    <ClInclude Include="Source\Renderer\Material.h">
+      <Filter>Source\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Gui.h">
-      <Filter>Source</Filter>
+    <ClInclude Include="Source\Renderer\Privitives.h">
+      <Filter>Source\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Shaders\BRDF.hlsl">
-      <Filter>Shaders</Filter>
+    <Text Include="Source\3rdParty\ImGui\LICENSE.txt">
+      <Filter>Source\3rdParty\ImGui</Filter>
     </Text>
-    <Text Include="Shaders\Standard.shader">
-      <Filter>Shaders</Filter>
-    </Text>
-    <Text Include="Shaders\Surface.hlsl">
-      <Filter>Shaders</Filter>
-    </Text>
-    <Text Include="Shaders\Lighting.hlsl">
-      <Filter>Shaders</Filter>
-    </Text>
-    <Text Include="Shaders\Common.hlsl">
-      <Filter>Shaders</Filter>
-    </Text>
-    <Text Include="Shaders\Input.hlsl">
-      <Filter>Shaders</Filter>
-    </Text>
-    <Text Include="Shaders\ShadowSamplingTent.hlsl">
-      <Filter>Shaders</Filter>
-    </Text>
-    <Text Include="Shaders\Shadow.hlsl">
-      <Filter>Shaders</Filter>
-    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Source\Shaders\BRDF.hlsl">
+      <Filter>Source\Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\Standard.shader">
+      <Filter>Source\Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\Common.hlsl">
+      <Filter>Source\Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\Input.hlsl">
+      <Filter>Source\Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\Lighting.hlsl">
+      <Filter>Source\Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\Shadow.hlsl">
+      <Filter>Source\Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\ShadowSamplingTent.hlsl">
+      <Filter>Source\Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\Surface.hlsl">
+      <Filter>Source\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

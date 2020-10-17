@@ -2,7 +2,7 @@
 
 #include "Privitives.h"
 
-#include "LodePNG/lodepng.h"
+#include "3rdParty/LodePNG/lodepng.h"
 
 Engine *gEngine;
 
@@ -310,12 +310,12 @@ void Engine::InitShaders()
 	// Shaders
 	{
 		// Forward Pass
-		standardForwardVS = CompileVertexShader(L"Shaders\\Standard.shader", "StandardForwardVS", &vsBlob);
-		standardOpaqueForwardPS = CompilePixelShader(L"Shaders\\Standard.shader", "StandardOpaqueForwardPS");
+		standardForwardVS = CompileVertexShader(L"Source\\Shaders\\Standard.shader", "StandardForwardVS", &vsBlob);
+		standardOpaqueForwardPS = CompilePixelShader(L"Source\\Shaders\\Standard.shader", "StandardOpaqueForwardPS");
 
 		// Shadow Pass
-		standardShadowVS = CompileVertexShader(L"Shaders\\Standard.shader", "StandardShadowVS");
-		standardOpaqueShadowPS = CompilePixelShader(L"Shaders\\Standard.shader", "StandardOpaqueShadowPS");
+		standardShadowVS = CompileVertexShader(L"Source\\Shaders\\Standard.shader", "StandardShadowVS");
+		standardOpaqueShadowPS = CompilePixelShader(L"Source\\Shaders\\Standard.shader", "StandardOpaqueShadowPS");
 	}
 
 	// Input layout
@@ -348,14 +348,14 @@ void Engine::ReleaseShaders()
 
 void Engine::InitScene()
 {
-	auto* testBaseTexture = LoadTextureFromPNG("Textures\\test_base.png");
+	auto* testBaseTexture = LoadTextureFromPNG("Assets\\Textures\\test_base.png");
 	textureRVs.push_back(testBaseTexture);
-	auto* testNormalTexture = LoadTextureFromPNG("Textures\\test_nrm.png");
+	auto* testNormalTexture = LoadTextureFromPNG("Assets\\Textures\\test_nrm.png");
 	textureRVs.push_back(testNormalTexture);
 
-	auto* blueTilesBaseTexture = LoadTextureFromPNG("Textures\\Tiles20_base.png");
+	auto* blueTilesBaseTexture = LoadTextureFromPNG("Assets\\Textures\\Tiles20_base.png");
 	textureRVs.push_back(blueTilesBaseTexture);
-	auto* blueTilesNormalTexture = LoadTextureFromPNG("Textures\\Tiles20_nrm.png");
+	auto* blueTilesNormalTexture = LoadTextureFromPNG("Assets\\Textures\\Tiles20_nrm.png");
 	textureRVs.push_back(blueTilesNormalTexture);
 
 	Material *test = new Material(
