@@ -6,6 +6,8 @@
 #include "3rdParty/ImGui/imgui_impl_win32.h"
 #include "3rdParty/ImGui/imgui_impl_dx11.h"
 
+#include <3rdParty/glm/glm.hpp>
+
 Gui::Gui()
 {
 	hWnd = 0;
