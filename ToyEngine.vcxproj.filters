@@ -37,6 +37,12 @@
     <Filter Include="Source\3rdParty\glm\simd">
       <UniqueIdentifier>{720a98b5-84d8-4ecb-b19a-a665f5c070cf}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Driver">
+      <UniqueIdentifier>{eb928a40-fab3-4c26-a46b-30f512feb824}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Driver\D3D11">
+      <UniqueIdentifier>{5f8778ce-ddd3-428f-bfc0-d03be7eb2568}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Common.cpp">
@@ -86,6 +92,18 @@
     </ClCompile>
     <ClCompile Include="Source\3rdParty\glm\detail\glm.cpp">
       <Filter>Source\3rdParty\glm\detail</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Driver\D3D11\D3D11Driver.cpp">
+      <Filter>Source\Driver\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Driver\D3D11\D3D11Buffer.cpp">
+      <Filter>Source\Driver\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Driver\D3D11\D3D11Texture.cpp">
+      <Filter>Source\Driver\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Driver\D3D11\D3D11RenderState.cpp">
+      <Filter>Source\Driver\D3D11</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -988,6 +1006,39 @@
     </ClInclude>
     <ClInclude Include="Source\3rdParty\glm\simd\vector_relational.h">
       <Filter>Source\3rdParty\glm\simd</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\D3D11\D3D11Driver.h">
+      <Filter>Source\Driver\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\IDriver.h">
+      <Filter>Source\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\DriverCommon.h">
+      <Filter>Source\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\IBuffer.h">
+      <Filter>Source\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\ITexture.h">
+      <Filter>Source\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\TexFmt.h">
+      <Filter>Source\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\D3D11\D3D11Buffer.h">
+      <Filter>Source\Driver\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\D3D11\D3D11Texture.h">
+      <Filter>Source\Driver\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\DriverConsts.h">
+      <Filter>Source\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\DriverSettings.h">
+      <Filter>Source\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\D3D11\D3D11RenderState.h">
+      <Filter>Source\Driver\D3D11</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
