@@ -5,6 +5,8 @@
 #include "D3D11Texture.h"
 #include "D3D11Buffer.h"
 #include "D3D11RenderState.h"
+#include "D3D11ShaderSet.h"
+#include "D3D11InputLayout.h"
 
 static std::unique_ptr<D3D11Driver> driver;
 D3D11Driver* get_drv() { return driver.get(); };
@@ -62,6 +64,22 @@ ResId D3D11Driver::createRenderState(const RenderStateDesc& desc)
 {
 	D3D11RenderState* rs = new D3D11RenderState(desc);
 	return rs->getId();
+}
+
+ResId D3D11Driver::createShaderSet(const ShaderSetDesc& desc)
+{
+	D3D11ShaderSet* shaderSet = new D3D11ShaderSet(desc);
+	return shaderSet->getId();
+}
+
+ResId D3D11Driver::createInputLayout(const InputLayoutElementDesc* descs, unsigned int num_descs, ResId shader_set)
+{
+	assert(descs != nullptr);
+	assert(num_descs > 0);
+	assert(shaders.find(shader_set) != shaders.end());
+	D3D11ShaderSet* shaderSet = shaders[shader_set];
+	D3D11InputLayout* inputLayout = new D3D11InputLayout(descs, num_descs, *shaderSet);
+	return inputLayout->getId();
 }
 
 void D3D11Driver::setIndexBuffer(ResId* res_id)
@@ -243,46 +261,70 @@ void D3D11Driver::setSettings(const DriverSettings& new_settings)
 	settings = new_settings;
 }
 
-ResId D3D11Driver::registerTexture(D3D11Texture* tex)
+template<typename T>
+static ResId emplace_resource(T* res, std::map<ResId, T*>& dest)
 {
 	ResId resId = nextAvailableResId++;
-	auto&& emplaceResult = textures.emplace(resId, tex);
+	auto&& emplaceResult = dest.emplace(resId, res);
 	assert(emplaceResult.second);
 	return resId;
+}
+
+template<typename T>
+static void erase_resource(ResId id, std::map<ResId, T*>& from)
+{
+	size_t numElementsErased = from.erase(id);
+	assert(numElementsErased > 0);
+}
+
+ResId D3D11Driver::registerTexture(D3D11Texture* tex)
+{
+	return emplace_resource(tex, textures);
 }
 
 void D3D11Driver::unregisterTexture(ResId id)
 {
-	size_t numElementsErased = textures.erase(id);
-	assert(numElementsErased > 0);
+	erase_resource(id, textures);
 }
 
 ResId D3D11Driver::registerBuffer(D3D11Buffer* buf)
 {
-	ResId resId = nextAvailableResId++;
-	auto&& emplaceResult = buffers.emplace(resId, buf);
-	assert(emplaceResult.second);
-	return resId;
+	return emplace_resource(buf, buffers);
 }
 
 void D3D11Driver::unregisterBuffer(ResId id)
 {
-	size_t numElementsErased = buffers.erase(id);
-	assert(numElementsErased > 0);
+	erase_resource(id, buffers);
 }
 
 ResId D3D11Driver::registerRenderState(D3D11RenderState* rs)
 {
-	ResId resId = nextAvailableResId++;
-	auto&& emplaceResult = renderStates.emplace(resId, rs);
-	assert(emplaceResult.second);
-	return resId;
+	return emplace_resource(rs, renderStates);
 }
 
 void D3D11Driver::unregisterRenderState(ResId id)
 {
-	size_t numElementsErased = renderStates.erase(id);
-	assert(numElementsErased > 0);
+	erase_resource(id, renderStates);
+}
+
+ResId D3D11Driver::registerShaderSet(D3D11ShaderSet* shader_set)
+{
+	return emplace_resource(shader_set, shaders);
+}
+
+void D3D11Driver::unregisterShaderSet(ResId id)
+{
+	erase_resource(id, shaders);
+}
+
+ResId D3D11Driver::registerInputLayout(D3D11InputLayout* input_layout)
+{
+	return emplace_resource(input_layout, inputLayouts);
+}
+
+void D3D11Driver::unregisterInputLayout(ResId id)
+{
+	erase_resource(id, inputLayouts);
 }
 
 bool D3D11Driver::initResolutionDependentResources(int display_width, int display_height)

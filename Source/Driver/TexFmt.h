@@ -72,7 +72,7 @@ enum class TexFmt
 	A8_UNORM                                = 65,
 };
 
-inline unsigned int get_texel_byte_size_for_texfmt(TexFmt fmt)
+inline unsigned int get_byte_size_for_texfmt(TexFmt fmt)
 {
 	switch (fmt)
 	{

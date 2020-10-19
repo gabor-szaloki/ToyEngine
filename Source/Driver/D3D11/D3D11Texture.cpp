@@ -35,7 +35,7 @@ D3D11Texture::~D3D11Texture()
 
 void D3D11Texture::updateData(unsigned int dst_subresource, const IntBox* dst_box, const void* src_data)
 {
-	unsigned int rowPitch = desc.width * get_texel_byte_size_for_texfmt(desc.format);
+	unsigned int rowPitch = desc.width * get_byte_size_for_texfmt(desc.format);
 
 	if (dst_box != nullptr)
 	{

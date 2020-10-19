@@ -17,6 +17,8 @@ using ComPtr = Microsoft::WRL::ComPtr<T>;
 class D3D11Texture;
 class D3D11Buffer;
 class D3D11RenderState;
+class D3D11ShaderSet;
+class D3D11InputLayout;
 
 class D3D11Driver : public IDriver
 {
@@ -28,6 +30,8 @@ public:
 	ITexture* createTexture(const TextureDesc& desc) override;
 	IBuffer* createBuffer(const BufferDesc& desc) override;
 	ResId createRenderState(const RenderStateDesc& desc) override;
+	ResId createShaderSet(const ShaderSetDesc& desc) override;
+	ResId createInputLayout(const InputLayoutElementDesc* descs, unsigned int num_descs, ResId shader_set) override;
 
 	void setIndexBuffer(ResId* res_id) override;
 	void setVertexBuffer(ResId* res_id) override;
@@ -52,6 +56,10 @@ public:
 	void unregisterBuffer(ResId id);
 	ResId registerRenderState(D3D11RenderState* rs);
 	void unregisterRenderState(ResId id);
+	ResId registerShaderSet(D3D11ShaderSet* shader_set);
+	void unregisterShaderSet(ResId id);
+	ResId registerInputLayout(D3D11InputLayout* input_layout);
+	void unregisterInputLayout(ResId id);
 
 private:
 	bool initResolutionDependentResources(int display_width, int display_height);
@@ -69,6 +77,8 @@ private:
 	std::map<ResId, D3D11Texture*> textures;
 	std::map<ResId, D3D11Buffer*> buffers;
 	std::map<ResId, D3D11RenderState*> renderStates;
+	std::map<ResId, D3D11ShaderSet*> shaders;
+	std::map<ResId, D3D11InputLayout*> inputLayouts;
 
 	ResId defaultRenderState;
 };

@@ -30,7 +30,9 @@
     <ClCompile Include="Source\Common.cpp" />
     <ClCompile Include="Source\Driver\D3D11\D3D11Buffer.cpp" />
     <ClCompile Include="Source\Driver\D3D11\D3D11Driver.cpp" />
+    <ClCompile Include="Source\Driver\D3D11\D3D11InputLayout.cpp" />
     <ClCompile Include="Source\Driver\D3D11\D3D11RenderState.cpp" />
+    <ClCompile Include="Source\Driver\D3D11\D3D11ShaderSet.cpp" />
     <ClCompile Include="Source\Driver\D3D11\D3D11Texture.cpp" />
     <ClCompile Include="Source\Program.cpp" />
     <ClCompile Include="Source\Renderer\Camera.cpp" />
@@ -335,12 +337,15 @@
     <ClInclude Include="Source\Common.h" />
     <ClInclude Include="Source\Driver\D3D11\D3D11Buffer.h" />
     <ClInclude Include="Source\Driver\D3D11\D3D11Driver.h" />
+    <ClInclude Include="Source\Driver\D3D11\D3D11InputLayout.h" />
     <ClInclude Include="Source\Driver\D3D11\D3D11RenderState.h" />
+    <ClInclude Include="Source\Driver\D3D11\D3D11ShaderSet.h" />
     <ClInclude Include="Source\Driver\D3D11\D3D11Texture.h" />
     <ClInclude Include="Source\Driver\DriverCommon.h" />
     <ClInclude Include="Source\Driver\DriverSettings.h" />
     <ClInclude Include="Source\Driver\IBuffer.h" />
     <ClInclude Include="Source\Driver\IDriver.h" />
+    <ClInclude Include="Source\Driver\IShaderSet.h" />
     <ClInclude Include="Source\Driver\ITexture.h" />
     <ClInclude Include="Source\Driver\DriverConsts.h" />
     <ClInclude Include="Source\Driver\TexFmt.h" />

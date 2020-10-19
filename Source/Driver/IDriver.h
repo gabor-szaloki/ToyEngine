@@ -15,6 +15,8 @@ public:
 	virtual ITexture* createTexture(const TextureDesc& desc) = 0;
 	virtual IBuffer* createBuffer(const BufferDesc& desc) = 0;
 	virtual ResId createRenderState(const RenderStateDesc& desc) = 0;
+	virtual ResId createShaderSet(const ShaderSetDesc& desc) = 0;
+	virtual ResId createInputLayout(const InputLayoutElementDesc* descs, unsigned int num_descs, ResId shader_set) = 0;
 
 	virtual void setIndexBuffer(ResId* res_id) = 0;
 	virtual void setVertexBuffer(ResId* res_id) = 0;

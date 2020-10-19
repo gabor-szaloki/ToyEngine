@@ -105,6 +105,12 @@
     <ClCompile Include="Source\Driver\D3D11\D3D11RenderState.cpp">
       <Filter>Source\Driver\D3D11</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Driver\D3D11\D3D11ShaderSet.cpp">
+      <Filter>Source\Driver\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Driver\D3D11\D3D11InputLayout.cpp">
+      <Filter>Source\Driver\D3D11</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common.h">
@@ -1038,6 +1044,15 @@
       <Filter>Source\Driver</Filter>
     </ClInclude>
     <ClInclude Include="Source\Driver\D3D11\D3D11RenderState.h">
+      <Filter>Source\Driver\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\IShaderSet.h">
+      <Filter>Source\Driver</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\D3D11\D3D11ShaderSet.h">
+      <Filter>Source\Driver\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\D3D11\D3D11InputLayout.h">
       <Filter>Source\Driver\D3D11</Filter>
     </ClInclude>
   </ItemGroup>

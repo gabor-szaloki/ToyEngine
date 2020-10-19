@@ -21,12 +21,13 @@ struct IntBox // Todo: move outside of Driver
 
 enum class ShaderStage
 {
-	VS,
-	PS,
-	GS,
-	HS,
-	DS,
-	CS,
+	VS = 0,
+	PS = 1,
+	GS = 2,
+	HS = 3,
+	DS = 4,
+	CS = 5,
+	GRAPHICS_STAGE_COUNT = 5,
 };
 
 struct SamplerDesc
@@ -89,4 +90,23 @@ struct RenderStateDesc
 {
 	RasterizerDesc rasterizerDesc;
 	DepthStencilDesc depthStencilDesc;
+};
+
+struct ShaderSetDesc
+{
+	const char* sourceFilePath = nullptr;
+	const char* shaderFuncNames[(int)ShaderStage::GRAPHICS_STAGE_COUNT] = {};
+};
+
+struct ComputeShaderDesc
+{
+	const char* sourceFilePath = nullptr;
+	const char* shaderFuncName = nullptr;
+};
+
+struct InputLayoutElementDesc
+{
+	VertexInputSemantic semantic;
+	unsigned int semanticIndex;
+	TexFmt format;
 };

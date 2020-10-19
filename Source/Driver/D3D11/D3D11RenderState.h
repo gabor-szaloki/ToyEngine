@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Driver/DriverCommon.h>
-#include <memory>
 #include "D3D11Driver.h"
 
 class D3D11RenderState

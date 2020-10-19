@@ -127,3 +127,12 @@ enum class CullMode
 	FRONT = 2,
 	BACK = 3
 };
+
+enum class VertexInputSemantic
+{
+	POSITION = 1,
+	NORMAL = 2,
+	TANGENT = 3,
+	COLOR = 4,
+	TEXCOORD = 5
+};
