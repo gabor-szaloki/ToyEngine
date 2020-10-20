@@ -14,20 +14,20 @@ RenderState::RenderState(const RenderStateDesc& desc_) : desc(desc_)
 	rsd.DepthBias = desc.rasterizerDesc.depthBias;
 	rsd.SlopeScaledDepthBias = desc.rasterizerDesc.slopeScaledDepthBias;
 	rsd.ScissorEnable = desc.rasterizerDesc.scissorEnable;
-	hr = get_drv()->getDevice()->CreateRasterizerState(&rsd, &rasterizerState);
+	hr = Driver::get()->getDevice()->CreateRasterizerState(&rsd, &rasterizerState);
 	assert(SUCCEEDED(hr));
 
 	D3D11_DEPTH_STENCIL_DESC dsd{};
 	dsd.DepthEnable = desc.depthStencilDesc.depthTest || desc.depthStencilDesc.depthWrite;
 	dsd.DepthWriteMask = desc.depthStencilDesc.depthWrite ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
 	dsd.DepthFunc = (D3D11_COMPARISON_FUNC)desc.depthStencilDesc.DepthFunc;
-	hr = get_drv()->getDevice()->CreateDepthStencilState(&dsd, &depthStencilState);
+	hr = Driver::get()->getDevice()->CreateDepthStencilState(&dsd, &depthStencilState);
 	assert(SUCCEEDED(hr));
 
-	id = get_drv()->registerRenderState(this);
+	id = Driver::get()->registerRenderState(this);
 }
 
 RenderState::~RenderState()
 {
-	get_drv()->unregisterRenderState(id);
+	Driver::get()->unregisterRenderState(id);
 }

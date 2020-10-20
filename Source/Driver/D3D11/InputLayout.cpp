@@ -47,14 +47,14 @@ InputLayout::InputLayout(const InputLayoutElementDesc* descs, unsigned int num_d
 
 	ID3DBlob* vsBlob = shader_set.getVsBlob();
 	assert(vsBlob != nullptr);
-	HRESULT hr = get_drv()->getDevice()->CreateInputLayout(ieds.data(), num_descs,
+	HRESULT hr = Driver::get()->getDevice()->CreateInputLayout(ieds.data(), num_descs,
 		vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &inputLayout);
 	assert(SUCCEEDED(hr));
 
-	id = get_drv()->registerInputLayout(this);
+	id = Driver::get()->registerInputLayout(this);
 }
 
 InputLayout::~InputLayout()
 {
-	get_drv()->unregisterInputLayout(id);
+	Driver::get()->unregisterInputLayout(id);
 }

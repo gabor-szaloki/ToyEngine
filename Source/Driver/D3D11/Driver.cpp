@@ -11,9 +11,12 @@
 using namespace drv_d3d11;
 
 static std::unique_ptr<Driver> driver;
-Driver* drv_d3d11::get_drv() { return driver.get(); };
-
 static ResId nextAvailableResId = 0;
+
+Driver* drv_d3d11::Driver::get()
+{
+	return driver.get();
+}
 
 bool Driver::init(void* hwnd, int display_width, int display_height)
 {

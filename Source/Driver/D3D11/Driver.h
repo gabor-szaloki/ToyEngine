@@ -21,13 +21,12 @@ namespace drv_d3d11
 	class RenderState;
 	class ShaderSet;
 	class InputLayout;
-	class Driver;
-
-	Driver* get_drv();
 
 	class Driver : public IDriver
 	{
 	public:
+		static Driver* get();
+
 		bool init(void* hwnd, int display_width, int display_height) override;
 		void shutdown() override;
 		void resize(int display_width, int display_height) override;
