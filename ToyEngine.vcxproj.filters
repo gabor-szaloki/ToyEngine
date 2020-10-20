@@ -43,6 +43,9 @@
     <Filter Include="Source\Driver\D3D11">
       <UniqueIdentifier>{5f8778ce-ddd3-428f-bfc0-d03be7eb2568}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Renderer2">
+      <UniqueIdentifier>{f6db5caa-aca0-48fa-9082-a82a52e2936c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Common.cpp">
@@ -110,6 +113,9 @@
     </ClCompile>
     <ClCompile Include="Source\Driver\D3D11\InputLayout.cpp">
       <Filter>Source\Driver\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer2\WorldRenderer.cpp">
+      <Filter>Source\Renderer2</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1034,9 +1040,6 @@
     <ClInclude Include="Source\Driver\DriverSettings.h">
       <Filter>Source\Driver</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Driver\IShaderSet.h">
-      <Filter>Source\Driver</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Driver\D3D11\Driver.h">
       <Filter>Source\Driver\D3D11</Filter>
     </ClInclude>
@@ -1054,6 +1057,12 @@
     </ClInclude>
     <ClInclude Include="Source\Driver\D3D11\InputLayout.h">
       <Filter>Source\Driver\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer2\WorldRenderer.h">
+      <Filter>Source\Renderer2</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer2\ConstantBuffers.h">
+      <Filter>Source\Renderer2</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

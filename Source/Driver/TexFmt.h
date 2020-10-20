@@ -4,6 +4,7 @@
 
 enum class TexFmt
 {
+	INVALID                                 = -1, // This one is custom!
 	UNKNOWN	                                = 0,
 	R32G32B32A32_TYPELESS                   = 1,
 	R32G32B32A32_FLOAT                      = 2,

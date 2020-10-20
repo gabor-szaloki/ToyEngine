@@ -11,6 +11,7 @@ public:
 	virtual bool init(void* hwnd, int display_width, int display_height) = 0;
 	virtual void shutdown() = 0;
 	virtual void resize(int display_width, int display_height) = 0;
+	virtual void getDisplaySize(int& display_width, int& display_height) = 0;
 
 	virtual ITexture* createTexture(const TextureDesc& desc) = 0;
 	virtual IBuffer* createBuffer(const BufferDesc& desc) = 0;
@@ -28,9 +29,12 @@ public:
 	virtual void setRenderTarget(ResId* target_id, ResId* depth_id) = 0;
 	virtual void setRenderTargets(unsigned int num_targets, ResId** target_ids, ResId* depth_id) = 0;
 	virtual void setRenderState(ResId* id) = 0;
+	virtual void setView(float x, float y, float w, float h, float z_min, float z_max) = 0;
 
 	virtual void draw(unsigned int vertex_count, unsigned int start_vertex) = 0;
 	virtual void drawIndexed(unsigned int index_count, unsigned int start_index, int base_vertex) = 0;
+
+	virtual void present() = 0;
 
 	virtual const DriverSettings& getSettings() = 0;
 	virtual void setSettings(const DriverSettings& new_settings) = 0;

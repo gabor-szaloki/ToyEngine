@@ -1,5 +1,7 @@
 #include "Driver.h"
 
+#include <Common.h>
+
 #include <assert.h>
 
 #include "Texture.h"
@@ -10,12 +12,16 @@
 
 using namespace drv_d3d11;
 
-static std::unique_ptr<Driver> driver;
 static ResId nextAvailableResId = 0;
+
+void create_driver_d3d11()
+{
+	drv = new Driver();
+}
 
 Driver& drv_d3d11::Driver::get()
 {
-	return *driver.get();
+	return *(Driver*)drv;
 }
 
 bool Driver::init(void* hwnd, int display_width, int display_height)
@@ -26,33 +32,44 @@ bool Driver::init(void* hwnd, int display_width, int display_height)
 	scd.BufferCount = 1;
 	scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	scd.OutputWindow = hWnd;
+	scd.OutputWindow = (HWND)hwnd;
 	scd.SampleDesc.Count = 1;
 	scd.Windowed = true;
 
+	unsigned int creationFlags = 0;
+#if defined(_DEBUG)
+	creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+
 	hr = D3D11CreateDeviceAndSwapChain(
-		nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, nullptr, 0, D3D11_SDK_VERSION,
+		nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, creationFlags, nullptr, 0, D3D11_SDK_VERSION,
 		&scd, &swapchain, &device, nullptr, &context);
 	assert(SUCCEEDED(hr));
 
-	driver.reset(this);
+	initResolutionDependentResources(display_width, display_height);
 
 	return true;
 }
 
 void Driver::shutdown()
 {
+	releaseAllResources();
+
 	swapchain.Reset();
 	context.Reset();
 	device.Reset();
-
-	driver.reset();
 }
 
 void Driver::resize(int display_width, int display_height)
 {
 	closeResolutionDependentResources();
 	initResolutionDependentResources(display_width, display_height);
+}
+
+void drv_d3d11::Driver::getDisplaySize(int& display_width, int& display_height)
+{
+	display_width = displayWidth;
+	display_height = displayHeight;
 }
 
 ITexture* Driver::createTexture(const TextureDesc& desc)
@@ -260,6 +277,12 @@ void Driver::setRenderState(ResId* res_id)
 	context->OMSetDepthStencilState(renderStates[resId]->getDepthStencilState(), 0);
 }
 
+void drv_d3d11::Driver::setView(float x, float y, float w, float h, float z_min, float z_max)
+{
+	D3D11_VIEWPORT viewport{x, y, w, h, z_min, z_max};
+	context->RSSetViewports(1, &viewport);
+}
+
 void drv_d3d11::Driver::draw(unsigned int vertex_count, unsigned int start_vertex)
 {
 	context->Draw(vertex_count, start_vertex);
@@ -268,6 +291,11 @@ void drv_d3d11::Driver::draw(unsigned int vertex_count, unsigned int start_verte
 void drv_d3d11::Driver::drawIndexed(unsigned int index_count, unsigned int start_index, int base_vertex)
 {
 	context->DrawIndexed(index_count, start_index, base_vertex);
+}
+
+void drv_d3d11::Driver::present()
+{
+	swapchain->Present(settings.vsync ? 1 : 0, 0);
 }
 
 void Driver::setSettings(const DriverSettings& new_settings)
@@ -346,6 +374,9 @@ bool Driver::initResolutionDependentResources(int display_width, int display_hei
 {
 	HRESULT hr;
 
+	displayWidth = display_width;
+	displayHeight = display_height;
+
 	// Create backbuffer render target view
 	{
 		ID3D11Texture2D* backBufferTexture;
@@ -381,4 +412,30 @@ bool Driver::initResolutionDependentResources(int display_width, int display_hei
 void Driver::closeResolutionDependentResources()
 {
 	backbuffer.reset();
+}
+
+template<typename T>
+static void release_pool(std::map<ResId, T*>& pool)
+{
+	for (auto&& pair : pool)
+	{
+		assert(pair.second != nullptr);
+		delete pair.second;
+	}
+	pool.clear();
+}
+
+void drv_d3d11::Driver::releaseAllResources()
+{
+	// Textures and buffers should be destroyed by the user
+	assert(textures.size() == 0);
+	release_pool(textures);
+	assert(buffers.size() == 0);
+	release_pool(buffers);
+
+	// These are destroyed automatically
+	// TODO: implement a way for the user to destroy these as well to avoid bloating the driver with these
+	release_pool(renderStates);
+	release_pool(shaders);
+	release_pool(inputLayouts);
 }

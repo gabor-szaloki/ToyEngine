@@ -1,5 +1,7 @@
 #include "Common.h"
 
+IDriver* drv;
+
 void ThrowIfFailed(HRESULT hr, const char *errorMsg)
 {
 	if (FAILED(hr))

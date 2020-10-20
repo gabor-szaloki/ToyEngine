@@ -3,6 +3,7 @@
 
 #include "Common.h"
 #include "Renderer/Engine.h"
+#include "Renderer2/WorldRenderer.h"
 
 #define DEFAULT_WINDOWED_POS_X 100
 #define DEFAULT_WINDOWED_POS_Y 100
@@ -19,6 +20,12 @@ bool ctrl = false;
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
+//#define USE_NEW_RENDERER 1
+
+#if USE_NEW_RENDERER
+WorldRenderer* wr;
+#endif
+
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
 {
 	showCmd = nShowCmd;
@@ -34,19 +41,31 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	wc.lpszClassName = "WindowClass1";
 	RegisterClassEx(&wc);
 
-	RECT wr = { 0, 0, DEFAULT_WINDOWED_WIDTH, DEFAULT_WINDOWED_HEIGHT };
-	AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, false);
+	RECT windowRect = { 0, 0, DEFAULT_WINDOWED_WIDTH, DEFAULT_WINDOWED_HEIGHT };
+	AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, false);
 
 	HWND hWnd = CreateWindowEx(0,
 		"WindowClass1", // window class
 		"ToyEngine", // title
 		WS_OVERLAPPEDWINDOW, // window style
 		//WS_POPUP, // window style
-		DEFAULT_WINDOWED_POS_X, DEFAULT_WINDOWED_POS_Y, wr.right - wr.left, wr.bottom - wr.top, // x, y, w, h
+		DEFAULT_WINDOWED_POS_X, DEFAULT_WINDOWED_POS_Y, // x, y
+		windowRect.right - windowRect.left, windowRect.bottom - windowRect.top, // w, h
 		nullptr, nullptr, hInstance, nullptr);
 
+#if USE_NEW_RENDERER
+	create_driver_d3d11();
+	bool success = drv->init(hWnd, DEFAULT_WINDOWED_WIDTH, DEFAULT_WINDOWED_HEIGHT);
+	if (!success)
+	{
+		OutputDebugString("Driver initialization failed. Exiting.");
+		return 1;
+	}
+	wr = new WorldRenderer();
+#else
 	gEngine = new Engine();
 	gEngine->Init(hWnd, DEFAULT_WINDOWED_WIDTH, DEFAULT_WINDOWED_HEIGHT);
+#endif
 
 	ShowWindow(hWnd, nShowCmd);
 
@@ -62,8 +81,14 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 			if (msg.message == WM_QUIT)
 			{
+#if USE_NEW_RENDERER
+				delete wr;
+				drv->shutdown();
+				delete drv;
+#else
 				gEngine->Release();
 				delete gEngine;
+#endif
 				return (int)msg.wParam;
 			}
 		}
@@ -72,8 +97,14 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		float deltaTimeInSeconds = (float)(((double)std::chrono::duration_cast<std::chrono::microseconds>(currentTime - lastTime).count()) * 0.001 * 0.001);
 		lastTime = currentTime;
 
+#if USE_NEW_RENDERER
+		wr->update(deltaTimeInSeconds);
+		wr->render();
+		drv->present();
+#else
 		gEngine->Update(deltaTimeInSeconds);
 		gEngine->RenderFrame();
+#endif
 	}
 
 	return 0;
@@ -122,6 +153,29 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	case WM_KEYUP:
 		switch (wParam)
 		{
+#if USE_NEW_RENDERER
+		case 0x57: // W
+			wr->cameraInputState.isMovingForward = false;
+			break;
+		case 0x53: // S
+			wr->cameraInputState.isMovingBackward = false;
+			break;
+		case 0x44: // D
+			wr->cameraInputState.isMovingRight = false;
+			break;
+		case 0x41: // A
+			wr->cameraInputState.isMovingLeft = false;
+			break;
+		case 0x45: // E
+			wr->cameraInputState.isMovingUp = false;
+			break;
+		case 0x51: // Q
+			wr->cameraInputState.isMovingDown = false;
+			break;
+		case VK_SHIFT:
+			wr->cameraInputState.isSpeeding = false;
+			break;
+#else
 		case 0x57: // W
 			gEngine->cameraInputState.isMovingForward = false;
 			break;
@@ -143,6 +197,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		case VK_SHIFT:
 			gEngine->cameraInputState.isSpeeding = false;
 			break;
+#endif
 		case VK_CONTROL:
 			ctrl = false;
 			break;
@@ -151,6 +206,29 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	case WM_KEYDOWN:
 		switch (wParam)
 		{
+#if USE_NEW_RENDERER
+		case 0x57: // W
+			wr->cameraInputState.isMovingForward = true;
+			break;
+		case 0x53: // S
+			wr->cameraInputState.isMovingBackward = true;
+			break;
+		case 0x44: // D
+			wr->cameraInputState.isMovingRight = true;
+			break;
+		case 0x41: // A
+			wr->cameraInputState.isMovingLeft = true;
+			break;
+		case 0x45: // E
+			wr->cameraInputState.isMovingUp = true;
+			break;
+		case 0x51: // Q
+			wr->cameraInputState.isMovingDown = true;
+			break;
+		case VK_SHIFT:
+			wr->cameraInputState.isSpeeding = true;
+			break;
+#else
 		case 0x57: // W
 			if (ctrl)
 				gEngine->ToggleGUI();
@@ -170,11 +248,12 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			gEngine->cameraInputState.isMovingUp = true;
 			break;
 		case 0x51: // Q
-			gEngine->cameraInputState.isMovingDown= true;
+			gEngine->cameraInputState.isMovingDown = true;
 			break;
 		case VK_SHIFT:
 			gEngine->cameraInputState.isSpeeding = true;
 			break;
+#endif
 		case VK_CONTROL:
 			ctrl = true;
 			break;
@@ -219,8 +298,12 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		sprintf_s(str, "WM_SIZE, clientRect: x:%d, y:%d, w:%d, h:%d\n", clientRect.left, clientRect.top, w, h);
 		OutputDebugString(str);
 
+#if USE_NEW_RENDERER
+		drv->resize(w, h);
+		wr->onResize();
+#else
 		gEngine->Resize(hWnd, float(w), float(h));
-
+#endif
 		break;
 	}
 	}

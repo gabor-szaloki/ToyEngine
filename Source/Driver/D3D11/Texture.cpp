@@ -71,9 +71,9 @@ void Texture::createViews()
 	if (desc.bindFlags & BIND_SHADER_RESOURCE)
 	{
 		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-		srvDesc.Format = (DXGI_FORMAT)desc.format;
+		srvDesc.Format = (DXGI_FORMAT)(desc.srvFormatOverride != TexFmt::INVALID ? desc.srvFormatOverride : desc.format);
 		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-		srvDesc.Texture2D.MipLevels = -1;
+		srvDesc.Texture2D.MipLevels = desc.mips == 0 ? -1 : desc.mips;
 		srvDesc.Texture2D.MostDetailedMip = 0;
 
 		hr = Driver::get().getDevice().CreateShaderResourceView(resource.Get(), &srvDesc, &srv);
@@ -82,16 +82,16 @@ void Texture::createViews()
 	if (desc.bindFlags & BIND_UNORDERED_ACCESS)
 	{
 		D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
-		uavDesc.Format = (DXGI_FORMAT)desc.format;
+		uavDesc.Format = (DXGI_FORMAT)(desc.uavFormatOverride != TexFmt::INVALID ? desc.uavFormatOverride : desc.format);
 		uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
 		uavDesc.Texture2D.MipSlice = 0;
-		Driver::get().getDevice().CreateUnorderedAccessView(resource.Get(), &uavDesc, &uav);
+		hr = Driver::get().getDevice().CreateUnorderedAccessView(resource.Get(), &uavDesc, &uav);
 		assert(SUCCEEDED(hr));
 	}
 	if (desc.bindFlags & BIND_RENDER_TARGET)
 	{
 		D3D11_RENDER_TARGET_VIEW_DESC rtvDesc{};
-		rtvDesc.Format = (DXGI_FORMAT)desc.format;
+		rtvDesc.Format = (DXGI_FORMAT)(desc.rtvFormatOverride != TexFmt::INVALID ? desc.rtvFormatOverride : desc.format);
 		rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 		rtvDesc.Texture2D.MipSlice = 0;
 		hr = Driver::get().getDevice().CreateRenderTargetView(resource.Get(), &rtvDesc, &rtv);
@@ -100,7 +100,7 @@ void Texture::createViews()
 	if (desc.bindFlags & BIND_DEPTH_STENCIL)
 	{
 		D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
-		dsvDesc.Format = (DXGI_FORMAT)desc.format;
+		dsvDesc.Format = (DXGI_FORMAT)(desc.dsvFormatOverride != TexFmt::INVALID ? desc.dsvFormatOverride : desc.format);
 		dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 		dsvDesc.Texture2D.MipSlice = 0;
 		hr = Driver::get().getDevice().CreateDepthStencilView(resource.Get(), &dsvDesc, &dsv);
@@ -114,8 +114,9 @@ void Texture::createSampler()
 		return;
 
 	const unsigned int driverAnisotropy = Driver::get().getSettings().textureFilteringAnisotropy;
+	D3D11_FILTER defaultFilter = driverAnisotropy > 0 ? D3D11_FILTER_ANISOTROPIC : D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 	D3D11_SAMPLER_DESC sd{};
-	sd.Filter = driverAnisotropy > 0 ? D3D11_FILTER_ANISOTROPIC : D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	sd.Filter = desc.samplerDesc.filter == FILTER_DEFAULT ? defaultFilter : (D3D11_FILTER)desc.samplerDesc.filter;
 	sd.AddressU = (D3D11_TEXTURE_ADDRESS_MODE)desc.samplerDesc.addressU;
 	sd.AddressV = (D3D11_TEXTURE_ADDRESS_MODE)desc.samplerDesc.addressV;
 	sd.AddressW = (D3D11_TEXTURE_ADDRESS_MODE)desc.samplerDesc.addressW;
@@ -124,6 +125,8 @@ void Texture::createSampler()
 	sd.ComparisonFunc = (D3D11_COMPARISON_FUNC)desc.samplerDesc.comparisonFunc;
 	sd.MinLOD = desc.samplerDesc.minLOD;
 	sd.MaxLOD = desc.samplerDesc.maxLOD;
+	for (int i = 0; i < 4; i++)
+		sd.BorderColor[i] = desc.samplerDesc.borderColor[i];
 
 	HRESULT hr = Driver::get().getDevice().CreateSamplerState(&sd, &sampler);
 	assert(SUCCEEDED(hr));

@@ -30,6 +30,7 @@ namespace drv_d3d11
 		bool init(void* hwnd, int display_width, int display_height) override;
 		void shutdown() override;
 		void resize(int display_width, int display_height) override;
+		void getDisplaySize(int& display_width, int& display_height) override;
 
 		ITexture* createTexture(const TextureDesc& desc) override;
 		IBuffer* createBuffer(const BufferDesc& desc) override;
@@ -47,9 +48,12 @@ namespace drv_d3d11
 		void setRenderTarget(ResId* target_id, ResId* depth_id) override;
 		void setRenderTargets(unsigned int num_targets, ResId** target_ids, ResId* depth_id) override;
 		void setRenderState(ResId* res_id) override;
+		void setView(float x, float y, float w, float h, float z_min, float z_max) override;
 
 		void draw(unsigned int vertex_count, unsigned int start_vertex) override;
 		void drawIndexed(unsigned int index_count, unsigned int start_index, int base_vertex) override;
+
+		void present() override;
 
 		const DriverSettings& getSettings() override { return settings; };
 		void setSettings(const DriverSettings& new_settings) override;
@@ -71,7 +75,9 @@ namespace drv_d3d11
 	private:
 		bool initResolutionDependentResources(int display_width, int display_height);
 		void closeResolutionDependentResources();
+		void releaseAllResources();
 
+		int displayWidth = -1, displayHeight = -1;
 		DriverSettings settings;
 
 		HWND hWnd;
