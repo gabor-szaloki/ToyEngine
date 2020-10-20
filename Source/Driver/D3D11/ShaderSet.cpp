@@ -54,7 +54,7 @@ ShaderSet::ShaderSet(const ShaderSetDesc& desc_) : desc(desc_)
 			desc.sourceFilePath, desc.shaderFuncNames[(int)ShaderStage::VS], "vs_5_0", &vsBlob,
 			[&](const void* byte_code, SIZE_T byte_code_length, ID3D11VertexShader** out_shader)
 			{
-				return Driver::get()->getDevice()->CreateVertexShader(
+				return Driver::get().getDevice().CreateVertexShader(
 					byte_code, byte_code_length, nullptr, out_shader);
 			}));
 	}
@@ -64,7 +64,7 @@ ShaderSet::ShaderSet(const ShaderSetDesc& desc_) : desc(desc_)
 			desc.sourceFilePath, desc.shaderFuncNames[(int)ShaderStage::PS], "ps_5_0", nullptr,
 			[&](const void* byte_code, SIZE_T byte_code_length, ID3D11PixelShader** out_shader)
 			{
-				return Driver::get()->getDevice()->CreatePixelShader(
+				return Driver::get().getDevice().CreatePixelShader(
 					byte_code, byte_code_length, nullptr, out_shader);
 			}));
 	}
@@ -74,7 +74,7 @@ ShaderSet::ShaderSet(const ShaderSetDesc& desc_) : desc(desc_)
 			desc.sourceFilePath, desc.shaderFuncNames[(int)ShaderStage::GS], "gs_5_0", nullptr,
 			[&](const void* byte_code, SIZE_T byte_code_length, ID3D11GeometryShader** out_shader)
 			{
-				return Driver::get()->getDevice()->CreateGeometryShader(
+				return Driver::get().getDevice().CreateGeometryShader(
 					byte_code, byte_code_length, nullptr, out_shader);
 			}));
 	}
@@ -84,7 +84,7 @@ ShaderSet::ShaderSet(const ShaderSetDesc& desc_) : desc(desc_)
 			desc.sourceFilePath, desc.shaderFuncNames[(int)ShaderStage::HS], "hs_5_0", nullptr,
 			[&](const void* byte_code, SIZE_T byte_code_length, ID3D11HullShader** out_shader)
 			{
-				return Driver::get()->getDevice()->CreateHullShader(
+				return Driver::get().getDevice().CreateHullShader(
 					byte_code, byte_code_length, nullptr, out_shader);
 			}));
 	}
@@ -94,24 +94,24 @@ ShaderSet::ShaderSet(const ShaderSetDesc& desc_) : desc(desc_)
 			desc.sourceFilePath, desc.shaderFuncNames[(int)ShaderStage::DS], "ds_5_0", nullptr,
 			[&](const void* byte_code, SIZE_T byte_code_length, ID3D11DomainShader** out_shader)
 			{
-				return Driver::get()->getDevice()->CreateDomainShader(
+				return Driver::get().getDevice().CreateDomainShader(
 					byte_code, byte_code_length, nullptr, out_shader);
 			}));
 	}
 
-	Driver::get()->registerShaderSet(this);
+	Driver::get().registerShaderSet(this);
 }
 
 ShaderSet::~ShaderSet()
 {
-	Driver::get()->unregisterShaderSet(id);
+	Driver::get().unregisterShaderSet(id);
 }
 
 void ShaderSet::set()
 {
-	Driver::get()->getContext()->VSSetShader(vs.Get(), nullptr, 0);
-	Driver::get()->getContext()->PSSetShader(ps.Get(), nullptr, 0);
-	Driver::get()->getContext()->GSSetShader(gs.Get(), nullptr, 0);
-	Driver::get()->getContext()->HSSetShader(hs.Get(), nullptr, 0);
-	Driver::get()->getContext()->DSSetShader(ds.Get(), nullptr, 0);
+	Driver::get().getContext().VSSetShader(vs.Get(), nullptr, 0);
+	Driver::get().getContext().PSSetShader(ps.Get(), nullptr, 0);
+	Driver::get().getContext().GSSetShader(gs.Get(), nullptr, 0);
+	Driver::get().getContext().HSSetShader(hs.Get(), nullptr, 0);
+	Driver::get().getContext().DSSetShader(ds.Get(), nullptr, 0);
 }

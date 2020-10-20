@@ -25,7 +25,7 @@ namespace drv_d3d11
 	class Driver : public IDriver
 	{
 	public:
-		static Driver* get();
+		static Driver& get();
 
 		bool init(void* hwnd, int display_width, int display_height) override;
 		void shutdown() override;
@@ -54,8 +54,8 @@ namespace drv_d3d11
 		const DriverSettings& getSettings() override { return settings; };
 		void setSettings(const DriverSettings& new_settings) override;
 
-		ID3D11Device* getDevice() { return device.Get(); }
-		ID3D11DeviceContext* getContext() { return context.Get(); }
+		ID3D11Device& getDevice() { return *device.Get(); }
+		ID3D11DeviceContext& getContext() { return *context.Get(); }
 
 		ResId registerTexture(Texture* tex);
 		void unregisterTexture(ResId id);

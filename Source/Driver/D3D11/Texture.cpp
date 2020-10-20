@@ -20,19 +20,19 @@ Texture::Texture(const TextureDesc& desc_, ID3D11Texture2D* tex) : desc(desc_), 
 		td.BindFlags = desc.bindFlags;
 		td.CPUAccessFlags = desc.cpuAccessFlags;
 		td.MiscFlags = desc.miscFlags;
-		HRESULT hr = Driver::get()->getDevice()->CreateTexture2D(&td, nullptr, &resource);
+		HRESULT hr = Driver::get().getDevice().CreateTexture2D(&td, nullptr, &resource);
 		assert(SUCCEEDED(hr));
 	}
 
 	createViews();
 	createSampler();
 
-	id = Driver::get()->registerTexture(this);
+	id = Driver::get().registerTexture(this);
 }
 
 Texture::~Texture()
 {
-	Driver::get()->unregisterTexture(id);
+	Driver::get().unregisterTexture(id);
 }
 
 void Texture::updateData(unsigned int dst_subresource, const IntBox* dst_box, const void* src_data)
@@ -48,11 +48,11 @@ void Texture::updateData(unsigned int dst_subresource, const IntBox* dst_box, co
 		dstBox.right  = dst_box->right;  assert(dst_box->right >= 0);
 		dstBox.bottom = dst_box->bottom; assert(dst_box->bottom >= 0);
 		dstBox.back   = dst_box->back;   assert(dst_box->back >= 0);
-		Driver::get()->getContext()->UpdateSubresource(resource.Get(), dst_subresource, &dstBox, src_data, rowPitch, 0);
+		Driver::get().getContext().UpdateSubresource(resource.Get(), dst_subresource, &dstBox, src_data, rowPitch, 0);
 	}
 	else
 	{
-		Driver::get()->getContext()->UpdateSubresource(resource.Get(), dst_subresource, nullptr, src_data, rowPitch, 0);
+		Driver::get().getContext().UpdateSubresource(resource.Get(), dst_subresource, nullptr, src_data, rowPitch, 0);
 	}
 }
 
@@ -61,7 +61,7 @@ void Texture::generateMips()
 	assert(desc.miscFlags & RESOURCE_MISC_GENERATE_MIPS);
 	assert(desc.bindFlags & BIND_SHADER_RESOURCE);
 	assert(srv != nullptr);
-	Driver::get()->getContext()->GenerateMips(srv.Get());
+	Driver::get().getContext().GenerateMips(srv.Get());
 }
 
 void Texture::createViews()
@@ -76,7 +76,7 @@ void Texture::createViews()
 		srvDesc.Texture2D.MipLevels = -1;
 		srvDesc.Texture2D.MostDetailedMip = 0;
 
-		hr = Driver::get()->getDevice()->CreateShaderResourceView(resource.Get(), &srvDesc, &srv);
+		hr = Driver::get().getDevice().CreateShaderResourceView(resource.Get(), &srvDesc, &srv);
 		assert(SUCCEEDED(hr));
 	}
 	if (desc.bindFlags & BIND_UNORDERED_ACCESS)
@@ -85,7 +85,7 @@ void Texture::createViews()
 		uavDesc.Format = (DXGI_FORMAT)desc.format;
 		uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
 		uavDesc.Texture2D.MipSlice = 0;
-		Driver::get()->getDevice()->CreateUnorderedAccessView(resource.Get(), &uavDesc, &uav);
+		Driver::get().getDevice().CreateUnorderedAccessView(resource.Get(), &uavDesc, &uav);
 		assert(SUCCEEDED(hr));
 	}
 	if (desc.bindFlags & BIND_RENDER_TARGET)
@@ -94,7 +94,7 @@ void Texture::createViews()
 		rtvDesc.Format = (DXGI_FORMAT)desc.format;
 		rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 		rtvDesc.Texture2D.MipSlice = 0;
-		hr = Driver::get()->getDevice()->CreateRenderTargetView(resource.Get(), &rtvDesc, &rtv);
+		hr = Driver::get().getDevice().CreateRenderTargetView(resource.Get(), &rtvDesc, &rtv);
 		assert(SUCCEEDED(hr));
 	}
 	if (desc.bindFlags & BIND_DEPTH_STENCIL)
@@ -103,7 +103,7 @@ void Texture::createViews()
 		dsvDesc.Format = (DXGI_FORMAT)desc.format;
 		dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 		dsvDesc.Texture2D.MipSlice = 0;
-		hr = Driver::get()->getDevice()->CreateDepthStencilView(resource.Get(), &dsvDesc, &dsv);
+		hr = Driver::get().getDevice().CreateDepthStencilView(resource.Get(), &dsvDesc, &dsv);
 		assert(SUCCEEDED(hr));
 	}
 }
@@ -113,7 +113,7 @@ void Texture::createSampler()
 	if (!desc.hasSampler)
 		return;
 
-	const unsigned int driverAnisotropy = Driver::get()->getSettings().textureFilteringAnisotropy;
+	const unsigned int driverAnisotropy = Driver::get().getSettings().textureFilteringAnisotropy;
 	D3D11_SAMPLER_DESC sd{};
 	sd.Filter = driverAnisotropy > 0 ? D3D11_FILTER_ANISOTROPIC : D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 	sd.AddressU = (D3D11_TEXTURE_ADDRESS_MODE)desc.samplerDesc.addressU;
@@ -125,6 +125,6 @@ void Texture::createSampler()
 	sd.MinLOD = desc.samplerDesc.minLOD;
 	sd.MaxLOD = desc.samplerDesc.maxLOD;
 
-	HRESULT hr = Driver::get()->getDevice()->CreateSamplerState(&sd, &sampler);
+	HRESULT hr = Driver::get().getDevice().CreateSamplerState(&sd, &sampler);
 	assert(SUCCEEDED(hr));
 }
