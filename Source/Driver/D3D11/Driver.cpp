@@ -1,19 +1,21 @@
-#include "D3D11Driver.h"
+#include "Driver.h"
 
 #include <assert.h>
 
-#include "D3D11Texture.h"
-#include "D3D11Buffer.h"
-#include "D3D11RenderState.h"
-#include "D3D11ShaderSet.h"
-#include "D3D11InputLayout.h"
+#include "Texture.h"
+#include "Buffer.h"
+#include "RenderState.h"
+#include "ShaderSet.h"
+#include "InputLayout.h"
 
-static std::unique_ptr<D3D11Driver> driver;
-D3D11Driver* get_drv() { return driver.get(); };
+using namespace drv_d3d11;
+
+static std::unique_ptr<Driver> driver;
+Driver* drv_d3d11::get_drv() { return driver.get(); };
 
 static ResId nextAvailableResId = 0;
 
-bool D3D11Driver::init(void* hwnd, int display_width, int display_height)
+bool Driver::init(void* hwnd, int display_width, int display_height)
 {
 	HRESULT hr;
 
@@ -35,7 +37,7 @@ bool D3D11Driver::init(void* hwnd, int display_width, int display_height)
 	return true;
 }
 
-void D3D11Driver::shutdown()
+void Driver::shutdown()
 {
 	swapchain.Reset();
 	context.Reset();
@@ -44,45 +46,45 @@ void D3D11Driver::shutdown()
 	driver.reset();
 }
 
-void D3D11Driver::resize(int display_width, int display_height)
+void Driver::resize(int display_width, int display_height)
 {
 	closeResolutionDependentResources();
 	initResolutionDependentResources(display_width, display_height);
 }
 
-ITexture* D3D11Driver::createTexture(const TextureDesc& desc)
+ITexture* Driver::createTexture(const TextureDesc& desc)
 {
-	return new D3D11Texture(desc);
+	return new Texture(desc);
 }
 
-IBuffer* D3D11Driver::createBuffer(const BufferDesc& desc)
+IBuffer* Driver::createBuffer(const BufferDesc& desc)
 {
-	return new D3D11Buffer(desc);
+	return new Buffer(desc);
 }
 
-ResId D3D11Driver::createRenderState(const RenderStateDesc& desc)
+ResId Driver::createRenderState(const RenderStateDesc& desc)
 {
-	D3D11RenderState* rs = new D3D11RenderState(desc);
+	RenderState* rs = new RenderState(desc);
 	return rs->getId();
 }
 
-ResId D3D11Driver::createShaderSet(const ShaderSetDesc& desc)
+ResId Driver::createShaderSet(const ShaderSetDesc& desc)
 {
-	D3D11ShaderSet* shaderSet = new D3D11ShaderSet(desc);
+	ShaderSet* shaderSet = new ShaderSet(desc);
 	return shaderSet->getId();
 }
 
-ResId D3D11Driver::createInputLayout(const InputLayoutElementDesc* descs, unsigned int num_descs, ResId shader_set)
+ResId Driver::createInputLayout(const InputLayoutElementDesc* descs, unsigned int num_descs, ResId shader_set)
 {
 	assert(descs != nullptr);
 	assert(num_descs > 0);
 	assert(shaders.find(shader_set) != shaders.end());
-	D3D11ShaderSet* shaderSet = shaders[shader_set];
-	D3D11InputLayout* inputLayout = new D3D11InputLayout(descs, num_descs, *shaderSet);
+	ShaderSet* shaderSet = shaders[shader_set];
+	InputLayout* inputLayout = new InputLayout(descs, num_descs, *shaderSet);
 	return inputLayout->getId();
 }
 
-void D3D11Driver::setIndexBuffer(ResId* res_id)
+void Driver::setIndexBuffer(ResId* res_id)
 {
 	assert(res_id == nullptr || buffers.find(*res_id) != buffers.end());
 	assert(res_id == nullptr || buffers[*res_id]->getDesc().bindFlags & BIND_INDEX_BUFFER);
@@ -91,7 +93,7 @@ void D3D11Driver::setIndexBuffer(ResId* res_id)
 	context->IASetIndexBuffer(res, DXGI_FORMAT_R16_UINT, 0);
 }
 
-void D3D11Driver::setVertexBuffer(ResId* res_id)
+void Driver::setVertexBuffer(ResId* res_id)
 {
 	assert(res_id == nullptr || buffers.find(*res_id) != buffers.end());
 	assert(res_id == nullptr || buffers[*res_id]->getDesc().bindFlags & BIND_VERTEX_BUFFER);
@@ -101,7 +103,7 @@ void D3D11Driver::setVertexBuffer(ResId* res_id)
 	context->IASetVertexBuffers(0, 1, &res, &stride, nullptr);
 }
 
-void D3D11Driver::setConstantBuffer(ShaderStage stage, unsigned int slot, ResId* res_id)
+void Driver::setConstantBuffer(ShaderStage stage, unsigned int slot, ResId* res_id)
 {
 	assert(res_id == nullptr || buffers.find(*res_id) != buffers.end());
 	assert(res_id == nullptr || buffers[*res_id]->getDesc().bindFlags & BIND_CONSTANT_BUFFER);
@@ -133,7 +135,7 @@ void D3D11Driver::setConstantBuffer(ShaderStage stage, unsigned int slot, ResId*
 	}
 }
 
-void D3D11Driver::setBuffer(ShaderStage stage, unsigned int slot, ResId* res_id)
+void Driver::setBuffer(ShaderStage stage, unsigned int slot, ResId* res_id)
 {
 	assert(res_id == nullptr || buffers.find(*res_id) != buffers.end());
 	assert(res_id == nullptr || buffers[*res_id]->getDesc().bindFlags & BIND_SHADER_RESOURCE);
@@ -165,7 +167,7 @@ void D3D11Driver::setBuffer(ShaderStage stage, unsigned int slot, ResId* res_id)
 	}
 }
 
-void D3D11Driver::setRwBuffer(unsigned int slot, ResId* res_id)
+void Driver::setRwBuffer(unsigned int slot, ResId* res_id)
 {
 	assert(res_id == nullptr || buffers.find(*res_id) != buffers.end());
 	assert(res_id == nullptr || buffers[*res_id]->getDesc().bindFlags & BIND_UNORDERED_ACCESS);
@@ -174,7 +176,7 @@ void D3D11Driver::setRwBuffer(unsigned int slot, ResId* res_id)
 	context->CSSetUnorderedAccessViews(slot, 1, &uav, nullptr);
 }
 
-void D3D11Driver::setTexture(ShaderStage stage, unsigned int slot, ResId* res_id)
+void Driver::setTexture(ShaderStage stage, unsigned int slot, ResId* res_id)
 {
 	assert(res_id == nullptr || textures.find(*res_id) != textures.end());
 	assert(res_id == nullptr || textures[*res_id]->getDesc().bindFlags & BIND_SHADER_RESOURCE);
@@ -206,7 +208,7 @@ void D3D11Driver::setTexture(ShaderStage stage, unsigned int slot, ResId* res_id
 	}
 }
 
-void D3D11Driver::setRwTexture(unsigned int slot, ResId* res_id)
+void Driver::setRwTexture(unsigned int slot, ResId* res_id)
 {
 	assert(res_id == nullptr || textures.find(*res_id) != textures.end());
 	assert(res_id == nullptr || textures[*res_id]->getDesc().bindFlags & BIND_UNORDERED_ACCESS);
@@ -215,7 +217,7 @@ void D3D11Driver::setRwTexture(unsigned int slot, ResId* res_id)
 	context->CSSetUnorderedAccessViews(slot, 1, &uav, nullptr);
 }
 
-void D3D11Driver::setRenderTarget(ResId* target_id, ResId* depth_id)
+void Driver::setRenderTarget(ResId* target_id, ResId* depth_id)
 {
 	assert(target_id == nullptr || textures.find(*target_id) != textures.end());
 	assert(target_id == nullptr || textures[*target_id]->getDesc().bindFlags & BIND_RENDER_TARGET);
@@ -227,7 +229,7 @@ void D3D11Driver::setRenderTarget(ResId* target_id, ResId* depth_id)
 	context->OMSetRenderTargets(1, &rtv, dsv);
 }
 
-void D3D11Driver::setRenderTargets(unsigned int num_targets, ResId** target_ids, ResId* depth_id)
+void Driver::setRenderTargets(unsigned int num_targets, ResId** target_ids, ResId* depth_id)
 {
 	assert(num_targets <= D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT);
 	assert(depth_id == nullptr || textures.find(*depth_id) != textures.end());
@@ -246,7 +248,7 @@ void D3D11Driver::setRenderTargets(unsigned int num_targets, ResId** target_ids,
 	context->OMSetRenderTargets(num_targets, rtvs, dsv);
 }
 
-void D3D11Driver::setRenderState(ResId* res_id)
+void Driver::setRenderState(ResId* res_id)
 {
 	assert(res_id == nullptr || renderStates.find(*res_id) != renderStates.end());
 	
@@ -255,7 +257,7 @@ void D3D11Driver::setRenderState(ResId* res_id)
 	context->OMSetDepthStencilState(renderStates[resId]->getDepthStencilState(), 0);
 }
 
-void D3D11Driver::setSettings(const DriverSettings& new_settings)
+void Driver::setSettings(const DriverSettings& new_settings)
 {
 	// TODO: handle each change in settings properly
 	settings = new_settings;
@@ -277,57 +279,57 @@ static void erase_resource(ResId id, std::map<ResId, T*>& from)
 	assert(numElementsErased > 0);
 }
 
-ResId D3D11Driver::registerTexture(D3D11Texture* tex)
+ResId Driver::registerTexture(Texture* tex)
 {
 	return emplace_resource(tex, textures);
 }
 
-void D3D11Driver::unregisterTexture(ResId id)
+void Driver::unregisterTexture(ResId id)
 {
 	erase_resource(id, textures);
 }
 
-ResId D3D11Driver::registerBuffer(D3D11Buffer* buf)
+ResId Driver::registerBuffer(Buffer* buf)
 {
 	return emplace_resource(buf, buffers);
 }
 
-void D3D11Driver::unregisterBuffer(ResId id)
+void Driver::unregisterBuffer(ResId id)
 {
 	erase_resource(id, buffers);
 }
 
-ResId D3D11Driver::registerRenderState(D3D11RenderState* rs)
+ResId Driver::registerRenderState(RenderState* rs)
 {
 	return emplace_resource(rs, renderStates);
 }
 
-void D3D11Driver::unregisterRenderState(ResId id)
+void Driver::unregisterRenderState(ResId id)
 {
 	erase_resource(id, renderStates);
 }
 
-ResId D3D11Driver::registerShaderSet(D3D11ShaderSet* shader_set)
+ResId Driver::registerShaderSet(ShaderSet* shader_set)
 {
 	return emplace_resource(shader_set, shaders);
 }
 
-void D3D11Driver::unregisterShaderSet(ResId id)
+void Driver::unregisterShaderSet(ResId id)
 {
 	erase_resource(id, shaders);
 }
 
-ResId D3D11Driver::registerInputLayout(D3D11InputLayout* input_layout)
+ResId Driver::registerInputLayout(InputLayout* input_layout)
 {
 	return emplace_resource(input_layout, inputLayouts);
 }
 
-void D3D11Driver::unregisterInputLayout(ResId id)
+void Driver::unregisterInputLayout(ResId id)
 {
 	erase_resource(id, inputLayouts);
 }
 
-bool D3D11Driver::initResolutionDependentResources(int display_width, int display_height)
+bool Driver::initResolutionDependentResources(int display_width, int display_height)
 {
 	HRESULT hr;
 
@@ -351,7 +353,7 @@ bool D3D11Driver::initResolutionDependentResources(int display_width, int displa
 		desc.cpuAccessFlags = td.CPUAccessFlags;
 		desc.miscFlags = td.MiscFlags;
 		desc.hasSampler = false;
-		backbuffer = std::make_unique<D3D11Texture>(desc, backBufferTexture);
+		backbuffer = std::make_unique<Texture>(desc, backBufferTexture);
 	}
 
 	// Create default render state
@@ -363,7 +365,7 @@ bool D3D11Driver::initResolutionDependentResources(int display_width, int displa
 	return true;
 }
 
-void D3D11Driver::closeResolutionDependentResources()
+void Driver::closeResolutionDependentResources()
 {
 	backbuffer.reset();
 }

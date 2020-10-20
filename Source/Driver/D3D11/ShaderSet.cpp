@@ -1,7 +1,9 @@
-#include "D3D11ShaderSet.h"
+#include "ShaderSet.h"
 
 #include <assert.h>
 #include <functional>
+
+using namespace drv_d3d11;
 
 static wchar_t* utf8_to_wcs(const char* utf8_str, wchar_t* wcs_buf, int wcs_buf_len) // TODO: move to some kind of utils
 {
@@ -44,7 +46,7 @@ static T* compile_and_create_shader(
 	return shader;
 }
 
-D3D11ShaderSet::D3D11ShaderSet(const ShaderSetDesc& desc_) : desc(desc_)
+ShaderSet::ShaderSet(const ShaderSetDesc& desc_) : desc(desc_)
 {
 	if (desc.shaderFuncNames[(int)ShaderStage::VS] != nullptr)
 	{
@@ -100,12 +102,12 @@ D3D11ShaderSet::D3D11ShaderSet(const ShaderSetDesc& desc_) : desc(desc_)
 	get_drv()->registerShaderSet(this);
 }
 
-D3D11ShaderSet::~D3D11ShaderSet()
+ShaderSet::~ShaderSet()
 {
 	get_drv()->unregisterShaderSet(id);
 }
 
-void D3D11ShaderSet::set()
+void ShaderSet::set()
 {
 	get_drv()->getContext()->VSSetShader(vs.Get(), nullptr, 0);
 	get_drv()->getContext()->PSSetShader(ps.Get(), nullptr, 0);

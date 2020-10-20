@@ -1,8 +1,10 @@
-#include "D3D11Texture.h"
+#include "Texture.h"
 
 #include <assert.h>
 
-D3D11Texture::D3D11Texture(const TextureDesc& desc_, ID3D11Texture2D* tex) : desc(desc_), resource(tex)
+using namespace drv_d3d11;
+
+Texture::Texture(const TextureDesc& desc_, ID3D11Texture2D* tex) : desc(desc_), resource(tex)
 {
 	if (resource == nullptr)
 	{
@@ -28,12 +30,12 @@ D3D11Texture::D3D11Texture(const TextureDesc& desc_, ID3D11Texture2D* tex) : des
 	id = get_drv()->registerTexture(this);
 }
 
-D3D11Texture::~D3D11Texture()
+Texture::~Texture()
 {
 	get_drv()->unregisterTexture(id);
 }
 
-void D3D11Texture::updateData(unsigned int dst_subresource, const IntBox* dst_box, const void* src_data)
+void Texture::updateData(unsigned int dst_subresource, const IntBox* dst_box, const void* src_data)
 {
 	unsigned int rowPitch = desc.width * get_byte_size_for_texfmt(desc.format);
 
@@ -54,7 +56,7 @@ void D3D11Texture::updateData(unsigned int dst_subresource, const IntBox* dst_bo
 	}
 }
 
-void D3D11Texture::generateMips()
+void Texture::generateMips()
 {
 	assert(desc.miscFlags & RESOURCE_MISC_GENERATE_MIPS);
 	assert(desc.bindFlags & BIND_SHADER_RESOURCE);
@@ -62,7 +64,7 @@ void D3D11Texture::generateMips()
 	get_drv()->getContext()->GenerateMips(srv.Get());
 }
 
-void D3D11Texture::createViews()
+void Texture::createViews()
 {
 	HRESULT hr;
 
@@ -106,7 +108,7 @@ void D3D11Texture::createViews()
 	}
 }
 
-void D3D11Texture::createSampler()
+void Texture::createSampler()
 {
 	if (!desc.hasSampler)
 		return;

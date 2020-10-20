@@ -1,8 +1,10 @@
-#include "D3D11RenderState.h"
+#include "RenderState.h"
 
 #include <assert.h>
 
-D3D11RenderState::D3D11RenderState(const RenderStateDesc& desc_) : desc(desc_)
+using namespace drv_d3d11;
+
+RenderState::RenderState(const RenderStateDesc& desc_) : desc(desc_)
 {
 	HRESULT hr;
 
@@ -25,7 +27,7 @@ D3D11RenderState::D3D11RenderState(const RenderStateDesc& desc_) : desc(desc_)
 	id = get_drv()->registerRenderState(this);
 }
 
-D3D11RenderState::~D3D11RenderState()
+RenderState::~RenderState()
 {
 	get_drv()->unregisterRenderState(id);
 }

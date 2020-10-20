@@ -1,8 +1,10 @@
-#include "D3D11Buffer.h"
+#include "Buffer.h"
 
 #include <assert.h>
 
-D3D11Buffer::D3D11Buffer(const BufferDesc& desc_) : desc(desc_)
+using namespace drv_d3d11;
+
+Buffer::Buffer(const BufferDesc& desc_) : desc(desc_)
 {
 	HRESULT hr;
 
@@ -21,18 +23,18 @@ D3D11Buffer::D3D11Buffer(const BufferDesc& desc_) : desc(desc_)
 	id = get_drv()->registerBuffer(this);
 }
 
-D3D11Buffer::~D3D11Buffer()
+Buffer::~Buffer()
 {
 	get_drv()->unregisterBuffer(id);
 }
 
-void D3D11Buffer::updateData(const void* src_data)
+void Buffer::updateData(const void* src_data)
 {
 	get_drv()->getContext()->UpdateSubresource(resource.Get(), 0, nullptr, src_data, 0, 0);
 	// TODO: use Map for dynamic buffers
 }
 
-void D3D11Buffer::createViews()
+void Buffer::createViews()
 {
 	if (desc.bindFlags & BIND_SHADER_RESOURCE)
 	{

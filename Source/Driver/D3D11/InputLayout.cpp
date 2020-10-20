@@ -1,8 +1,10 @@
-#include "D3D11InputLayout.h"
-#include "D3D11ShaderSet.h"
+#include "InputLayout.h"
+#include "ShaderSet.h"
 
 #include <assert.h>
 #include <vector>
+
+using namespace drv_d3d11;
 
 static const char* get_semantic_string(VertexInputSemantic semantic)
 {
@@ -24,7 +26,7 @@ static const char* get_semantic_string(VertexInputSemantic semantic)
 	}
 }
 
-D3D11InputLayout::D3D11InputLayout(const InputLayoutElementDesc* descs, unsigned int num_descs, const D3D11ShaderSet& shader_set)
+InputLayout::InputLayout(const InputLayoutElementDesc* descs, unsigned int num_descs, const ShaderSet& shader_set)
 {
 	std::vector<D3D11_INPUT_ELEMENT_DESC> ieds;
 	ieds.resize(num_descs);
@@ -52,7 +54,7 @@ D3D11InputLayout::D3D11InputLayout(const InputLayoutElementDesc* descs, unsigned
 	id = get_drv()->registerInputLayout(this);
 }
 
-D3D11InputLayout::~D3D11InputLayout()
+InputLayout::~InputLayout()
 {
 	get_drv()->unregisterInputLayout(id);
 }
