@@ -48,6 +48,9 @@ namespace drv_d3d11
 		void setRenderTargets(unsigned int num_targets, ResId** target_ids, ResId* depth_id) override;
 		void setRenderState(ResId* res_id) override;
 
+		void draw(unsigned int vertex_count, unsigned int start_vertex) override;
+		void drawIndexed(unsigned int index_count, unsigned int start_index, int base_vertex) override;
+
 		const DriverSettings& getSettings() override { return settings; };
 		void setSettings(const DriverSettings& new_settings) override;
 

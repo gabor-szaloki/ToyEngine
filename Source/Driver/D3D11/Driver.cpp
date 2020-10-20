@@ -260,6 +260,16 @@ void Driver::setRenderState(ResId* res_id)
 	context->OMSetDepthStencilState(renderStates[resId]->getDepthStencilState(), 0);
 }
 
+void drv_d3d11::Driver::draw(unsigned int vertex_count, unsigned int start_vertex)
+{
+	context->Draw(vertex_count, start_vertex);
+}
+
+void drv_d3d11::Driver::drawIndexed(unsigned int index_count, unsigned int start_index, int base_vertex)
+{
+	context->DrawIndexed(index_count, start_index, base_vertex);
+}
+
 void Driver::setSettings(const DriverSettings& new_settings)
 {
 	// TODO: handle each change in settings properly
