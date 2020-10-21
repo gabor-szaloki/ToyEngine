@@ -23,7 +23,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 //#define USE_NEW_RENDERER 1
 
 #if USE_NEW_RENDERER
-WorldRenderer* wr;
+renderer::WorldRenderer* wr;
 #endif
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
@@ -61,7 +61,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		OutputDebugString("Driver initialization failed. Exiting.");
 		return 1;
 	}
-	wr = new WorldRenderer();
+	wr = new renderer::WorldRenderer();
 #else
 	gEngine = new Engine();
 	gEngine->Init(hWnd, DEFAULT_WINDOWED_WIDTH, DEFAULT_WINDOWED_HEIGHT);

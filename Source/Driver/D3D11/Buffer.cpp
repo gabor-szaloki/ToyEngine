@@ -15,8 +15,20 @@ Buffer::Buffer(const BufferDesc& desc_) : desc(desc_)
 	bd.CPUAccessFlags = desc.cpuAccessFlags;
 	bd.MiscFlags = desc.miscFlags;
 	bd.StructureByteStride = desc.elementByteSize;
-	hr = Driver::get().getDevice().CreateBuffer(&bd, nullptr, &resource);
-	assert(SUCCEEDED(hr));
+
+	if (desc.initialData != nullptr)
+	{
+		D3D11_SUBRESOURCE_DATA initData{};
+		initData.pSysMem = desc.initialData;
+
+		hr = Driver::get().getDevice().CreateBuffer(&bd, &initData, &resource);
+		assert(SUCCEEDED(hr));
+	}
+	else
+	{
+		hr = Driver::get().getDevice().CreateBuffer(&bd, nullptr, &resource);
+		assert(SUCCEEDED(hr));
+	}
 
 	createViews();
 	

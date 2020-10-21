@@ -70,15 +70,21 @@ void Engine::InitDevice()
 {
 	DXGI_SWAP_CHAIN_DESC scd;
 	ZeroMemory(&scd, sizeof(DXGI_SWAP_CHAIN_DESC));
-	scd.BufferCount = 1;
+	scd.BufferCount = 2;
 	scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	scd.OutputWindow = hWnd;
 	scd.SampleDesc.Count = 1;
 	scd.Windowed = true;
+	scd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+
+	unsigned int creationFlags = 0;
+#if defined(_DEBUG)
+	creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
 
 	ThrowIfFailed(D3D11CreateDeviceAndSwapChain(
-		nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, nullptr, 0, D3D11_SDK_VERSION,
+		nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, creationFlags, nullptr, 0, D3D11_SDK_VERSION,
 		&scd, &swapchain, &device, nullptr, &context), "Error creating device and swapchain\n");
 }
 
@@ -310,12 +316,12 @@ void Engine::InitShaders()
 	// Shaders
 	{
 		// Forward Pass
-		standardForwardVS = CompileVertexShader(L"Source\\Shaders\\Standard.shader", "StandardForwardVS", &vsBlob);
-		standardOpaqueForwardPS = CompilePixelShader(L"Source\\Shaders\\Standard.shader", "StandardOpaqueForwardPS");
+		standardForwardVS = CompileVertexShader(L"Source/Shaders/Standard.shader", "StandardForwardVS", &vsBlob);
+		standardOpaqueForwardPS = CompilePixelShader(L"Source/Shaders/Standard.shader", "StandardOpaqueForwardPS");
 
 		// Shadow Pass
-		standardShadowVS = CompileVertexShader(L"Source\\Shaders\\Standard.shader", "StandardShadowVS");
-		standardOpaqueShadowPS = CompilePixelShader(L"Source\\Shaders\\Standard.shader", "StandardOpaqueShadowPS");
+		standardShadowVS = CompileVertexShader(L"Source/Shaders/Standard.shader", "StandardShadowVS");
+		standardOpaqueShadowPS = CompilePixelShader(L"Source/Shaders/Standard.shader", "StandardOpaqueShadowPS");
 	}
 
 	// Input layout
@@ -348,14 +354,14 @@ void Engine::ReleaseShaders()
 
 void Engine::InitScene()
 {
-	auto* testBaseTexture = LoadTextureFromPNG("Assets\\Textures\\test_base.png");
+	auto* testBaseTexture = LoadTextureFromPNG("Assets/Textures/test_base.png");
 	textureRVs.push_back(testBaseTexture);
-	auto* testNormalTexture = LoadTextureFromPNG("Assets\\Textures\\test_nrm.png");
+	auto* testNormalTexture = LoadTextureFromPNG("Assets/Textures/test_nrm.png");
 	textureRVs.push_back(testNormalTexture);
 
-	auto* blueTilesBaseTexture = LoadTextureFromPNG("Assets\\Textures\\Tiles20_base.png");
+	auto* blueTilesBaseTexture = LoadTextureFromPNG("Assets/Textures/Tiles20_base.png");
 	textureRVs.push_back(blueTilesBaseTexture);
-	auto* blueTilesNormalTexture = LoadTextureFromPNG("Assets\\Textures\\Tiles20_nrm.png");
+	auto* blueTilesNormalTexture = LoadTextureFromPNG("Assets/Textures/Tiles20_nrm.png");
 	textureRVs.push_back(blueTilesNormalTexture);
 
 	Material *test = new Material(

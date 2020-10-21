@@ -6,7 +6,7 @@
 #include "DriverSettings.h"
 
 typedef int ResId;
-#define BAD_RESID -1;
+constexpr ResId BAD_RESID = -1;
 
 struct IntBox // Todo: move outside of Driver
 {
@@ -88,6 +88,7 @@ struct BufferDesc
 	unsigned int bindFlags = 0;
 	unsigned int cpuAccessFlags = 0;
 	unsigned int miscFlags = 0;
+	void* initialData = nullptr;
 
 	BufferDesc() {};
 	BufferDesc(

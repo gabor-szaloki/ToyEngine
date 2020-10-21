@@ -35,6 +35,8 @@
     <ClCompile Include="Source\Driver\D3D11\ShaderSet.cpp" />
     <ClCompile Include="Source\Driver\D3D11\Texture.cpp" />
     <ClCompile Include="Source\Program.cpp" />
+    <ClCompile Include="Source\Renderer2\Material2.cpp" />
+    <ClCompile Include="Source\Renderer2\MeshRenderer.cpp" />
     <ClCompile Include="Source\Renderer2\WorldRenderer.cpp" />
     <ClCompile Include="Source\Renderer\Camera.cpp" />
     <ClCompile Include="Source\Renderer\Drawable.cpp" />
@@ -350,6 +352,10 @@
     <ClInclude Include="Source\Driver\DriverConsts.h" />
     <ClInclude Include="Source\Driver\TexFmt.h" />
     <ClInclude Include="Source\Renderer2\ConstantBuffers.h" />
+    <ClInclude Include="Source\Renderer2\Material2.h" />
+    <ClInclude Include="Source\Renderer2\MeshRenderer.h" />
+    <ClInclude Include="Source\Renderer2\Primitives2.h" />
+    <ClInclude Include="Source\Renderer2\RendererCommon.h" />
     <ClInclude Include="Source\Renderer2\WorldRenderer.h" />
     <ClInclude Include="Source\Renderer\Camera.h" />
     <ClInclude Include="Source\Renderer\Drawable.h" />

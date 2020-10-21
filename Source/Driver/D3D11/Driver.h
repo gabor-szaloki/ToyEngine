@@ -38,16 +38,17 @@ namespace drv_d3d11
 		ResId createShaderSet(const ShaderSetDesc& desc) override;
 		ResId createInputLayout(const InputLayoutElementDesc* descs, unsigned int num_descs, ResId shader_set) override;
 
-		void setIndexBuffer(ResId* res_id) override;
-		void setVertexBuffer(ResId* res_id) override;
-		void setConstantBuffer(ShaderStage stage, unsigned int slot, ResId* res_id) override;
-		void setBuffer(ShaderStage stage, unsigned int slot, ResId* res_id) override;
-		void setRwBuffer(unsigned int slot, ResId* res_id) override;
-		void setTexture(ShaderStage stage, unsigned int slot, ResId* res_id) override;
-		void setRwTexture(unsigned int slot, ResId* res_id) override;
-		void setRenderTarget(ResId* target_id, ResId* depth_id) override;
-		void setRenderTargets(unsigned int num_targets, ResId** target_ids, ResId* depth_id) override;
-		void setRenderState(ResId* res_id) override;
+		void setIndexBuffer(ResId res_id) override;
+		void setVertexBuffer(ResId res_id) override;
+		void setConstantBuffer(ShaderStage stage, unsigned int slot, ResId res_id) override;
+		void setBuffer(ShaderStage stage, unsigned int slot, ResId res_id) override;
+		void setRwBuffer(unsigned int slot, ResId res_id) override;
+		void setTexture(ShaderStage stage, unsigned int slot, ResId res_id) override;
+		void setRwTexture(unsigned int slot, ResId res_id) override;
+		void setRenderTarget(ResId target_id, ResId depth_id) override;
+		void setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id) override;
+		void setRenderState(ResId res_id) override;
+		void setShaderSet(ResId res_id) override;
 		void setView(float x, float y, float w, float h, float z_min, float z_max) override;
 
 		void draw(unsigned int vertex_count, unsigned int start_vertex) override;
@@ -55,6 +56,7 @@ namespace drv_d3d11
 
 		void present() override;
 
+		TexFmt getIndexFormat() override { return TexFmt::R16_UINT; }
 		const DriverSettings& getSettings() override { return settings; };
 		void setSettings(const DriverSettings& new_settings) override;
 
