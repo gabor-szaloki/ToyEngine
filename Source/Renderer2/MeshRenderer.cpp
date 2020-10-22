@@ -3,12 +3,19 @@
 #include <Driver/IBuffer.h>
 
 #include "Material2.h"
+#include "ConstantBuffers.h"
 
 using namespace renderer;
 
 MeshRenderer::MeshRenderer(const char* name_, Material* material_, ResId input_layout_id)
 	: name(name_), material(material_), inputLayoutId(input_layout_id)
 {
+	BufferDesc cbDesc;
+	cbDesc.bindFlags = BIND_CONSTANT_BUFFER;
+	cbDesc.numElements = 1;
+	cbDesc.name = name_;
+	cbDesc.elementByteSize = sizeof(PerObjectConstantBufferData);
+	cb.reset(drv->createBuffer(cbDesc));
 }
 
 void MeshRenderer::setInputLayout(ResId res_id)
@@ -33,7 +40,14 @@ void MeshRenderer::loadIndices(unsigned int num_indices, void* data)
 
 void MeshRenderer::render(RenderPass render_pass)
 {
+	PerObjectConstantBufferData perObjectCbData;
+	perObjectCbData.world = worldTransform;
+	cb->updateData(&perObjectCbData);
+
 	material->set(render_pass);
+	drv->setInputLayout(inputLayoutId);
 	drv->setIndexBuffer(ib->getId());
 	drv->setVertexBuffer(vb->getId());
+	drv->setConstantBuffer(ShaderStage::VS, 2, cb->getId());
+	drv->drawIndexed(ib->getDesc().numElements, 0, 0);
 }

@@ -12,6 +12,8 @@ namespace drv_d3d11
 		~InputLayout();
 		const ResId& getId() const { return id; }
 
+		ID3D11InputLayout* getResource() { return inputLayout.Get(); };
+
 	private:
 		ResId id = BAD_RESID;
 		ComPtr<ID3D11InputLayout> inputLayout;

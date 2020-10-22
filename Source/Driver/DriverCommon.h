@@ -53,30 +53,30 @@ struct SamplerDesc
 
 struct TextureDesc
 {
-	const char* name = "unnamedtex";
-	unsigned int width = 0;
-	unsigned int height = 0;
-	TexFmt format = TexFmt::R8G8B8A8_UNORM;
-	TexFmt srvFormatOverride = TexFmt::INVALID;
-	TexFmt uavFormatOverride = TexFmt::INVALID;
-	TexFmt rtvFormatOverride = TexFmt::INVALID;
-	TexFmt dsvFormatOverride = TexFmt::INVALID;
-	unsigned int mips = 1;
-	ResourceUsage usageFlags = ResourceUsage::DEFAULT;
-	unsigned int bindFlags = 0;
-	unsigned int cpuAccessFlags = 0;
-	unsigned int miscFlags = 0;
-	bool hasSampler = true;
-	SamplerDesc samplerDesc;
+const char* name = "unnamedtex";
+unsigned int width = 0;
+unsigned int height = 0;
+TexFmt format = TexFmt::R8G8B8A8_UNORM;
+TexFmt srvFormatOverride = TexFmt::INVALID;
+TexFmt uavFormatOverride = TexFmt::INVALID;
+TexFmt rtvFormatOverride = TexFmt::INVALID;
+TexFmt dsvFormatOverride = TexFmt::INVALID;
+unsigned int mips = 1;
+ResourceUsage usageFlags = ResourceUsage::DEFAULT;
+unsigned int bindFlags = 0;
+unsigned int cpuAccessFlags = 0;
+unsigned int miscFlags = 0;
+bool hasSampler = true;
+SamplerDesc samplerDesc;
 
-	TextureDesc() {};
-	TextureDesc(
-		const char* name_, unsigned int width_, unsigned int height_,
-		TexFmt format_ = TexFmt::R8G8B8A8_UNORM, unsigned int mips_ = 1,
-		ResourceUsage usage_flags = ResourceUsage::DEFAULT,
-		unsigned int bind_flags = 0, unsigned int cpu_access_flags = 0, unsigned int misc_flags = 0, bool has_sampler = true) :
-		name(name_), width(width_), height(height_), format(format_), usageFlags(usage_flags),
-		bindFlags(bind_flags), cpuAccessFlags(cpu_access_flags), miscFlags(misc_flags), hasSampler(has_sampler) {}
+TextureDesc() {};
+TextureDesc(
+	const char* name_, unsigned int width_, unsigned int height_,
+	TexFmt format_ = TexFmt::R8G8B8A8_UNORM, unsigned int mips_ = 1,
+	ResourceUsage usage_flags = ResourceUsage::DEFAULT,
+	unsigned int bind_flags = 0, unsigned int cpu_access_flags = 0, unsigned int misc_flags = 0, bool has_sampler = true) :
+	name(name_), width(width_), height(height_), format(format_), usageFlags(usage_flags),
+	bindFlags(bind_flags), cpuAccessFlags(cpu_access_flags), miscFlags(misc_flags), hasSampler(has_sampler) {}
 };
 
 struct BufferDesc
@@ -125,7 +125,7 @@ struct ShaderSetDesc
 {
 	const char* sourceFilePath = nullptr;
 	const char* shaderFuncNames[(int)ShaderStage::GRAPHICS_STAGE_COUNT] = {};
-	
+
 	ShaderSetDesc(const char* source_file_path = nullptr) : sourceFilePath(source_file_path) {}
 };
 
@@ -140,4 +140,18 @@ struct InputLayoutElementDesc
 	VertexInputSemantic semantic;
 	unsigned int semanticIndex;
 	TexFmt format;
+};
+
+struct RenderTargetClearParams
+{
+	unsigned int clearFlags = CLEAR_FLAG_ALL;
+	unsigned char colorTargetMask = 0xFF;
+	float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	float depth = 1.0f;
+	unsigned char stencil = 0;
+
+	RenderTargetClearParams(
+		unsigned int clear_flags = CLEAR_FLAG_ALL, unsigned char color_target_mask = 0xFF,
+		float depth_ = 1.0f, unsigned char stencil_ = 0) :
+		clearFlags(clear_flags), colorTargetMask(color_target_mask), depth(depth_), stencil(stencil_) {}
 };

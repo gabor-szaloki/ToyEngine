@@ -136,3 +136,11 @@ enum class VertexInputSemantic
 	COLOR = 4,
 	TEXCOORD = 5
 };
+
+typedef enum RenderTargetClearFlags
+{
+	CLEAR_FLAG_COLOR   = 1 << 0,
+	CLEAR_FLAG_DEPTH   = 1 << 1,
+	CLEAR_FLAG_STENCIL = 1 << 2,
+	CLEAR_FLAG_ALL = CLEAR_FLAG_COLOR | CLEAR_FLAG_DEPTH | CLEAR_FLAG_STENCIL,
+} RenderTargetClearFlags;

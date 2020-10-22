@@ -20,7 +20,7 @@ bool ctrl = false;
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-//#define USE_NEW_RENDERER 1
+#define USE_NEW_RENDERER 1
 
 #if USE_NEW_RENDERER
 renderer::WorldRenderer* wr;
@@ -122,8 +122,14 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		return 0;
 	}
 
+#if USE_NEW_RENDERER
+	if (wr == nullptr)
+#else
 	if (gEngine == nullptr)
+#endif
+	{
 		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
 
 	switch (message)
 	{
@@ -145,8 +151,13 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		{
 			POINT mousePos;
 			GetCursorPos(&mousePos);
+#if USE_NEW_RENDERER
+			wr->cameraInputState.deltaYaw += mousePos.x - lastMousePos.x;
+			wr->cameraInputState.deltaPitch += mousePos.y - lastMousePos.y;
+#else
 			gEngine->cameraInputState.deltaYaw += mousePos.x - lastMousePos.x;
 			gEngine->cameraInputState.deltaPitch += mousePos.y - lastMousePos.y;
+#endif
 			SetCursorPos(lastMousePos.x, lastMousePos.y);
 		}
 		break;
@@ -299,8 +310,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		OutputDebugString(str);
 
 #if USE_NEW_RENDERER
-		drv->resize(w, h);
-		wr->onResize();
+		wr->onResize(w, h);
 #else
 		gEngine->Resize(hWnd, float(w), float(h));
 #endif

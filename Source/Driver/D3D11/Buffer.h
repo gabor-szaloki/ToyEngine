@@ -9,7 +9,7 @@ namespace drv_d3d11
 	{
 	public:
 		Buffer(const BufferDesc& desc_);
-		~Buffer();
+		~Buffer() override;
 
 		const BufferDesc& getDesc() const override { return desc; }
 		const ResId& getId() const override { return id; };

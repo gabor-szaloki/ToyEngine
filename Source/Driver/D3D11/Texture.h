@@ -9,7 +9,7 @@ namespace drv_d3d11
 	{
 	public:
 		Texture(const TextureDesc& desc_, ID3D11Texture2D* tex = nullptr);
-		~Texture();
+		~Texture() override;
 
 		const TextureDesc& getDesc() const override { return desc; }
 		const ResId& getId() const override { return id; };

@@ -37,12 +37,11 @@ InputLayout::InputLayout(const InputLayoutElementDesc* descs, unsigned int num_d
 		ieds[i].SemanticIndex = descs[i].semanticIndex;
 		ieds[i].Format = (DXGI_FORMAT)descs[i].format;
 		ieds[i].InputSlot = 0;
+		ieds[i].AlignedByteOffset = byteSizeSoFar;
 		ieds[i].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 		ieds[i].InstanceDataStepRate = 0;
 
-		unsigned int byteSize = get_byte_size_for_texfmt(descs[i].format);
-		ieds[i].AlignedByteOffset = byteSizeSoFar + byteSize;
-		byteSizeSoFar += byteSize;
+		byteSizeSoFar += get_byte_size_for_texfmt(descs[i].format);
 	}
 
 	ID3DBlob* vsBlob = shader_set.getVsBlob();

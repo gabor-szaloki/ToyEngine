@@ -17,7 +17,7 @@ namespace renderer
 			{ XMFLOAT3( 1.0f,  0.0f,  1.0f), XMFLOAT3( 0.0f,  1.0f,  0.0f), XMFLOAT4( 1.0f,  0.0f,  0.0f, 1.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT2(1.0f, 0.0f) },
 			{ XMFLOAT3(-1.0f,  0.0f,  1.0f), XMFLOAT3( 0.0f,  1.0f,  0.0f), XMFLOAT4( 1.0f,  0.0f,  0.0f, 1.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT2(0.0f, 0.0f) },
 		};
-		unsigned short plane_indices[] =
+		unsigned short plane_indices[PLANE_INDEX_COUNT] =
 		{
 			3,1,0,
 			2,1,3,
@@ -25,7 +25,7 @@ namespace renderer
 
 		constexpr unsigned int BOX_VERTEX_COUNT = 4*6;
 		constexpr unsigned int BOX_INDEX_COUNT = 6*6;
-		StandardVertexData box_vertices[] =
+		StandardVertexData box_vertices[BOX_VERTEX_COUNT] =
 		{
 			// Position						 Normal							Tangent								 Color							   UV
 			{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3( 0.0f,  1.0f,  0.0f), XMFLOAT4( 1.0f,  0.0f,  0.0f, 1.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) },
@@ -58,7 +58,7 @@ namespace renderer
 			{ XMFLOAT3( 1.0f,  1.0f,  1.0f), XMFLOAT3( 0.0f,  0.0f,  1.0f), XMFLOAT4(-1.0f,  0.0f,  0.0f, 1.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT2(0.0f, 0.0f) },
 			{ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3( 0.0f,  0.0f,  1.0f), XMFLOAT4(-1.0f,  0.0f,  0.0f, 1.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT2(1.0f, 0.0f) },
 		};
-		unsigned short box_indices[] =
+		unsigned short box_indices[BOX_INDEX_COUNT] =
 		{
 			3,1,0,
 			2,1,3,

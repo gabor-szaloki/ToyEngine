@@ -35,6 +35,6 @@ Texture2D _NormalTexture : register(t1);
 SamplerState _Sampler : register(s0);
 
 Texture2D<float> _MainLightShadowmap : register(t2);
-SamplerComparisonState _ShadowCmpSampler : register(s1);
+SamplerComparisonState _ShadowCmpSampler : register(s2);
 
 #endif

@@ -35,7 +35,7 @@ bool Driver::init(void* hwnd, int display_width, int display_height)
 	scd.OutputWindow = (HWND)hwnd;
 	scd.SampleDesc.Count = 1;
 	scd.Windowed = true;
-	scd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	//scd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // RenderDoc fails to capture with FLIP_DISCARD :(
 	scd.Flags = 0;
 
 	unsigned int creationFlags = 0;
@@ -50,11 +50,16 @@ bool Driver::init(void* hwnd, int display_width, int display_height)
 
 	initResolutionDependentResources(display_width, display_height);
 
+	// TODO: Maybe expose this?
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
 	return true;
 }
 
 void Driver::shutdown()
 {
+	backbuffer.reset();
+
 	releaseAllResources();
 
 	swapchain.Reset();
@@ -64,11 +69,13 @@ void Driver::shutdown()
 
 void Driver::resize(int display_width, int display_height)
 {
+	context->OMSetRenderTargets(0, nullptr, nullptr);
 	closeResolutionDependentResources();
+	swapchain->ResizeBuffers(2, display_width, display_width, DXGI_FORMAT_UNKNOWN, 0);
 	initResolutionDependentResources(display_width, display_height);
 }
 
-void drv_d3d11::Driver::getDisplaySize(int& display_width, int& display_height)
+void Driver::getDisplaySize(int& display_width, int& display_height)
 {
 	display_width = displayWidth;
 	display_height = displayHeight;
@@ -82,6 +89,15 @@ ITexture* Driver::createTexture(const TextureDesc& desc)
 IBuffer* Driver::createBuffer(const BufferDesc& desc)
 {
 	return new Buffer(desc);
+}
+
+template<typename T>
+static void destroy_resource(ResId id, std::map<ResId, T*>& from)
+{
+	assert(id != BAD_RESID);
+	assert(from.find(id) != from.end());
+	delete from[id];
+	from.erase(id);
 }
 
 ResId Driver::createRenderState(const RenderStateDesc& desc)
@@ -106,6 +122,40 @@ ResId Driver::createInputLayout(const InputLayoutElementDesc* descs, unsigned in
 	return inputLayout->getId();
 }
 
+template<typename T>
+size_t erase_if_found(ResId id, std::map<ResId, T*>& from)
+{
+	auto it = from.find(id);
+	if (it != from.end())
+	{
+		delete it->second;
+		return from.erase(id);
+	}
+	return 0;
+}
+
+void Driver::destroyResource(ResId res_id)
+{
+	if (erase_if_found(res_id, inputLayouts))
+		return;
+	if (erase_if_found(res_id, renderStates))
+		return;
+	if (erase_if_found(res_id, shaders))
+		return;
+	if (erase_if_found(res_id, buffers))
+		return;
+	if (erase_if_found(res_id, textures))
+		return;
+	assert(false);
+}
+
+void Driver::setInputLayout(ResId res_id)
+{
+	assert(res_id != BAD_RESID);
+	assert(inputLayouts.find(res_id) != inputLayouts.end());
+	context->IASetInputLayout(inputLayouts[res_id]->getResource());
+}
+
 void Driver::setIndexBuffer(ResId res_id)
 {
 	assert(res_id != BAD_RESID);
@@ -123,7 +173,8 @@ void Driver::setVertexBuffer(ResId res_id)
 
 	ID3D11Buffer* res = buffers[res_id]->getResource();
 	unsigned int stride = buffers[res_id]->getDesc().elementByteSize;
-	context->IASetVertexBuffers(0, 1, &res, &stride, nullptr);
+	unsigned int offset = 0;
+	context->IASetVertexBuffers(0, 1, &res, &stride, &offset);
 }
 
 void Driver::setConstantBuffer(ShaderStage stage, unsigned int slot, ResId res_id)
@@ -199,7 +250,7 @@ void Driver::setRwBuffer(unsigned int slot, ResId res_id)
 	context->CSSetUnorderedAccessViews(slot, 1, &uav, nullptr);
 }
 
-void Driver::setTexture(ShaderStage stage, unsigned int slot, ResId res_id)
+void Driver::setTexture(ShaderStage stage, unsigned int slot, ResId res_id, bool set_sampler_too)
 {
 	assert(res_id == BAD_RESID || textures.find(res_id) != textures.end());
 	assert(res_id == BAD_RESID || textures[res_id]->getDesc().bindFlags & BIND_SHADER_RESOURCE);
@@ -229,6 +280,35 @@ void Driver::setTexture(ShaderStage stage, unsigned int slot, ResId res_id)
 		assert(false);
 		break;
 	}
+
+	if (set_sampler_too)
+	{
+		ID3D11SamplerState* sampler = res_id != BAD_RESID ? textures[res_id]->getSampler() : nullptr;
+		switch (stage)
+		{
+		case ShaderStage::VS:
+			context->VSSetSamplers(slot, 1, &sampler);
+			break;
+		case ShaderStage::PS:
+			context->PSSetSamplers(slot, 1, &sampler);
+			break;
+		case ShaderStage::GS:
+			context->GSSetSamplers(slot, 1, &sampler);
+			break;
+		case ShaderStage::HS:
+			context->HSSetSamplers(slot, 1, &sampler);
+			break;
+		case ShaderStage::DS:
+			context->DSSetSamplers(slot, 1, &sampler);
+			break;
+		case ShaderStage::CS:
+			context->CSSetSamplers(slot, 1, &sampler);
+			break;
+		default:
+			assert(false);
+			break;
+		}
+	}
 }
 
 void Driver::setRwTexture(unsigned int slot, ResId res_id)
@@ -247,8 +327,12 @@ void Driver::setRenderTarget(ResId target_id, ResId depth_id)
 	assert(depth_id == BAD_RESID || textures.find(depth_id) != textures.end());
 	assert(depth_id == BAD_RESID || textures[depth_id]->getDesc().bindFlags & BIND_DEPTH_STENCIL);
 
-	ID3D11RenderTargetView* rtv = target_id != BAD_RESID ? textures[target_id]->getRtv() : nullptr;
-	ID3D11DepthStencilView* dsv = depth_id != BAD_RESID ? textures[depth_id]->getDsv() : nullptr;
+	currentRenderTargets[0] = target_id != BAD_RESID ? textures[target_id] : nullptr;
+	ID3D11RenderTargetView* rtv = currentRenderTargets[0] != nullptr ? currentRenderTargets[0]->getRtv() : nullptr;
+
+	currentDepthTarget = depth_id != BAD_RESID ? textures[depth_id] : nullptr;
+	ID3D11DepthStencilView* dsv = currentDepthTarget != nullptr ? currentDepthTarget->getDsv() : nullptr;
+	
 	context->OMSetRenderTargets(1, &rtv, dsv);
 }
 
@@ -258,7 +342,8 @@ void Driver::setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId
 	assert(depth_id == BAD_RESID || textures.find(depth_id) != textures.end());
 	assert(depth_id == BAD_RESID || textures[depth_id]->getDesc().bindFlags & BIND_DEPTH_STENCIL);
 
-	ID3D11DepthStencilView* dsv = depth_id != BAD_RESID ? textures[depth_id]->getDsv() : nullptr;
+	currentDepthTarget = depth_id != BAD_RESID ? textures[depth_id] : nullptr;
+	ID3D11DepthStencilView* dsv = currentDepthTarget != nullptr ? currentDepthTarget->getDsv() : nullptr;
 
 	ID3D11RenderTargetView* rtvs[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT]{};
 	for (unsigned int i = 0; i < num_targets; i++)
@@ -266,7 +351,8 @@ void Driver::setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId
 		assert(target_ids[i] == BAD_RESID || textures.find(target_ids[i]) != textures.end());
 		assert(target_ids[i] == BAD_RESID || textures[target_ids[i]]->getDesc().bindFlags & BIND_RENDER_TARGET);
 
-		rtvs[i] = target_ids[i] != BAD_RESID ? textures[target_ids[i]]->getRtv() : nullptr;
+		currentRenderTargets[i] = target_ids[i] != BAD_RESID ? textures[target_ids[i]] : nullptr;
+		rtvs[i] = currentRenderTargets[i] != nullptr ? currentRenderTargets[i]->getRtv() : nullptr;
 	}
 
 	context->OMSetRenderTargets(num_targets, rtvs, dsv);
@@ -281,29 +367,52 @@ void Driver::setRenderState(ResId res_id)
 	context->OMSetDepthStencilState(renderStates[resId]->getDepthStencilState(), 0);
 }
 
-void drv_d3d11::Driver::setShaderSet(ResId res_id)
+void Driver::setShaderSet(ResId res_id)
 {
 	assert(shaders.find(res_id) != shaders.end());
 	shaders[res_id]->set();
 }
 
-void drv_d3d11::Driver::setView(float x, float y, float w, float h, float z_min, float z_max)
+void Driver::setView(float x, float y, float w, float h, float z_min, float z_max)
 {
 	D3D11_VIEWPORT viewport{x, y, w, h, z_min, z_max};
 	context->RSSetViewports(1, &viewport);
 }
 
-void drv_d3d11::Driver::draw(unsigned int vertex_count, unsigned int start_vertex)
+void Driver::draw(unsigned int vertex_count, unsigned int start_vertex)
 {
 	context->Draw(vertex_count, start_vertex);
 }
 
-void drv_d3d11::Driver::drawIndexed(unsigned int index_count, unsigned int start_index, int base_vertex)
+void Driver::drawIndexed(unsigned int index_count, unsigned int start_index, int base_vertex)
 {
 	context->DrawIndexed(index_count, start_index, base_vertex);
 }
 
-void drv_d3d11::Driver::present()
+void Driver::clearRenderTargets(const RenderTargetClearParams clear_params)
+{
+	if (clear_params.clearFlags & CLEAR_FLAG_COLOR)
+	{
+		for (unsigned int i = 0, mask = clear_params.colorTargetMask;
+			mask && i < currentRenderTargets.size();
+			i++, mask >>= mask)
+		{
+			if ((mask & 1) && currentRenderTargets[i] != nullptr)
+				context->ClearRenderTargetView(currentRenderTargets[i]->getRtv(), clear_params.color);
+		}
+	}
+	if ((clear_params.clearFlags & (CLEAR_FLAG_DEPTH | CLEAR_FLAG_STENCIL)) && currentDepthTarget != nullptr)
+	{
+		unsigned int dsvClearFlags = 0;
+		if (clear_params.clearFlags & CLEAR_FLAG_DEPTH)
+			dsvClearFlags |= D3D11_CLEAR_DEPTH;
+		if (clear_params.clearFlags & CLEAR_FLAG_STENCIL)
+			dsvClearFlags |= D3D11_CLEAR_STENCIL;
+		context->ClearDepthStencilView(currentDepthTarget->getDsv(), dsvClearFlags, clear_params.depth, clear_params.stencil);
+	}
+}
+
+void Driver::present()
 {
 	swapchain->Present(settings.vsync ? 1 : 0, 0);
 }
@@ -396,6 +505,9 @@ bool Driver::initResolutionDependentResources(int display_width, int display_hei
 		D3D11_TEXTURE2D_DESC td;
 		backBufferTexture->GetDesc(&td);
 
+		assert(td.Width == displayWidth);
+		assert(td.Height == displayHeight);
+
 		TextureDesc desc;
 		desc.name = "backbuffer";
 		desc.width = td.Width;
@@ -427,15 +539,12 @@ void Driver::closeResolutionDependentResources()
 template<typename T>
 static void release_pool(std::map<ResId, T*>& pool)
 {
-	for (auto&& pair : pool)
-	{
-		assert(pair.second != nullptr);
-		delete pair.second;
-	}
+	for (auto itr = pool.begin(); itr != pool.end();)
+		delete (itr++)->second;
 	pool.clear();
 }
 
-void drv_d3d11::Driver::releaseAllResources()
+void Driver::releaseAllResources()
 {
 	// Textures and buffers should be destroyed by the user
 	assert(textures.size() == 0);

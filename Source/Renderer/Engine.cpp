@@ -488,7 +488,7 @@ void Engine::RenderFrame()
 	context->PSSetConstantBuffers(0, 1, &perFrameCB);
 
 	context->PSSetSamplers(0, 1, anisotropicFilteringEnabled ? &samplerAnisotropicWrap : &samplerLinearWrap);
-	context->PSSetSamplers(1, 1, &samplerShadowCmp);
+	context->PSSetSamplers(2, 1, &samplerShadowCmp);
 
 	ShadowPass(lightViewMatrix, lightProjectionMatrix);
 	ForwardPass();

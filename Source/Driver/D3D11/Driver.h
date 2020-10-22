@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <map>
+#include <array>
 #include <wrl/client.h>
 
 #include <Driver/IDriver.h>
@@ -32,18 +33,21 @@ namespace drv_d3d11
 		void resize(int display_width, int display_height) override;
 		void getDisplaySize(int& display_width, int& display_height) override;
 
+		ITexture* getBackbufferTexture() override { return (ITexture*)backbuffer.get(); };
 		ITexture* createTexture(const TextureDesc& desc) override;
 		IBuffer* createBuffer(const BufferDesc& desc) override;
 		ResId createRenderState(const RenderStateDesc& desc) override;
 		ResId createShaderSet(const ShaderSetDesc& desc) override;
 		ResId createInputLayout(const InputLayoutElementDesc* descs, unsigned int num_descs, ResId shader_set) override;
+		void destroyResource(ResId res_id) override;
 
+		void setInputLayout(ResId res_id) override;
 		void setIndexBuffer(ResId res_id) override;
 		void setVertexBuffer(ResId res_id) override;
 		void setConstantBuffer(ShaderStage stage, unsigned int slot, ResId res_id) override;
 		void setBuffer(ShaderStage stage, unsigned int slot, ResId res_id) override;
 		void setRwBuffer(unsigned int slot, ResId res_id) override;
-		void setTexture(ShaderStage stage, unsigned int slot, ResId res_id) override;
+		void setTexture(ShaderStage stage, unsigned int slot, ResId res_id, bool set_sampler_too) override;
 		void setRwTexture(unsigned int slot, ResId res_id) override;
 		void setRenderTarget(ResId target_id, ResId depth_id) override;
 		void setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id) override;
@@ -53,6 +57,8 @@ namespace drv_d3d11
 
 		void draw(unsigned int vertex_count, unsigned int start_vertex) override;
 		void drawIndexed(unsigned int index_count, unsigned int start_index, int base_vertex) override;
+
+		void clearRenderTargets(const RenderTargetClearParams clear_params) override;
 
 		void present() override;
 
@@ -96,5 +102,8 @@ namespace drv_d3d11
 		std::map<ResId, InputLayout*> inputLayouts;
 
 		ResId defaultRenderState;
+
+		std::array<Texture*, D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT> currentRenderTargets;
+		Texture* currentDepthTarget = nullptr;
 	};
 }

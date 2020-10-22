@@ -25,7 +25,7 @@ namespace renderer
 		WorldRenderer();
 		~WorldRenderer();
 
-		void onResize();
+		void onResize(int display_width, int display_height);
 		void update(float delta_time);
 		void render();
 
@@ -51,8 +51,8 @@ namespace renderer
 		void closeResolutionDependentResources();
 		ITexture* loadTextureFromPng(const char* path);
 		void initScene();
-		void performForwardPass();
 		void performShadowPass(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix);
+		void performForwardPass();
 
 		float time;
 
@@ -67,18 +67,20 @@ namespace renderer
 		float directionalShadowDistance = 20.0f;
 
 		std::unique_ptr<ITexture> depthTex;
-		ResId forwardRenderStateId;
-		ResId forwardWireframeRenderStateId;
+		ResId forwardRenderStateId = BAD_RESID;
+		ResId forwardWireframeRenderStateId = BAD_RESID;
 		std::unique_ptr<ITexture> shadowMap;
-		ResId shadowRenderStateId;
+		ResId shadowRenderStateId = BAD_RESID;
 
 		std::unique_ptr<IBuffer> perFrameCb;
 		std::unique_ptr<IBuffer> perCameraCb;
 		std::unique_ptr<IBuffer> perObjectCb;
 
 		std::array<ResId, (int)RenderPass::_COUNT> standardShaders;
+		ResId standardInputLayout = BAD_RESID;
 
 		bool showWireframe;
+
 
 		std::vector<ITexture*> managedTextures;
 		std::vector<Material*> managedMaterials;

@@ -25,9 +25,14 @@ static T* compile_and_create_shader(
 	wchar_t fileName[MAX_PATH];
 	utf8_to_wcs(file_name, fileName, MAX_PATH);
 
+	unsigned int flags1 = 0, flags2 = 0;
+#if defined(_DEBUG)
+	flags1 |= D3DCOMPILE_DEBUG;
+#endif
+
 	HRESULT hr = D3DCompileFromFile(
 		fileName, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE,
-		entry_point, target_string, 0, 0, &blob, &errorBlob);
+		entry_point, target_string, flags1, flags2, &blob, &errorBlob);
 
 	if (errorBlob)
 		OutputDebugString(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()));
@@ -99,7 +104,7 @@ ShaderSet::ShaderSet(const ShaderSetDesc& desc_) : desc(desc_)
 			}));
 	}
 
-	Driver::get().registerShaderSet(this);
+	id = Driver::get().registerShaderSet(this);
 }
 
 ShaderSet::~ShaderSet()

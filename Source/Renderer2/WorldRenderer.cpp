@@ -50,7 +50,17 @@ WorldRenderer::WorldRenderer()
 	shaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "StandardOpaqueShadowPS";
 	standardShaders[(int)RenderPass::SHADOW] = drv->createShaderSet(shaderDesc);
 
-	// TODO: Standard input layout
+	constexpr unsigned int NUM_STANDARD_INPUT_LAYOUT_ELEMENTS = 5;
+	InputLayoutElementDesc standardInputLayoutDesc[NUM_STANDARD_INPUT_LAYOUT_ELEMENTS] =
+	{
+		{ VertexInputSemantic::POSITION, 0, TexFmt::R32G32B32_FLOAT    },
+		{ VertexInputSemantic::NORMAL,   0, TexFmt::R32G32B32_FLOAT    },
+		{ VertexInputSemantic::TANGENT,  0, TexFmt::R32G32B32A32_FLOAT },
+		{ VertexInputSemantic::COLOR,    0, TexFmt::R32G32B32A32_FLOAT },
+		{ VertexInputSemantic::TEXCOORD, 0, TexFmt::R32G32_FLOAT       },
+	};
+	standardInputLayout = drv->createInputLayout(standardInputLayoutDesc,
+		NUM_STANDARD_INPUT_LAYOUT_ELEMENTS, standardShaders[(int)RenderPass::FORWARD]);
 
 	setShadowResolution(2048);
 	setShadowBias(50000, 1.0f);
@@ -73,9 +83,10 @@ WorldRenderer::~WorldRenderer()
 	managedMeshRenderers.clear();
 }
 
-void WorldRenderer::onResize()
+void WorldRenderer::onResize(int display_width, int display_height)
 {
 	closeResolutionDependentResources();
+	drv->resize(display_width, display_height);
 	initResolutionDependentResources();
 }
 
@@ -105,8 +116,48 @@ void WorldRenderer::update(float delta_time)
 	sphere->worldTransform = XMMatrixRotationY(time * 0.05f) * XMMatrixTranslation(1.5f, 1.5f, 0.0f);
 }
 
+template<typename T>
+static XMFLOAT4 get_final_light_color(const T& color, float intensity)
+{
+	return XMFLOAT4(color.x * intensity, color.y * intensity, color.z * intensity, 1.0f);
+}
+
+static XMMATRIX get_shadow_matrix(XMMATRIX& lightView, XMMATRIX& lightProj)
+{
+	XMMATRIX worldToLightSpace = XMMatrixMultiply(lightView, lightProj);
+
+	//XMMATRIX textureScaleBias = XMMatrixMultiply(XMMatrixScaling(0.5f, -0.5f, 1.0f), XMMatrixTranslation(0.5f, 0.5f, 0.0f));
+	const XMMATRIX textureScaleBias = XMMatrixSet(
+		0.5f, 0.0f, 0.0f, 0.0f,
+		0.0f, -0.5f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.5f, 0.5f, 0.0f, 1.0f);
+
+	return XMMatrixMultiply(worldToLightSpace, textureScaleBias);
+}
+
 void WorldRenderer::render()
 {
+	// Update per-frame constant buffer
+	PerFrameConstantBufferData perFrameCbData;
+	perFrameCbData.ambientLightColor = get_final_light_color(ambientLightColor, ambientLightIntensity);
+	perFrameCbData.mainLightColor = get_final_light_color(mainLight->GetColor(), mainLight->GetIntensity());
+	XMMATRIX mainLightTranslateMatrix = XMMatrixTranslationFromVector(camera->GetEye() + camera->GetForward() * shadowDistance * 0.5f);
+	XMMATRIX inverseLightViewMatrix = XMMatrixRotationRollPitchYaw(mainLight->GetPitch(), mainLight->GetYaw(), 0.0f) * mainLightTranslateMatrix;
+	XMStoreFloat4(&perFrameCbData.mainLightDirection, inverseLightViewMatrix.r[2]);
+	XMMATRIX lightViewMatrix = XMMatrixInverse(nullptr, inverseLightViewMatrix);
+	XMMATRIX lightProjectionMatrix = XMMatrixOrthographicLH(shadowDistance, shadowDistance, -directionalShadowDistance, directionalShadowDistance);
+	perFrameCbData.mainLightShadowMatrix = get_shadow_matrix(lightViewMatrix, lightProjectionMatrix);
+	const float shadowResolution = (float)shadowMap->getDesc().width;
+	const float invShadowResolution = 1.0f / shadowResolution;
+	perFrameCbData.mainLightShadowResolution = XMFLOAT4(invShadowResolution, invShadowResolution, shadowResolution, shadowResolution);
+	perFrameCb->updateData(&perFrameCbData);
+
+	drv->setConstantBuffer(ShaderStage::VS, 0, perFrameCb->getId());
+	drv->setConstantBuffer(ShaderStage::PS, 0, perFrameCb->getId());
+
+	performShadowPass(lightViewMatrix, lightProjectionMatrix);
+	performForwardPass();
 }
 
 void WorldRenderer::setShadowResolution(unsigned int shadow_resolution)
@@ -174,8 +225,8 @@ void WorldRenderer::initScene()
 	managedTextures.insert(managedTextures.end(), testMaterialTextures.begin(), testMaterialTextures.end());
 
 	std::array<ITexture*, 2> blueTilesMaterialTextures;
-	testMaterialTextures[0] = loadTextureFromPng("Assets/Textures/Tiles20_base.png");
-	testMaterialTextures[1] = loadTextureFromPng("Assets/Textures/Tiles20_nrm.png");
+	blueTilesMaterialTextures[0] = loadTextureFromPng("Assets/Textures/Tiles20_base.png");
+	blueTilesMaterialTextures[1] = loadTextureFromPng("Assets/Textures/Tiles20_nrm.png");
 	managedTextures.insert(managedTextures.end(), blueTilesMaterialTextures.begin(), blueTilesMaterialTextures.end());
 
 	Material* test = new Material(standardShaders);
@@ -186,29 +237,76 @@ void WorldRenderer::initScene()
 	blueTiles->setTextures(ShaderStage::PS, blueTilesMaterialTextures.data(), 2);
 	managedMaterials.push_back(blueTiles);
 
-	MeshRenderer* floor = new MeshRenderer("floor", blueTiles);
+	MeshRenderer* floor = new MeshRenderer("floor", blueTiles, standardInputLayout);
 	floor->loadVertices(primitives::PLANE_VERTEX_COUNT, sizeof(primitives::plane_vertices[0]), (void*)primitives::plane_vertices);
-	floor->loadIndices(primitives::PLANE_INDEX_COUNT, (void*)primitives::plane_vertices);
+	floor->loadIndices(primitives::PLANE_INDEX_COUNT, (void*)primitives::plane_indices);
 	floor->worldTransform = XMMatrixScaling(10.0f, 10.0f, 10.0f);
 	managedMeshRenderers.push_back(floor);
 
-	MeshRenderer* box = new MeshRenderer("box", blueTiles);
+	MeshRenderer* box = new MeshRenderer("box", blueTiles, standardInputLayout);
 	box->loadVertices(primitives::BOX_VERTEX_COUNT, sizeof(primitives::box_vertices[0]), (void*)primitives::box_vertices);
-	box->loadIndices(primitives::PLANE_INDEX_COUNT, (void*)primitives::box_indices);
+	box->loadIndices(primitives::BOX_INDEX_COUNT, (void*)primitives::box_indices);
 	box->worldTransform = XMMatrixTranslation(-1.5f, 1.5f, 0.0f);
 	managedMeshRenderers.push_back(box);
 
-	MeshRenderer* sphere = new MeshRenderer("sphere", blueTiles);
-	sphere->loadVertices(primitives::BOX_VERTEX_COUNT, sizeof(primitives::sphere_vertices[0]), (void*)primitives::sphere_vertices);
-	sphere->loadIndices(primitives::PLANE_INDEX_COUNT, (void*)primitives::sphere_indices);
+	MeshRenderer* sphere = new MeshRenderer("sphere", blueTiles, standardInputLayout);
+	sphere->loadVertices(primitives::SPHERE_VERTEX_COUNT, sizeof(primitives::sphere_vertices[0]), (void*)primitives::sphere_vertices);
+	sphere->loadIndices(primitives::SPHERE_INDEX_COUNT, (void*)primitives::sphere_indices);
 	sphere->worldTransform = XMMatrixTranslation(1.5f, 1.5f, 0.0f);
 	managedMeshRenderers.push_back(sphere);
 }
 
-void renderer::WorldRenderer::performForwardPass()
+void WorldRenderer::performShadowPass(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix)
 {
+	drv->setRenderState(shadowRenderStateId);
+	drv->setRenderTarget(BAD_RESID, shadowMap->getId());
+	drv->setView(0, 0, (float)shadowMap->getDesc().width, (float)shadowMap->getDesc().height, 0, 1);
+
+	RenderTargetClearParams clearParams(CLEAR_FLAG_DEPTH, 0, 1.0f);
+	drv->clearRenderTargets(clearParams);
+
+	PerCameraConstantBufferData perCameraCbData;
+	perCameraCbData.view = lightViewMatrix;
+	perCameraCbData.projection = lightProjectionMatrix;
+	XMStoreFloat3(&perCameraCbData.cameraWorldPosition, camera->GetEye());
+	perCameraCb->updateData(&perCameraCbData);
+
+	drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
+	drv->setConstantBuffer(ShaderStage::PS, 1, perCameraCb->getId());
+
+	for (MeshRenderer* mr : managedMeshRenderers)
+		mr->render(RenderPass::SHADOW);
 }
 
-void renderer::WorldRenderer::performShadowPass(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix)
+void WorldRenderer::performForwardPass()
 {
+	drv->setRenderState(forwardRenderStateId);
+
+	ITexture* backbuffer = drv->getBackbufferTexture();
+	const TextureDesc& bbDesc = backbuffer->getDesc();
+	drv->setRenderTarget(backbuffer->getId(), depthTex->getId());
+	drv->setView(0, 0, (float)bbDesc.width, (float)bbDesc.height, 0, 1);
+
+	RenderTargetClearParams clearParams;
+	clearParams.color[0] = 0.0f;
+	clearParams.color[1] = 0.2f;
+	clearParams.color[2] = 0.4f;
+	clearParams.color[3] = 1.0f;
+	drv->clearRenderTargets(clearParams);
+
+	PerCameraConstantBufferData perCameraCbData;
+	perCameraCbData.view = camera->GetViewMatrix();
+	perCameraCbData.projection = camera->GetProjectionMatrix();
+	XMStoreFloat3(&perCameraCbData.cameraWorldPosition, camera->GetEye());
+	perCameraCb->updateData(&perCameraCbData);
+
+	drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
+	drv->setConstantBuffer(ShaderStage::PS, 1, perCameraCb->getId());
+
+	drv->setTexture(ShaderStage::PS, 2, shadowMap->getId(), true);
+
+	for (MeshRenderer* mr : managedMeshRenderers)
+		mr->render(RenderPass::FORWARD);
+
+	drv->setTexture(ShaderStage::PS, 2, BAD_RESID, true);
 }

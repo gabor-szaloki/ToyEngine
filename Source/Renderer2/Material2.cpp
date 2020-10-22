@@ -27,7 +27,7 @@ void Material::set(RenderPass render_pass)
 		{
 			ITexture* tex = textures[stage][i];
 			ResId texId = tex != nullptr ? tex->getId() : BAD_RESID;
-			drv->setTexture((ShaderStage)stage, i, textures[stage][i]->getId());
+			drv->setTexture((ShaderStage)stage, i, textures[stage][i]->getId(), true);
 		}
 	}
 }

@@ -25,6 +25,7 @@ namespace renderer
 		const char* name = nullptr;
 		Material* material = nullptr;
 		ResId inputLayoutId = BAD_RESID;
+		std::unique_ptr<IBuffer> cb;
 		std::unique_ptr<IBuffer> vb;
 		std::unique_ptr<IBuffer> ib;
 	};
