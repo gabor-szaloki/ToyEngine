@@ -249,7 +249,7 @@ ITexture* WorldRenderer::loadTextureFromPng(const char* path)
 void WorldRenderer::initScene()
 {
 	std::array<ITexture*, 2> testMaterialTextures;
-	testMaterialTextures[0] = loadTextureFromPng("Assets/Textures/test_base9.png");
+	testMaterialTextures[0] = loadTextureFromPng("Assets/Textures/test_base.png");
 	testMaterialTextures[1] = loadTextureFromPng("Assets/Textures/test_nrm.png");
 	managedTextures.insert(managedTextures.end(), testMaterialTextures.begin(), testMaterialTextures.end());
 
