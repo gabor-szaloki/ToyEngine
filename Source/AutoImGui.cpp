@@ -4,24 +4,45 @@
 #include <map>
 #include <3rdParty/imgui/imgui.h>
 #include <3rdParty/imgui/implot.h>
+#define MINI_CASE_SENSITIVE
+#include <3rdParty/mini/ini.h>
+
+#include "Common.h"
 
 using namespace autoimgui;
 
-static std::map<const char*, bool> window_states;
+bool autoimgui::is_active = true;
+
+static mINI::INIFile ini_file("toyimgui.ini");
+static mINI::INIStructure ini;
+
+void autoimgui::init()
+{
+	bool success = ini_file.read(ini);
+	if (!success)
+		ini_file.generate(ini, true);
+}
+
+void autoimgui::shutdown()
+{
+}
 
 bool autoimgui::is_window_opened(const char* window_name)
 {
-	return window_states[window_name];
+	return ini["windows"][window_name] == "open";
 }
 
-bool autoimgui::set_window_opened(const char* window_name, bool opened)
+void autoimgui::set_window_opened(const char* window_name, bool opened)
 {
-	return window_states[window_name] = opened;
-	// TODO seriialize and save this
+	ini["windows"][window_name] = opened ? "open" : "closed";
+	ini_file.write(ini, true);
 }
 
 void autoimgui::perform()
 {
+	if (!is_active)
+		return;
+
 	const char* imGuiDemoWindowName = "Dear ImGui Demo window";
 	const char* imPlotDemoWindowName = "ImPlot Demo window";
 

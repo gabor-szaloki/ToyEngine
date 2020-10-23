@@ -43,6 +43,9 @@
     <Filter Include="Source\3rdParty\imgui">
       <UniqueIdentifier>{ad4e9038-ee50-438f-ad47-4bb1ea24ec01}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\3rdParty\mini">
+      <UniqueIdentifier>{f32764fe-d298-417d-9547-7893ffd7cf84}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Common.cpp">
@@ -1072,6 +1075,9 @@
     </ClInclude>
     <ClInclude Include="Source\3rdParty\ImGui\implot_internal.h">
       <Filter>Source\3rdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\mini\ini.h">
+      <Filter>Source\3rdParty\mini</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

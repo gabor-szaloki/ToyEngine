@@ -9,10 +9,10 @@
 
 #include "Common.h"
 
-#define DEFAULT_WINDOWED_POS_X 100
-#define DEFAULT_WINDOWED_POS_Y 100
-#define DEFAULT_WINDOWED_WIDTH 1280
-#define DEFAULT_WINDOWED_HEIGHT 720
+static constexpr int DEFAULT_WINDOWED_POS_X = 100;
+static constexpr int DEFAULT_WINDOWED_POS_Y = 100;
+static constexpr int DEFAULT_WINDOWED_WIDTH = 1600;
+static constexpr int DEFAULT_WINDOWED_HEIGHT = 900;
 
 static int showCmd;
 static HWND hWnd;
@@ -20,7 +20,6 @@ static bool fullscreen = false;
 static RECT lastWindowedRect = { DEFAULT_WINDOWED_POS_X, DEFAULT_WINDOWED_POS_Y, DEFAULT_WINDOWED_POS_X + DEFAULT_WINDOWED_WIDTH, DEFAULT_WINDOWED_POS_Y + DEFAULT_WINDOWED_HEIGHT };
 static bool rightMouseButtonHeldDown = false;
 static POINT lastMousePos;
-static bool showImGui = true;
 static bool ctrl = false;
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -58,12 +57,13 @@ static bool init()
 	ImGui::CreateContext();
 	ImPlot::CreateContext();
 	ImGui_ImplWin32_Init(hWnd);
+	autoimgui::init();
 
 	create_driver_d3d11();
 	bool success = drv->init(hWnd, DEFAULT_WINDOWED_WIDTH, DEFAULT_WINDOWED_HEIGHT);
 	if (!success)
 	{
-		OutputDebugString("Driver initialization failed. Exiting.");
+		debug::log("Driver initialization failed. Exiting.");
 		return false;
 	}
 	wr = new WorldRenderer();
@@ -75,6 +75,7 @@ static void shutdown()
 	delete wr;
 	drv->shutdown();
 	delete drv;
+	autoimgui::shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImPlot::DestroyContext();
 	ImGui::DestroyContext();
@@ -96,7 +97,7 @@ static void update()
 static void render()
 {
 	wr->render();
-	if (showImGui)
+	if (autoimgui::is_active)
 		ImGui::Render();
 	else
 		ImGui::EndFrame();
@@ -231,7 +232,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			wr->cameraInputState.isSpeeding = true;
 			break;
 		case VK_F2:
-			showImGui = !showImGui;
+			autoimgui::is_active = !autoimgui::is_active;
 			break;
 		case VK_CONTROL:
 			ctrl = true;
@@ -242,7 +243,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 				GetWindowRect(hWnd, &lastWindowedRect);
 
 			fullscreen = !fullscreen;
-			OutputDebugString(fullscreen ? "VK_F11, Going fullscreen\n" : "Going windowed\n");
+			debug::log(fullscreen ? "VK_F11, Going fullscreen\n" : "Going windowed\n");
 
 			HMONITOR hMon = MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY);
 			MONITORINFO monitorInfo;
@@ -275,7 +276,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 
 		char str[MAX_PATH];
 		sprintf_s(str, "WM_SIZE, clientRect: x:%d, y:%d, w:%d, h:%d\n", clientRect.left, clientRect.top, w, h);
-		OutputDebugString(str);
+		debug::log(str);
 
 		// Minimize sends WM_SIZE requests with 0 size, which is invalid.
 		w = glm::max(8, w);
@@ -290,4 +291,4 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 
 REGISTER_IMGUI_FUNCTION_EX("App", "Toggle fullscreen", "F11", 100, [] { PostMessage(hWnd, WM_KEYDOWN, VK_F11, 0); });
 REGISTER_IMGUI_FUNCTION_EX("App", "Exit", "Alt+F4", 999, [] { PostMessage(hWnd, WM_CLOSE, 0, 0); });
-REGISTER_IMGUI_FUNCTION_EX("ImGui", "Hide ImGui", "F2", 100, []() { showImGui = false; });
+REGISTER_IMGUI_FUNCTION_EX("ImGui", "Hide ImGui", "F2", 100, []() { autoimgui::is_active = false; });

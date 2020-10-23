@@ -233,7 +233,7 @@ ITexture* WorldRenderer::loadTextureFromPng(const char* path)
 	if (error != 0)
 	{
 		char errortext[256];
-		sprintf_s(errortext, "error %d %s\n", error, lodepng_error_text(error));
+		sprintf_s(errortext, "error %d %s", error, lodepng_error_text(error));
 		debug::log(errortext);
 	}
 

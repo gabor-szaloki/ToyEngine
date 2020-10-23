@@ -31,7 +31,8 @@ static void stats_window()
 }
 REGISTER_IMGUI_WINDOW("Stats", stats_window);
 
-void debug::log(char* msg)
+void debug::log(const char* msg)
 {
 	OutputDebugString(msg);
+	OutputDebugString("\n");
 }

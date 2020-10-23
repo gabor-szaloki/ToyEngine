@@ -340,6 +340,7 @@
     <ClInclude Include="Source\3rdParty\ImGui\imstb_textedit.h" />
     <ClInclude Include="Source\3rdParty\ImGui\imstb_truetype.h" />
     <ClInclude Include="Source\3rdParty\LodePNG\lodepng.h" />
+    <ClInclude Include="Source\3rdParty\mini\ini.h" />
     <ClInclude Include="Source\AutoImGui.h" />
     <ClInclude Include="Source\Common.h" />
     <ClInclude Include="Source\Driver\D3D11\Buffer.h" />

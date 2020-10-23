@@ -37,7 +37,7 @@ static T* compile_and_create_shader(
 		entry_point, target_string, flags1, flags2, &blob, &errorBlob);
 
 	if (errorBlob)
-		OutputDebugString(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()));
+		debug::log(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()));
 	SAFE_RELEASE(errorBlob);
 	if (FAILED(hr))
 		return nullptr;

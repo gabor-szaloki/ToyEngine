@@ -2,8 +2,12 @@
 
 namespace autoimgui
 {
+    extern bool is_active;
+
+    void init();
+    void shutdown();
     bool is_window_opened(const char *window_name);
-    bool set_window_opened(const char *window_name, bool opened);
+    void set_window_opened(const char *window_name, bool opened);
     void perform();
 
     typedef void (*ImGuiFuncPtr)();

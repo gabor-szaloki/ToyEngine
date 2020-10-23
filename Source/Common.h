@@ -11,7 +11,7 @@ extern void create_driver_d3d11();
 // TODO: add a capable logger utility
 namespace debug
 {
-	void log(char* msg);
+	void log(const char* msg);
 }
 
 // For DirectXMath
