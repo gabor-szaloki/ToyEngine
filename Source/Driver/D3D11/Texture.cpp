@@ -67,9 +67,38 @@ void Texture::updateData(unsigned int dst_subresource, const IntBox* dst_box, co
 void Texture::generateMips()
 {
 	assert(desc.miscFlags & RESOURCE_MISC_GENERATE_MIPS);
-	assert(desc.bindFlags & BIND_SHADER_RESOURCE);
+	assert(desc.bindFlags & BIND_RENDER_TARGET);
 	assert(srv != nullptr);
 	Driver::get().getContext().GenerateMips(srv);
+}
+
+void Texture::destroySampler()
+{
+	SAFE_RELEASE(sampler);
+}
+
+void Texture::createSampler()
+{
+	if (!desc.hasSampler)
+		return;
+
+	const unsigned int driverAnisotropy = Driver::get().getSettings().textureFilteringAnisotropy;
+	D3D11_FILTER defaultFilter = driverAnisotropy > 0 ? D3D11_FILTER_ANISOTROPIC : D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	D3D11_SAMPLER_DESC sd{};
+	sd.Filter = desc.samplerDesc.filter == FILTER_DEFAULT ? defaultFilter : (D3D11_FILTER)desc.samplerDesc.filter;
+	sd.AddressU = (D3D11_TEXTURE_ADDRESS_MODE)desc.samplerDesc.addressU;
+	sd.AddressV = (D3D11_TEXTURE_ADDRESS_MODE)desc.samplerDesc.addressV;
+	sd.AddressW = (D3D11_TEXTURE_ADDRESS_MODE)desc.samplerDesc.addressW;
+	sd.MipLODBias = desc.samplerDesc.mipBias;
+	sd.MaxAnisotropy = driverAnisotropy;
+	sd.ComparisonFunc = (D3D11_COMPARISON_FUNC)desc.samplerDesc.comparisonFunc;
+	sd.MinLOD = desc.samplerDesc.minLOD;
+	sd.MaxLOD = desc.samplerDesc.maxLOD;
+	for (int i = 0; i < 4; i++)
+		sd.BorderColor[i] = desc.samplerDesc.borderColor[i];
+
+	HRESULT hr = Driver::get().getDevice().CreateSamplerState(&sd, &sampler);
+	assert(SUCCEEDED(hr));
 }
 
 void Texture::createViews()
@@ -114,28 +143,4 @@ void Texture::createViews()
 		hr = Driver::get().getDevice().CreateDepthStencilView(resource, &dsvDesc, &dsv);
 		assert(SUCCEEDED(hr));
 	}
-}
-
-void Texture::createSampler()
-{
-	if (!desc.hasSampler)
-		return;
-
-	const unsigned int driverAnisotropy = Driver::get().getSettings().textureFilteringAnisotropy;
-	D3D11_FILTER defaultFilter = driverAnisotropy > 0 ? D3D11_FILTER_ANISOTROPIC : D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-	D3D11_SAMPLER_DESC sd{};
-	sd.Filter = desc.samplerDesc.filter == FILTER_DEFAULT ? defaultFilter : (D3D11_FILTER)desc.samplerDesc.filter;
-	sd.AddressU = (D3D11_TEXTURE_ADDRESS_MODE)desc.samplerDesc.addressU;
-	sd.AddressV = (D3D11_TEXTURE_ADDRESS_MODE)desc.samplerDesc.addressV;
-	sd.AddressW = (D3D11_TEXTURE_ADDRESS_MODE)desc.samplerDesc.addressW;
-	sd.MipLODBias = desc.samplerDesc.mipBias;
-	sd.MaxAnisotropy = driverAnisotropy;
-	sd.ComparisonFunc = (D3D11_COMPARISON_FUNC)desc.samplerDesc.comparisonFunc;
-	sd.MinLOD = desc.samplerDesc.minLOD;
-	sd.MaxLOD = desc.samplerDesc.maxLOD;
-	for (int i = 0; i < 4; i++)
-		sd.BorderColor[i] = desc.samplerDesc.borderColor[i];
-
-	HRESULT hr = Driver::get().getDevice().CreateSamplerState(&sd, &sampler);
-	assert(SUCCEEDED(hr));
 }

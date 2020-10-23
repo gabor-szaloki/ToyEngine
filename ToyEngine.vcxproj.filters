@@ -123,6 +123,12 @@
     <ClCompile Include="Source\Renderer2\MeshRenderer.cpp">
       <Filter>Source\Renderer2</Filter>
     </ClCompile>
+    <ClCompile Include="Source\AutoImGui.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer2\Gui2.cpp">
+      <Filter>Source\Renderer2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common.h">
@@ -1081,6 +1087,9 @@
     </ClInclude>
     <ClInclude Include="Source\Renderer2\Primitives2.h">
       <Filter>Source\Renderer2</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\AutoImGui.h">
+      <Filter>Source</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

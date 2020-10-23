@@ -3,6 +3,8 @@
 #include <Common.h>
 
 #include <assert.h>
+#include <3rdParty/ImGui/imgui.h>
+#include <3rdParty/ImGui/imgui_impl_dx11.h>
 
 #include "Texture.h"
 #include "Buffer.h"
@@ -53,11 +55,15 @@ bool Driver::init(void* hwnd, int display_width, int display_height)
 	// TODO: Maybe expose this?
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+	ImGui_ImplDX11_Init(device, context);
+
 	return true;
 }
 
 void Driver::shutdown()
 {
+	ImGui_ImplDX11_Shutdown();
+
 	backbuffer.reset();
 
 	releaseAllResources();
@@ -414,6 +420,18 @@ void Driver::clearRenderTargets(const RenderTargetClearParams clear_params)
 	}
 }
 
+void Driver::beginFrame()
+{
+	ImGui_ImplDX11_NewFrame();
+}
+
+void Driver::endFrame()
+{
+	ImDrawData* drawData = ImGui::GetDrawData();
+	if (drawData != nullptr)
+		ImGui_ImplDX11_RenderDrawData(drawData);
+}
+
 void Driver::present()
 {
 	swapchain->Present(settings.vsync ? 1 : 0, 0);
@@ -421,8 +439,17 @@ void Driver::present()
 
 void Driver::setSettings(const DriverSettings& new_settings)
 {
-	// TODO: handle each change in settings properly
+	DriverSettings oldSettings = settings;
 	settings = new_settings;
+
+	if (settings.textureFilteringAnisotropy != oldSettings.textureFilteringAnisotropy)
+	{
+		for (auto& [k, v] : textures)
+		{
+			v->destroySampler();
+			v->createSampler();
+		}
+	}
 }
 
 template<typename T>

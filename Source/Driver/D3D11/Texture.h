@@ -13,8 +13,12 @@ namespace drv_d3d11
 
 		const TextureDesc& getDesc() const override { return desc; }
 		const ResId& getId() const override { return id; };
+		void* getViewHandle() const override { return srv; };
 		void updateData(unsigned int dst_subresource, const IntBox* dst_box, const void* src_data) override;
 		void generateMips() override;
+
+		void destroySampler();
+		void createSampler();
 
 		ID3D11Texture2D* getResource() const { return resource; }
 		ID3D11SamplerState* getSampler() const { return sampler; }
@@ -25,7 +29,6 @@ namespace drv_d3d11
 
 	private:
 		void createViews();
-		void createSampler();
 
 		TextureDesc desc;
 		ResId id = BAD_RESID;

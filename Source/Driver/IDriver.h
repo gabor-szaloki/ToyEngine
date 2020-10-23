@@ -40,6 +40,8 @@ public:
 
 	virtual void clearRenderTargets(const RenderTargetClearParams clear_params) = 0;
 
+	virtual void beginFrame() = 0;
+	virtual void endFrame() = 0;
 	virtual void present() = 0;
 
 	virtual TexFmt getIndexFormat() = 0;

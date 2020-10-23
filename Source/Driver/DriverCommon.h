@@ -75,7 +75,7 @@ TextureDesc(
 	TexFmt format_ = TexFmt::R8G8B8A8_UNORM, unsigned int mips_ = 1,
 	ResourceUsage usage_flags = ResourceUsage::DEFAULT,
 	unsigned int bind_flags = 0, unsigned int cpu_access_flags = 0, unsigned int misc_flags = 0, bool has_sampler = true) :
-	name(name_), width(width_), height(height_), format(format_), usageFlags(usage_flags),
+	name(name_), width(width_), height(height_), format(format_), mips(mips_), usageFlags(usage_flags),
 	bindFlags(bind_flags), cpuAccessFlags(cpu_access_flags), miscFlags(misc_flags), hasSampler(has_sampler) {}
 };
 

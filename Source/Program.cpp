@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <chrono>
 
+#include <3rdParty/ImGui/imgui.h>
+#include <3rdParty/ImGui/imgui_impl_win32.h>
+
 #include "Common.h"
 #include "Renderer/Engine.h"
 #include "Renderer2/WorldRenderer.h"
@@ -10,21 +13,21 @@
 #define DEFAULT_WINDOWED_WIDTH 1280
 #define DEFAULT_WINDOWED_HEIGHT 720
 
-int showCmd;
-bool fullscreen = false;
-RECT lastWindowedRect = { DEFAULT_WINDOWED_POS_X, DEFAULT_WINDOWED_POS_Y, DEFAULT_WINDOWED_POS_X + DEFAULT_WINDOWED_WIDTH, DEFAULT_WINDOWED_POS_Y + DEFAULT_WINDOWED_HEIGHT };
-bool rightMouseButtonHeldDown = false;
-POINT lastMousePos;
-bool ctrl = false;
+static int showCmd;
+static HWND hWnd;
+static bool fullscreen = false;
+static RECT lastWindowedRect = { DEFAULT_WINDOWED_POS_X, DEFAULT_WINDOWED_POS_Y, DEFAULT_WINDOWED_POS_X + DEFAULT_WINDOWED_WIDTH, DEFAULT_WINDOWED_POS_Y + DEFAULT_WINDOWED_HEIGHT };
+static bool rightMouseButtonHeldDown = false;
+static POINT lastMousePos;
+static bool showImGui = true;
+static bool ctrl = false;
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 #define USE_NEW_RENDERER 1
 
-#if USE_NEW_RENDERER
 renderer::WorldRenderer* wr;
-#endif
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
 {
@@ -44,7 +47,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	RECT windowRect = { 0, 0, DEFAULT_WINDOWED_WIDTH, DEFAULT_WINDOWED_HEIGHT };
 	AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, false);
 
-	HWND hWnd = CreateWindowEx(0,
+	hWnd = CreateWindowEx(0,
 		"WindowClass1", // window class
 		"ToyEngine", // title
 		WS_OVERLAPPEDWINDOW, // window style
@@ -54,6 +57,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		nullptr, nullptr, hInstance, nullptr);
 
 #if USE_NEW_RENDERER
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGui_ImplWin32_Init(hWnd);
+
 	create_driver_d3d11();
 	bool success = drv->init(hWnd, DEFAULT_WINDOWED_WIDTH, DEFAULT_WINDOWED_HEIGHT);
 	if (!success)
@@ -85,6 +92,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				delete wr;
 				drv->shutdown();
 				delete drv;
+				ImGui_ImplWin32_Shutdown();
+				ImGui::DestroyContext();
 #else
 				gEngine->Release();
 				delete gEngine;
@@ -98,8 +107,17 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		lastTime = currentTime;
 
 #if USE_NEW_RENDERER
+		drv->beginFrame();
+		ImGui_ImplWin32_NewFrame();
+		ImGui::NewFrame();
+		autoimgui::perform();
 		wr->update(deltaTimeInSeconds);
 		wr->render();
+		if (showImGui)
+			ImGui::Render();
+		else
+			ImGui::EndFrame();
+		drv->endFrame();
 		drv->present();
 #else
 		gEngine->Update(deltaTimeInSeconds);
@@ -239,6 +257,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		case VK_SHIFT:
 			wr->cameraInputState.isSpeeding = true;
 			break;
+		case VK_F2:
+			showImGui = !showImGui;
+			break;
 #else
 		case 0x57: // W
 			if (ctrl)
@@ -310,6 +331,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		OutputDebugString(str);
 
 #if USE_NEW_RENDERER
+		// Minimize sends WM_SIZE requests with 0 size, which is invalid.
+		w = glm::max(8, w);
+		h = glm::max(8, h);
 		wr->onResize(w, h);
 #else
 		gEngine->Resize(hWnd, float(w), float(h));
@@ -320,3 +344,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 
 	return DefWindowProc(hWnd, message, wParam, lParam);
 }
+
+REGISTER_IMGUI_FUNCTION_EX("App", "Toggle fullscreen", "F11", 100, [] { PostMessage(hWnd, WM_KEYDOWN, VK_F11, 0); });
+REGISTER_IMGUI_FUNCTION_EX("App", "Exit", "Alt+F4", 999, [] { PostMessage(hWnd, WM_CLOSE, 0, 0); });

@@ -27,6 +27,7 @@
     <ClCompile Include="Source\3rdParty\ImGui\imgui_impl_win32.cpp" />
     <ClCompile Include="Source\3rdParty\ImGui\imgui_widgets.cpp" />
     <ClCompile Include="Source\3rdParty\LodePNG\lodepng.cpp" />
+    <ClCompile Include="Source\AutoImGui.cpp" />
     <ClCompile Include="Source\Common.cpp" />
     <ClCompile Include="Source\Driver\D3D11\Buffer.cpp" />
     <ClCompile Include="Source\Driver\D3D11\Driver.cpp" />
@@ -35,6 +36,7 @@
     <ClCompile Include="Source\Driver\D3D11\ShaderSet.cpp" />
     <ClCompile Include="Source\Driver\D3D11\Texture.cpp" />
     <ClCompile Include="Source\Program.cpp" />
+    <ClCompile Include="Source\Renderer2\Gui2.cpp" />
     <ClCompile Include="Source\Renderer2\Material2.cpp" />
     <ClCompile Include="Source\Renderer2\MeshRenderer.cpp" />
     <ClCompile Include="Source\Renderer2\WorldRenderer.cpp" />
@@ -337,6 +339,7 @@
     <ClInclude Include="Source\3rdParty\ImGui\imstb_textedit.h" />
     <ClInclude Include="Source\3rdParty\ImGui\imstb_truetype.h" />
     <ClInclude Include="Source\3rdParty\LodePNG\lodepng.h" />
+    <ClInclude Include="Source\AutoImGui.h" />
     <ClInclude Include="Source\Common.h" />
     <ClInclude Include="Source\Driver\D3D11\Buffer.h" />
     <ClInclude Include="Source\Driver\D3D11\Driver.h" />

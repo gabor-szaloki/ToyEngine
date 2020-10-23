@@ -143,6 +143,13 @@ void WorldRenderer::render()
 	performForwardPass();
 }
 
+unsigned int WorldRenderer::getShadowResolution()
+{
+	if (shadowMap == nullptr)
+		return 0;
+	return shadowMap->getDesc().width;
+}
+
 void WorldRenderer::setShadowResolution(unsigned int shadow_resolution)
 {
 	TextureDesc shadowMapDesc("shadowMap", shadow_resolution, shadow_resolution,
@@ -157,9 +164,12 @@ void WorldRenderer::setShadowResolution(unsigned int shadow_resolution)
 
 void WorldRenderer::setShadowBias(int depth_bias, float slope_scaled_depth_bias)
 {
+	shadowDepthBias = depth_bias;
+	shadowSlopeScaledDepthBias = slope_scaled_depth_bias;
+
 	RenderStateDesc desc;
-	desc.rasterizerDesc.depthBias = depth_bias;
-	desc.rasterizerDesc.slopeScaledDepthBias = slope_scaled_depth_bias;
+	desc.rasterizerDesc.depthBias = shadowDepthBias;
+	desc.rasterizerDesc.slopeScaledDepthBias = shadowSlopeScaledDepthBias;
 	shadowRenderStateId = drv->createRenderState(desc);
 }
 
@@ -303,7 +313,7 @@ void WorldRenderer::performShadowPass(const XMMATRIX& lightViewMatrix, const XMM
 
 void WorldRenderer::performForwardPass()
 {
-	drv->setRenderState(forwardRenderStateId);
+	drv->setRenderState(showWireframe ? forwardWireframeRenderStateId : forwardRenderStateId);
 
 	ITexture* backbuffer = drv->getBackbufferTexture();
 	const TextureDesc& bbDesc = backbuffer->getDesc();

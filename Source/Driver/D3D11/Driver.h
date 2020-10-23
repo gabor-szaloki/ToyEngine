@@ -14,9 +14,6 @@
 
 namespace drv_d3d11
 {
-	//template<typename T>
-	//using ComPtr = Microsoft::WRL::ComPtr<T>;
-
 	class Texture;
 	class Buffer;
 	class RenderState;
@@ -60,6 +57,8 @@ namespace drv_d3d11
 
 		void clearRenderTargets(const RenderTargetClearParams clear_params) override;
 
+		void beginFrame() override;
+		void endFrame() override;
 		void present() override;
 
 		TexFmt getIndexFormat() override { return TexFmt::R16_UINT; }
