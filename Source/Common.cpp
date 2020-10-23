@@ -3,6 +3,7 @@
 #include <3rdParty/ImGui/imgui.h>
 
 IDriver* drv;
+WorldRenderer* wr;
 
 void ThrowIfFailed(HRESULT hr, const char *errorMsg)
 {

@@ -36,16 +36,12 @@
     <ClCompile Include="Source\Driver\D3D11\ShaderSet.cpp" />
     <ClCompile Include="Source\Driver\D3D11\Texture.cpp" />
     <ClCompile Include="Source\Program.cpp" />
-    <ClCompile Include="Source\Renderer2\Gui2.cpp" />
-    <ClCompile Include="Source\Renderer2\Material2.cpp" />
-    <ClCompile Include="Source\Renderer2\MeshRenderer.cpp" />
-    <ClCompile Include="Source\Renderer2\WorldRenderer.cpp" />
     <ClCompile Include="Source\Renderer\Camera.cpp" />
-    <ClCompile Include="Source\Renderer\Drawable.cpp" />
-    <ClCompile Include="Source\Renderer\Engine.cpp" />
     <ClCompile Include="Source\Renderer\Gui.cpp" />
     <ClCompile Include="Source\Renderer\Light.cpp" />
     <ClCompile Include="Source\Renderer\Material.cpp" />
+    <ClCompile Include="Source\Renderer\MeshRenderer.cpp" />
+    <ClCompile Include="Source\Renderer\WorldRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\3rdParty\glm\common.hpp" />
@@ -354,20 +350,14 @@
     <ClInclude Include="Source\Driver\ITexture.h" />
     <ClInclude Include="Source\Driver\DriverConsts.h" />
     <ClInclude Include="Source\Driver\TexFmt.h" />
-    <ClInclude Include="Source\Renderer2\ConstantBuffers.h" />
-    <ClInclude Include="Source\Renderer2\Material2.h" />
-    <ClInclude Include="Source\Renderer2\MeshRenderer.h" />
-    <ClInclude Include="Source\Renderer2\Primitives2.h" />
-    <ClInclude Include="Source\Renderer2\RendererCommon.h" />
-    <ClInclude Include="Source\Renderer2\WorldRenderer.h" />
     <ClInclude Include="Source\Renderer\Camera.h" />
-    <ClInclude Include="Source\Renderer\Drawable.h" />
-    <ClInclude Include="Source\Renderer\Engine.h" />
-    <ClInclude Include="Source\Renderer\EngineCommon.h" />
-    <ClInclude Include="Source\Renderer\Gui.h" />
+    <ClInclude Include="Source\Renderer\ConstantBuffers.h" />
     <ClInclude Include="Source\Renderer\Light.h" />
     <ClInclude Include="Source\Renderer\Material.h" />
-    <ClInclude Include="Source\Renderer\Privitives.h" />
+    <ClInclude Include="Source\Renderer\MeshRenderer.h" />
+    <ClInclude Include="Source\Renderer\Primitives.h" />
+    <ClInclude Include="Source\Renderer\RendererCommon.h" />
+    <ClInclude Include="Source\Renderer\WorldRenderer.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Source\3rdParty\glm\CMakeLists.txt" />

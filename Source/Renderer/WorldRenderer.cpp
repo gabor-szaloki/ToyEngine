@@ -2,18 +2,15 @@
 
 #include <array>
 #include <3rdParty/LodePNG/lodepng.h>
-
 #include <Renderer/Camera.h>
 #include <Renderer/Light.h>
 #include <Driver/ITexture.h>
 #include <Driver/IBuffer.h>
 
 #include "ConstantBuffers.h"
-#include "Material2.h"
+#include "Material.h"
 #include "MeshRenderer.h"
-#include "Primitives2.h"
-
-using namespace renderer;
+#include "Primitives.h"
 
 WorldRenderer::WorldRenderer()
 {
@@ -194,7 +191,7 @@ void WorldRenderer::closeResolutionDependentResources()
 	forwardWireframeRenderStateId.close();
 }
 
-void renderer::WorldRenderer::initShaders()
+void WorldRenderer::initShaders()
 {
 	ShaderSetDesc shaderDesc("Source/Shaders/Standard.shader");
 	shaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "StandardForwardVS";
@@ -217,7 +214,7 @@ void renderer::WorldRenderer::initShaders()
 		NUM_STANDARD_INPUT_LAYOUT_ELEMENTS, standardShaders[(int)RenderPass::FORWARD]);
 }
 
-void renderer::WorldRenderer::closeShaders()
+void WorldRenderer::closeShaders()
 {
 	standardInputLayout.close();
 	for (ResId& id : standardShaders)
@@ -227,7 +224,7 @@ void renderer::WorldRenderer::closeShaders()
 	}
 }
 
-ITexture* renderer::WorldRenderer::loadTextureFromPng(const char* path)
+ITexture* WorldRenderer::loadTextureFromPng(const char* path)
 {
 	std::vector<unsigned char> pngData;
 	UINT width, height;

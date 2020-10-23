@@ -16,10 +16,8 @@
 #define RAD_TO_DEG 57.2957795f;
 #define DEG_TO_RAD 0.0174532925f;
 
-namespace renderer { class WorldRenderer; }
-
 extern IDriver* drv;
-extern renderer::WorldRenderer* wr;
+extern class WorldRenderer* wr;
 extern void create_driver_d3d11();
 
 void ThrowIfFailed(HRESULT hr, const char *errorMsg = nullptr);

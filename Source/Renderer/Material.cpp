@@ -1,30 +1,30 @@
 #include "Material.h"
 
-#include "Engine.h"
+#include <assert.h>
+#include <Driver/ITexture.h>
 
-Material::Material(
-	ID3D11VertexShader *forwardVS, ID3D11PixelShader *forwardPS,
-	ID3D11VertexShader *shadowVS, ID3D11PixelShader *shadowPS,
-	ID3D11ShaderResourceView *baseTextureRV,
-	ID3D11ShaderResourceView *normalTextureRV)
+Material::Material(const std::array<ResId, (int)RenderPass::_COUNT>& shaders_)
 {
-	this->forwardVS = forwardVS;
-	this->forwardPS = forwardPS;
-	this->shadowVS = shadowVS;
-	this->shadowPS = shadowPS;
-
-	this->baseTextureRV = baseTextureRV;
-	this->normalTextureRV = normalTextureRV;
+	for (int i = 0; i < (int)RenderPass::_COUNT; i++)
+		shaders[i] = shaders_[i];
 }
 
-Material::~Material()
+void Material::setTextures(ShaderStage stage, ITexture** textures_, unsigned int num_textures)
 {
+	assert(textures_ != nullptr);
+	textures[(int)stage].assign(textures_, textures_ + num_textures);
 }
 
-void Material::SetToContext(ID3D11DeviceContext *context, bool shadowPass)
+void Material::set(RenderPass render_pass)
 {
-	context->VSSetShader(shadowPass ? shadowVS : forwardVS, nullptr, 0);
-	context->PSSetShader(shadowPass ? shadowPS : forwardPS, nullptr, 0);
-	context->PSSetShaderResources(0, 1, &baseTextureRV);
-	context->PSSetShaderResources(1, 1, &normalTextureRV);
+	drv->setShaderSet(shaders[(int)render_pass]);
+	for (int stage = 0; stage < (int)ShaderStage::GRAPHICS_STAGE_COUNT; stage++)
+	{
+		for (unsigned int i = 0; i < textures[stage].size(); i++)
+		{
+			ITexture* tex = textures[stage][i];
+			ResId texId = tex != nullptr ? tex->getId() : BAD_RESID;
+			drv->setTexture((ShaderStage)stage, i, textures[stage][i]->getId(), true);
+		}
+	}
 }

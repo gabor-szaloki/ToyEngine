@@ -2,10 +2,8 @@
 
 #include <Driver/IBuffer.h>
 
-#include "Material2.h"
+#include "Material.h"
 #include "ConstantBuffers.h"
-
-using namespace renderer;
 
 MeshRenderer::MeshRenderer(const char* name_, Material* material_, ResId input_layout_id)
 	: name(name_), material(material_), inputLayoutId(input_layout_id)

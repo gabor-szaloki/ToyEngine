@@ -4,9 +4,6 @@
     <Filter Include="Source">
       <UniqueIdentifier>{312e91cf-1c69-416c-905a-96b2e6030187}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source\Renderer">
-      <UniqueIdentifier>{0a491fcc-de52-4033-968e-3a7818001e28}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source\Shaders">
       <UniqueIdentifier>{e90f1a98-579d-4de1-ba88-6dd16817e971}</UniqueIdentifier>
     </Filter>
@@ -43,7 +40,7 @@
     <Filter Include="Source\Driver\D3D11">
       <UniqueIdentifier>{5f8778ce-ddd3-428f-bfc0-d03be7eb2568}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source\Renderer2">
+    <Filter Include="Source\Renderer">
       <UniqueIdentifier>{f6db5caa-aca0-48fa-9082-a82a52e2936c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -75,24 +72,6 @@
     <ClCompile Include="Source\3rdParty\LodePNG\lodepng.cpp">
       <Filter>Source\3rdParty\LodePNG</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer\Camera.cpp">
-      <Filter>Source\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Drawable.cpp">
-      <Filter>Source\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Engine.cpp">
-      <Filter>Source\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Gui.cpp">
-      <Filter>Source\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Light.cpp">
-      <Filter>Source\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Material.cpp">
-      <Filter>Source\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="Source\3rdParty\glm\detail\glm.cpp">
       <Filter>Source\3rdParty\glm\detail</Filter>
     </ClCompile>
@@ -114,20 +93,26 @@
     <ClCompile Include="Source\Driver\D3D11\InputLayout.cpp">
       <Filter>Source\Driver\D3D11</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer2\WorldRenderer.cpp">
-      <Filter>Source\Renderer2</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer2\Material2.cpp">
-      <Filter>Source\Renderer2</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer2\MeshRenderer.cpp">
-      <Filter>Source\Renderer2</Filter>
-    </ClCompile>
     <ClCompile Include="Source\AutoImGui.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer2\Gui2.cpp">
-      <Filter>Source\Renderer2</Filter>
+    <ClCompile Include="Source\Renderer\Camera.cpp">
+      <Filter>Source\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\Light.cpp">
+      <Filter>Source\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\MeshRenderer.cpp">
+      <Filter>Source\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\WorldRenderer.cpp">
+      <Filter>Source\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\Gui.cpp">
+      <Filter>Source\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\Material.cpp">
+      <Filter>Source\Renderer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -160,30 +145,6 @@
     </ClInclude>
     <ClInclude Include="Source\3rdParty\LodePNG\lodepng.h">
       <Filter>Source\3rdParty\LodePNG</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Renderer\Camera.h">
-      <Filter>Source\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Renderer\Drawable.h">
-      <Filter>Source\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Renderer\Engine.h">
-      <Filter>Source\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Renderer\EngineCommon.h">
-      <Filter>Source\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Renderer\Gui.h">
-      <Filter>Source\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Renderer\Light.h">
-      <Filter>Source\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Renderer\Material.h">
-      <Filter>Source\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Renderer\Privitives.h">
-      <Filter>Source\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Source\3rdParty\glm\common.hpp">
       <Filter>Source\3rdParty\glm</Filter>
@@ -1070,26 +1031,32 @@
     <ClInclude Include="Source\Driver\D3D11\InputLayout.h">
       <Filter>Source\Driver\D3D11</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Renderer2\WorldRenderer.h">
-      <Filter>Source\Renderer2</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Renderer2\ConstantBuffers.h">
-      <Filter>Source\Renderer2</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Renderer2\RendererCommon.h">
-      <Filter>Source\Renderer2</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Renderer2\Material2.h">
-      <Filter>Source\Renderer2</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Renderer2\MeshRenderer.h">
-      <Filter>Source\Renderer2</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Renderer2\Primitives2.h">
-      <Filter>Source\Renderer2</Filter>
-    </ClInclude>
     <ClInclude Include="Source\AutoImGui.h">
       <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\Camera.h">
+      <Filter>Source\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\ConstantBuffers.h">
+      <Filter>Source\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\Light.h">
+      <Filter>Source\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\MeshRenderer.h">
+      <Filter>Source\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\RendererCommon.h">
+      <Filter>Source\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\WorldRenderer.h">
+      <Filter>Source\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\Primitives.h">
+      <Filter>Source\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\Material.h">
+      <Filter>Source\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

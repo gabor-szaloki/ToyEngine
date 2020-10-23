@@ -1,12 +1,10 @@
 #include <stdio.h>
 #include <chrono>
-
 #include <3rdParty/ImGui/imgui.h>
 #include <3rdParty/ImGui/imgui_impl_win32.h>
+#include <Renderer/WorldRenderer.h>
 
 #include "Common.h"
-#include "Renderer/Engine.h"
-#include "Renderer2/WorldRenderer.h"
 
 #define DEFAULT_WINDOWED_POS_X 100
 #define DEFAULT_WINDOWED_POS_Y 100
@@ -25,20 +23,14 @@ static bool ctrl = false;
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-#define USE_NEW_RENDERER 1
-
-renderer::WorldRenderer* wr;
-
-int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
+static void create_hwnd(HINSTANCE h_instance)
 {
-	showCmd = nShowCmd;
-
 	WNDCLASSEX wc;
 	ZeroMemory(&wc, sizeof(WNDCLASSEX));
 	wc.cbSize = sizeof(WNDCLASSEX);
 	wc.style = CS_HREDRAW | CS_VREDRAW;
 	wc.lpfnWndProc = WindowProc;
-	wc.hInstance = hInstance;
+	wc.hInstance = h_instance;
 	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
 	wc.lpszClassName = "WindowClass1";
@@ -54,9 +46,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		//WS_POPUP, // window style
 		DEFAULT_WINDOWED_POS_X, DEFAULT_WINDOWED_POS_Y, // x, y
 		windowRect.right - windowRect.left, windowRect.bottom - windowRect.top, // w, h
-		nullptr, nullptr, hInstance, nullptr);
+		nullptr, nullptr, h_instance, nullptr);
+}
 
-#if USE_NEW_RENDERER
+static bool init()
+{
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGui_ImplWin32_Init(hWnd);
@@ -66,17 +60,52 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	if (!success)
 	{
 		OutputDebugString("Driver initialization failed. Exiting.");
-		return 1;
+		return false;
 	}
-	wr = new renderer::WorldRenderer();
-#else
-	gEngine = new Engine();
-	gEngine->Init(hWnd, DEFAULT_WINDOWED_WIDTH, DEFAULT_WINDOWED_HEIGHT);
-#endif
+	wr = new WorldRenderer();
+	return true;
+}
+
+static void shutdown()
+{
+	delete wr;
+	drv->shutdown();
+	delete drv;
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+}
+
+static void update()
+{
+	auto currentTime = std::chrono::high_resolution_clock::now();
+	static auto lastTime = currentTime;
+	float deltaTimeInSeconds = (float)(((double)std::chrono::duration_cast<std::chrono::microseconds>(currentTime - lastTime).count()) * 0.001 * 0.001);
+	lastTime = currentTime;
+
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+	autoimgui::perform();
+	wr->update(deltaTimeInSeconds);
+}
+
+static void render()
+{
+	wr->render();
+	if (showImGui)
+		ImGui::Render();
+	else
+		ImGui::EndFrame();
+}
+
+int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
+{
+	showCmd = nShowCmd;
+
+	create_hwnd(hInstance);
+	if (!init())
+		return 1;
 
 	ShowWindow(hWnd, nShowCmd);
-
-	auto lastTime = std::chrono::high_resolution_clock::now();
 
 	MSG msg;
 	while (true)
@@ -88,41 +117,16 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 			if (msg.message == WM_QUIT)
 			{
-#if USE_NEW_RENDERER
-				delete wr;
-				drv->shutdown();
-				delete drv;
-				ImGui_ImplWin32_Shutdown();
-				ImGui::DestroyContext();
-#else
-				gEngine->Release();
-				delete gEngine;
-#endif
+				shutdown();
 				return (int)msg.wParam;
 			}
 		}
 
-		auto currentTime = std::chrono::high_resolution_clock::now();
-		float deltaTimeInSeconds = (float)(((double)std::chrono::duration_cast<std::chrono::microseconds>(currentTime - lastTime).count()) * 0.001 * 0.001);
-		lastTime = currentTime;
-
-#if USE_NEW_RENDERER
 		drv->beginFrame();
-		ImGui_ImplWin32_NewFrame();
-		ImGui::NewFrame();
-		autoimgui::perform();
-		wr->update(deltaTimeInSeconds);
-		wr->render();
-		if (showImGui)
-			ImGui::Render();
-		else
-			ImGui::EndFrame();
+		update();
+		render();
 		drv->endFrame();
 		drv->present();
-#else
-		gEngine->Update(deltaTimeInSeconds);
-		gEngine->RenderFrame();
-#endif
 	}
 
 	return 0;
@@ -140,14 +144,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		return 0;
 	}
 
-#if USE_NEW_RENDERER
 	if (wr == nullptr)
-#else
-	if (gEngine == nullptr)
-#endif
-	{
 		return DefWindowProc(hWnd, message, wParam, lParam);
-	}
 
 	switch (message)
 	{
@@ -169,20 +167,14 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		{
 			POINT mousePos;
 			GetCursorPos(&mousePos);
-#if USE_NEW_RENDERER
 			wr->cameraInputState.deltaYaw += mousePos.x - lastMousePos.x;
 			wr->cameraInputState.deltaPitch += mousePos.y - lastMousePos.y;
-#else
-			gEngine->cameraInputState.deltaYaw += mousePos.x - lastMousePos.x;
-			gEngine->cameraInputState.deltaPitch += mousePos.y - lastMousePos.y;
-#endif
 			SetCursorPos(lastMousePos.x, lastMousePos.y);
 		}
 		break;
 	case WM_KEYUP:
 		switch (wParam)
 		{
-#if USE_NEW_RENDERER
 		case 0x57: // W
 			wr->cameraInputState.isMovingForward = false;
 			break;
@@ -204,29 +196,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		case VK_SHIFT:
 			wr->cameraInputState.isSpeeding = false;
 			break;
-#else
-		case 0x57: // W
-			gEngine->cameraInputState.isMovingForward = false;
-			break;
-		case 0x53: // S
-			gEngine->cameraInputState.isMovingBackward = false;
-			break;
-		case 0x44: // D
-			gEngine->cameraInputState.isMovingRight = false;
-			break;
-		case 0x41: // A
-			gEngine->cameraInputState.isMovingLeft = false;
-			break;
-		case 0x45: // E
-			gEngine->cameraInputState.isMovingUp = false;
-			break;
-		case 0x51: // Q
-			gEngine->cameraInputState.isMovingDown = false;
-			break;
-		case VK_SHIFT:
-			gEngine->cameraInputState.isSpeeding = false;
-			break;
-#endif
 		case VK_CONTROL:
 			ctrl = false;
 			break;
@@ -235,7 +204,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	case WM_KEYDOWN:
 		switch (wParam)
 		{
-#if USE_NEW_RENDERER
 		case 0x57: // W
 			wr->cameraInputState.isMovingForward = true;
 			break;
@@ -260,32 +228,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		case VK_F2:
 			showImGui = !showImGui;
 			break;
-#else
-		case 0x57: // W
-			if (ctrl)
-				gEngine->ToggleGUI();
-			else
-				gEngine->cameraInputState.isMovingForward = true;
-			break;
-		case 0x53: // S
-			gEngine->cameraInputState.isMovingBackward = true;
-			break;
-		case 0x44: // D
-			gEngine->cameraInputState.isMovingRight = true;
-			break;
-		case 0x41: // A
-			gEngine->cameraInputState.isMovingLeft = true;
-			break;
-		case 0x45: // E
-			gEngine->cameraInputState.isMovingUp = true;
-			break;
-		case 0x51: // Q
-			gEngine->cameraInputState.isMovingDown = true;
-			break;
-		case VK_SHIFT:
-			gEngine->cameraInputState.isSpeeding = true;
-			break;
-#endif
 		case VK_CONTROL:
 			ctrl = true;
 			break;
@@ -330,14 +272,10 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		sprintf_s(str, "WM_SIZE, clientRect: x:%d, y:%d, w:%d, h:%d\n", clientRect.left, clientRect.top, w, h);
 		OutputDebugString(str);
 
-#if USE_NEW_RENDERER
 		// Minimize sends WM_SIZE requests with 0 size, which is invalid.
 		w = glm::max(8, w);
 		h = glm::max(8, h);
 		wr->onResize(w, h);
-#else
-		gEngine->Resize(hWnd, float(w), float(h));
-#endif
 		break;
 	}
 	}
@@ -347,3 +285,4 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 
 REGISTER_IMGUI_FUNCTION_EX("App", "Toggle fullscreen", "F11", 100, [] { PostMessage(hWnd, WM_KEYDOWN, VK_F11, 0); });
 REGISTER_IMGUI_FUNCTION_EX("App", "Exit", "Alt+F4", 999, [] { PostMessage(hWnd, WM_CLOSE, 0, 0); });
+REGISTER_IMGUI_FUNCTION_EX("ImGui", "Hide ImGui", "F2", 100, []() { showImGui = false; });

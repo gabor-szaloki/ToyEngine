@@ -1,26 +1,19 @@
 #pragma once
 
-#include "EngineCommon.h"
+#include <array>
+#include <vector>
+#include "RendererCommon.h"
+
+class ITexture;
 
 class Material
 {
-
 public:
-	Material(
-		ID3D11VertexShader *forwardVS, ID3D11PixelShader *forwardPS,
-		ID3D11VertexShader *shadowVS, ID3D11PixelShader *shadowPS,
-		ID3D11ShaderResourceView *baseTextureRV, 
-		ID3D11ShaderResourceView *normalTextureRV);
-	~Material();
-
-	void SetToContext(ID3D11DeviceContext *context, bool shadowPass);
+	Material(const std::array<ResId, (int)RenderPass::_COUNT>& shaders_);
+	void setTextures(ShaderStage stage, ITexture** textures_, unsigned int num_textures);
+	void set(RenderPass render_pass);
 
 private:
-
-	ID3D11ShaderResourceView *baseTextureRV;
-	ID3D11ShaderResourceView *normalTextureRV;
-
-	ID3D11VertexShader *forwardVS, *shadowVS;
-	ID3D11PixelShader *forwardPS, *shadowPS;
-
+	std::array<ResId, (int)RenderPass::_COUNT> shaders;
+	std::array<std::vector<ITexture*>, (int)ShaderStage::GRAPHICS_STAGE_COUNT> textures;
 };
