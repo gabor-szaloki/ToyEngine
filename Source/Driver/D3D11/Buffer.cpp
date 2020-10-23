@@ -1,5 +1,7 @@
 #include "Buffer.h"
 
+#include <Common.h>
+
 #include <assert.h>
 
 using namespace drv_d3d11;
@@ -37,12 +39,15 @@ Buffer::Buffer(const BufferDesc& desc_) : desc(desc_)
 
 Buffer::~Buffer()
 {
+	SAFE_RELEASE(resource);
+	SAFE_RELEASE(srv);
+	SAFE_RELEASE(uav);
 	Driver::get().unregisterBuffer(id);
 }
 
 void Buffer::updateData(const void* src_data)
 {
-	Driver::get().getContext().UpdateSubresource(resource.Get(), 0, nullptr, src_data, 0, 0);
+	Driver::get().getContext().UpdateSubresource(resource, 0, nullptr, src_data, 0, 0);
 	// TODO: use Map for dynamic buffers
 }
 
@@ -54,7 +59,7 @@ void Buffer::createViews()
 		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
 		srvDesc.Buffer.FirstElement = 0;
 		srvDesc.Buffer.NumElements = desc.numElements;
-		Driver::get().getDevice().CreateShaderResourceView(resource.Get(), &srvDesc, &srv);
+		Driver::get().getDevice().CreateShaderResourceView(resource, &srvDesc, &srv);
 	}
 	if (desc.bindFlags & BIND_UNORDERED_ACCESS)
 	{
@@ -62,6 +67,6 @@ void Buffer::createViews()
 		uavDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 		uavDesc.Buffer.FirstElement = 0;
 		uavDesc.Buffer.NumElements = desc.numElements;
-		Driver::get().getDevice().CreateUnorderedAccessView(resource.Get(), &uavDesc, &uav);
+		Driver::get().getDevice().CreateUnorderedAccessView(resource, &uavDesc, &uav);
 	}
 }

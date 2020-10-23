@@ -14,8 +14,8 @@
 
 namespace drv_d3d11
 {
-	template<typename T>
-	using ComPtr = Microsoft::WRL::ComPtr<T>;
+	//template<typename T>
+	//using ComPtr = Microsoft::WRL::ComPtr<T>;
 
 	class Texture;
 	class Buffer;
@@ -66,8 +66,8 @@ namespace drv_d3d11
 		const DriverSettings& getSettings() override { return settings; };
 		void setSettings(const DriverSettings& new_settings) override;
 
-		ID3D11Device& getDevice() { return *device.Get(); }
-		ID3D11DeviceContext& getContext() { return *context.Get(); }
+		ID3D11Device& getDevice() { return *device; }
+		ID3D11DeviceContext& getContext() { return *context; }
 
 		ResId registerTexture(Texture* tex);
 		void unregisterTexture(ResId id);
@@ -90,9 +90,9 @@ namespace drv_d3d11
 
 		HWND hWnd;
 
-		ComPtr<ID3D11Device> device;
-		ComPtr<ID3D11DeviceContext> context;
-		ComPtr<IDXGISwapChain> swapchain;
+		ID3D11Device* device;
+		ID3D11DeviceContext* context;
+		IDXGISwapChain* swapchain;
 		std::unique_ptr<Texture> backbuffer;
 
 		std::map<ResId, Texture*> textures;

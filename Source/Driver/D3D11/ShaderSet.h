@@ -11,17 +11,17 @@ namespace drv_d3d11
 		ShaderSet(const ShaderSetDesc& desc_);
 		~ShaderSet();
 		const ResId& getId() const { return id; }
-		ID3DBlob* getVsBlob() const { return vsBlob.Get(); }
+		ID3DBlob* getVsBlob() const { return vsBlob; }
 		void set();
 
 	private:
 		ShaderSetDesc desc;
 		ResId id = BAD_RESID;
-		ComPtr<ID3DBlob> vsBlob;
-		ComPtr<ID3D11VertexShader> vs;
-		ComPtr<ID3D11PixelShader> ps;
-		ComPtr<ID3D11GeometryShader> gs;
-		ComPtr<ID3D11HullShader> hs;
-		ComPtr<ID3D11DomainShader> ds;
+		ID3DBlob* vsBlob;
+		ID3D11VertexShader* vs;
+		ID3D11PixelShader* ps;
+		ID3D11GeometryShader* gs;
+		ID3D11HullShader* hs;
+		ID3D11DomainShader* ds;
 	};
 }

@@ -62,16 +62,19 @@ void Driver::shutdown()
 
 	releaseAllResources();
 
-	swapchain.Reset();
-	context.Reset();
-	device.Reset();
+	SAFE_RELEASE(swapchain);
+	SAFE_RELEASE(context);
+	SAFE_RELEASE(device);
 }
 
 void Driver::resize(int display_width, int display_height)
 {
+	if (display_width == displayWidth && display_height == displayHeight)
+		return;
 	context->OMSetRenderTargets(0, nullptr, nullptr);
 	closeResolutionDependentResources();
-	swapchain->ResizeBuffers(2, display_width, display_width, DXGI_FORMAT_UNKNOWN, 0);
+	HRESULT hr = swapchain->ResizeBuffers(0, display_width, display_height, DXGI_FORMAT_UNKNOWN, 0);
+	assert(SUCCEEDED(hr));
 	initResolutionDependentResources(display_width, display_height);
 }
 
@@ -123,15 +126,14 @@ ResId Driver::createInputLayout(const InputLayoutElementDesc* descs, unsigned in
 }
 
 template<typename T>
-size_t erase_if_found(ResId id, std::map<ResId, T*>& from)
+bool erase_if_found(ResId id, std::map<ResId, T*>& from)
 {
 	auto it = from.find(id);
-	if (it != from.end())
-	{
-		delete it->second;
-		return from.erase(id);
-	}
-	return 0;
+	if (it == from.end())
+		return false;
+	delete it->second;
+	// resource will remove itself from the pool from dtor
+	return true;
 }
 
 void Driver::destroyResource(ResId res_id)

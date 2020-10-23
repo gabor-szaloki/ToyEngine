@@ -24,11 +24,6 @@ WorldRenderer::WorldRenderer()
 	mainLight = std::make_unique<Light>();
 	mainLight->SetRotation(-XM_PI / 3, XM_PI / 3);
 
-	RenderStateDesc forwaredRsDesc;
-	forwardRenderStateId = drv->createRenderState(forwaredRsDesc);
-	forwaredRsDesc.rasterizerDesc.wireframe = true;
-	forwardWireframeRenderStateId = drv->createRenderState(forwaredRsDesc);
-
 	BufferDesc cbDesc;
 	cbDesc.bindFlags = BIND_CONSTANT_BUFFER;
 	cbDesc.numElements = 1;
@@ -42,25 +37,7 @@ WorldRenderer::WorldRenderer()
 	cbDesc.elementByteSize = sizeof(PerObjectConstantBufferData);
 	perObjectCb.reset(drv->createBuffer(cbDesc));
 
-	ShaderSetDesc shaderDesc("Source/Shaders/Standard.shader");
-	shaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "StandardForwardVS";
-	shaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "StandardOpaqueForwardPS";
-	standardShaders[(int)RenderPass::FORWARD] = drv->createShaderSet(shaderDesc);
-	shaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "StandardShadowVS";
-	shaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "StandardOpaqueShadowPS";
-	standardShaders[(int)RenderPass::SHADOW] = drv->createShaderSet(shaderDesc);
-
-	constexpr unsigned int NUM_STANDARD_INPUT_LAYOUT_ELEMENTS = 5;
-	InputLayoutElementDesc standardInputLayoutDesc[NUM_STANDARD_INPUT_LAYOUT_ELEMENTS] =
-	{
-		{ VertexInputSemantic::POSITION, 0, TexFmt::R32G32B32_FLOAT    },
-		{ VertexInputSemantic::NORMAL,   0, TexFmt::R32G32B32_FLOAT    },
-		{ VertexInputSemantic::TANGENT,  0, TexFmt::R32G32B32A32_FLOAT },
-		{ VertexInputSemantic::COLOR,    0, TexFmt::R32G32B32A32_FLOAT },
-		{ VertexInputSemantic::TEXCOORD, 0, TexFmt::R32G32_FLOAT       },
-	};
-	standardInputLayout = drv->createInputLayout(standardInputLayoutDesc,
-		NUM_STANDARD_INPUT_LAYOUT_ELEMENTS, standardShaders[(int)RenderPass::FORWARD]);
+	initShaders();
 
 	setShadowResolution(2048);
 	setShadowBias(50000, 1.0f);
@@ -81,10 +58,16 @@ WorldRenderer::~WorldRenderer()
 	for (MeshRenderer* mr : managedMeshRenderers)
 		delete mr;
 	managedMeshRenderers.clear();
+
+	closeShaders();
 }
 
 void WorldRenderer::onResize(int display_width, int display_height)
 {
+	int w, h;
+	drv->getDisplaySize(w, h);
+	if (display_width == w && display_height == h)
+		return;
 	closeResolutionDependentResources();
 	drv->resize(display_width, display_height);
 	initResolutionDependentResources();
@@ -182,6 +165,11 @@ void WorldRenderer::setShadowBias(int depth_bias, float slope_scaled_depth_bias)
 
 void WorldRenderer::initResolutionDependentResources()
 {
+	RenderStateDesc forwaredRsDesc;
+	forwardRenderStateId = drv->createRenderState(forwaredRsDesc);
+	forwaredRsDesc.rasterizerDesc.wireframe = true;
+	forwardWireframeRenderStateId = drv->createRenderState(forwaredRsDesc);
+
 	glm::ivec2 displayResolution;
 	drv->getDisplaySize(displayResolution.x, displayResolution.y);
 	TextureDesc depthTexDesc("depthTex", displayResolution.x, displayResolution.y,
@@ -192,6 +180,41 @@ void WorldRenderer::initResolutionDependentResources()
 void WorldRenderer::closeResolutionDependentResources()
 {
 	depthTex.reset();
+	forwardRenderStateId.close();
+	forwardWireframeRenderStateId.close();
+}
+
+void renderer::WorldRenderer::initShaders()
+{
+	ShaderSetDesc shaderDesc("Source/Shaders/Standard.shader");
+	shaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "StandardForwardVS";
+	shaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "StandardOpaqueForwardPS";
+	standardShaders[(int)RenderPass::FORWARD] = drv->createShaderSet(shaderDesc);
+	shaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "StandardShadowVS";
+	shaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "StandardOpaqueShadowPS";
+	standardShaders[(int)RenderPass::SHADOW] = drv->createShaderSet(shaderDesc);
+
+	constexpr unsigned int NUM_STANDARD_INPUT_LAYOUT_ELEMENTS = 5;
+	InputLayoutElementDesc standardInputLayoutDesc[NUM_STANDARD_INPUT_LAYOUT_ELEMENTS] =
+	{
+		{ VertexInputSemantic::POSITION, 0, TexFmt::R32G32B32_FLOAT    },
+		{ VertexInputSemantic::NORMAL,   0, TexFmt::R32G32B32_FLOAT    },
+		{ VertexInputSemantic::TANGENT,  0, TexFmt::R32G32B32A32_FLOAT },
+		{ VertexInputSemantic::COLOR,    0, TexFmt::R32G32B32A32_FLOAT },
+		{ VertexInputSemantic::TEXCOORD, 0, TexFmt::R32G32_FLOAT       },
+	};
+	standardInputLayout = drv->createInputLayout(standardInputLayoutDesc,
+		NUM_STANDARD_INPUT_LAYOUT_ELEMENTS, standardShaders[(int)RenderPass::FORWARD]);
+}
+
+void renderer::WorldRenderer::closeShaders()
+{
+	standardInputLayout.close();
+	for (ResId& id : standardShaders)
+	{
+		drv->destroyResource(id);
+		id = BAD_RESID;
+	}
 }
 
 ITexture* renderer::WorldRenderer::loadTextureFromPng(const char* path)

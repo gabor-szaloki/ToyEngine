@@ -1,5 +1,7 @@
 #include "Texture.h"
 
+#include <Common.h>
+
 #include <assert.h>
 
 using namespace drv_d3d11;
@@ -32,6 +34,12 @@ Texture::Texture(const TextureDesc& desc_, ID3D11Texture2D* tex) : desc(desc_), 
 
 Texture::~Texture()
 {
+	SAFE_RELEASE(resource);
+	SAFE_RELEASE(sampler);
+	SAFE_RELEASE(srv);
+	SAFE_RELEASE(uav);
+	SAFE_RELEASE(rtv);
+	SAFE_RELEASE(dsv);
 	Driver::get().unregisterTexture(id);
 }
 
@@ -48,11 +56,11 @@ void Texture::updateData(unsigned int dst_subresource, const IntBox* dst_box, co
 		dstBox.right  = dst_box->right;  assert(dst_box->right >= 0);
 		dstBox.bottom = dst_box->bottom; assert(dst_box->bottom >= 0);
 		dstBox.back   = dst_box->back;   assert(dst_box->back >= 0);
-		Driver::get().getContext().UpdateSubresource(resource.Get(), dst_subresource, &dstBox, src_data, rowPitch, 0);
+		Driver::get().getContext().UpdateSubresource(resource, dst_subresource, &dstBox, src_data, rowPitch, 0);
 	}
 	else
 	{
-		Driver::get().getContext().UpdateSubresource(resource.Get(), dst_subresource, nullptr, src_data, rowPitch, 0);
+		Driver::get().getContext().UpdateSubresource(resource, dst_subresource, nullptr, src_data, rowPitch, 0);
 	}
 }
 
@@ -61,7 +69,7 @@ void Texture::generateMips()
 	assert(desc.miscFlags & RESOURCE_MISC_GENERATE_MIPS);
 	assert(desc.bindFlags & BIND_SHADER_RESOURCE);
 	assert(srv != nullptr);
-	Driver::get().getContext().GenerateMips(srv.Get());
+	Driver::get().getContext().GenerateMips(srv);
 }
 
 void Texture::createViews()
@@ -76,7 +84,7 @@ void Texture::createViews()
 		srvDesc.Texture2D.MipLevels = desc.mips == 0 ? -1 : desc.mips;
 		srvDesc.Texture2D.MostDetailedMip = 0;
 
-		hr = Driver::get().getDevice().CreateShaderResourceView(resource.Get(), &srvDesc, &srv);
+		hr = Driver::get().getDevice().CreateShaderResourceView(resource, &srvDesc, &srv);
 		assert(SUCCEEDED(hr));
 	}
 	if (desc.bindFlags & BIND_UNORDERED_ACCESS)
@@ -85,7 +93,7 @@ void Texture::createViews()
 		uavDesc.Format = (DXGI_FORMAT)(desc.uavFormatOverride != TexFmt::INVALID ? desc.uavFormatOverride : desc.format);
 		uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
 		uavDesc.Texture2D.MipSlice = 0;
-		hr = Driver::get().getDevice().CreateUnorderedAccessView(resource.Get(), &uavDesc, &uav);
+		hr = Driver::get().getDevice().CreateUnorderedAccessView(resource, &uavDesc, &uav);
 		assert(SUCCEEDED(hr));
 	}
 	if (desc.bindFlags & BIND_RENDER_TARGET)
@@ -94,7 +102,7 @@ void Texture::createViews()
 		rtvDesc.Format = (DXGI_FORMAT)(desc.rtvFormatOverride != TexFmt::INVALID ? desc.rtvFormatOverride : desc.format);
 		rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 		rtvDesc.Texture2D.MipSlice = 0;
-		hr = Driver::get().getDevice().CreateRenderTargetView(resource.Get(), &rtvDesc, &rtv);
+		hr = Driver::get().getDevice().CreateRenderTargetView(resource, &rtvDesc, &rtv);
 		assert(SUCCEEDED(hr));
 	}
 	if (desc.bindFlags & BIND_DEPTH_STENCIL)
@@ -103,7 +111,7 @@ void Texture::createViews()
 		dsvDesc.Format = (DXGI_FORMAT)(desc.dsvFormatOverride != TexFmt::INVALID ? desc.dsvFormatOverride : desc.format);
 		dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 		dsvDesc.Texture2D.MipSlice = 0;
-		hr = Driver::get().getDevice().CreateDepthStencilView(resource.Get(), &dsvDesc, &dsv);
+		hr = Driver::get().getDevice().CreateDepthStencilView(resource, &dsvDesc, &dsv);
 		assert(SUCCEEDED(hr));
 	}
 }

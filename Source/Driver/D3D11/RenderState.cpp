@@ -1,5 +1,7 @@
 #include "RenderState.h"
 
+#include <Common.h>
+
 #include <assert.h>
 
 using namespace drv_d3d11;
@@ -29,5 +31,7 @@ RenderState::RenderState(const RenderStateDesc& desc_) : desc(desc_)
 
 RenderState::~RenderState()
 {
+	SAFE_RELEASE(rasterizerState);
+	SAFE_RELEASE(depthStencilState);
 	Driver::get().unregisterRenderState(id);
 }

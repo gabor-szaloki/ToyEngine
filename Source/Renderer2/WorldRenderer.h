@@ -49,6 +49,8 @@ namespace renderer
 	private:
 		void initResolutionDependentResources();
 		void closeResolutionDependentResources();
+		void initShaders();
+		void closeShaders();
 		ITexture* loadTextureFromPng(const char* path);
 		void initScene();
 		void performShadowPass(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix);
@@ -67,17 +69,17 @@ namespace renderer
 		float directionalShadowDistance = 20.0f;
 
 		std::unique_ptr<ITexture> depthTex;
-		ResId forwardRenderStateId = BAD_RESID;
-		ResId forwardWireframeRenderStateId = BAD_RESID;
+		ResIdHolder forwardRenderStateId = BAD_RESID;
+		ResIdHolder forwardWireframeRenderStateId = BAD_RESID;
 		std::unique_ptr<ITexture> shadowMap;
-		ResId shadowRenderStateId = BAD_RESID;
+		ResIdHolder shadowRenderStateId = BAD_RESID;
 
 		std::unique_ptr<IBuffer> perFrameCb;
 		std::unique_ptr<IBuffer> perCameraCb;
 		std::unique_ptr<IBuffer> perObjectCb;
 
 		std::array<ResId, (int)RenderPass::_COUNT> standardShaders;
-		ResId standardInputLayout = BAD_RESID;
+		ResIdHolder standardInputLayout = BAD_RESID;
 
 		bool showWireframe;
 

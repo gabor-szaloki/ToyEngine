@@ -1,5 +1,7 @@
 #include "ShaderSet.h"
 
+#include <Common.h>
+
 #include <assert.h>
 #include <functional>
 
@@ -20,7 +22,7 @@ static T* compile_and_create_shader(
 	std::function<HRESULT(const void* byte_code, SIZE_T byte_code_length, T** out_shader)> create_func)
 {
 	ID3DBlob* blob;
-	ComPtr<ID3DBlob> errorBlob;
+	ID3DBlob* errorBlob;
 
 	wchar_t fileName[MAX_PATH];
 	utf8_to_wcs(file_name, fileName, MAX_PATH);
@@ -36,6 +38,7 @@ static T* compile_and_create_shader(
 
 	if (errorBlob)
 		OutputDebugString(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()));
+	SAFE_RELEASE(errorBlob);
 	if (FAILED(hr))
 		return nullptr;
 
@@ -55,53 +58,53 @@ ShaderSet::ShaderSet(const ShaderSetDesc& desc_) : desc(desc_)
 {
 	if (desc.shaderFuncNames[(int)ShaderStage::VS] != nullptr)
 	{
-		vs.Attach(compile_and_create_shader<ID3D11VertexShader>(
+		vs = compile_and_create_shader<ID3D11VertexShader>(
 			desc.sourceFilePath, desc.shaderFuncNames[(int)ShaderStage::VS], "vs_5_0", &vsBlob,
 			[&](const void* byte_code, SIZE_T byte_code_length, ID3D11VertexShader** out_shader)
 			{
 				return Driver::get().getDevice().CreateVertexShader(
 					byte_code, byte_code_length, nullptr, out_shader);
-			}));
+			});
 	}
 	if (desc.shaderFuncNames[(int)ShaderStage::PS] != nullptr)
 	{
-		ps.Attach(compile_and_create_shader<ID3D11PixelShader>(
+		ps = compile_and_create_shader<ID3D11PixelShader>(
 			desc.sourceFilePath, desc.shaderFuncNames[(int)ShaderStage::PS], "ps_5_0", nullptr,
 			[&](const void* byte_code, SIZE_T byte_code_length, ID3D11PixelShader** out_shader)
 			{
 				return Driver::get().getDevice().CreatePixelShader(
 					byte_code, byte_code_length, nullptr, out_shader);
-			}));
+			});
 	}
 	if (desc.shaderFuncNames[(int)ShaderStage::GS] != nullptr)
 	{
-		gs.Attach(compile_and_create_shader<ID3D11GeometryShader>(
+		gs = compile_and_create_shader<ID3D11GeometryShader>(
 			desc.sourceFilePath, desc.shaderFuncNames[(int)ShaderStage::GS], "gs_5_0", nullptr,
 			[&](const void* byte_code, SIZE_T byte_code_length, ID3D11GeometryShader** out_shader)
 			{
 				return Driver::get().getDevice().CreateGeometryShader(
 					byte_code, byte_code_length, nullptr, out_shader);
-			}));
+			});
 	}
 	if (desc.shaderFuncNames[(int)ShaderStage::HS] != nullptr)
 	{
-		hs.Attach(compile_and_create_shader<ID3D11HullShader>(
+		hs = compile_and_create_shader<ID3D11HullShader>(
 			desc.sourceFilePath, desc.shaderFuncNames[(int)ShaderStage::HS], "hs_5_0", nullptr,
 			[&](const void* byte_code, SIZE_T byte_code_length, ID3D11HullShader** out_shader)
 			{
 				return Driver::get().getDevice().CreateHullShader(
 					byte_code, byte_code_length, nullptr, out_shader);
-			}));
+			});
 	}
 	if (desc.shaderFuncNames[(int)ShaderStage::DS] != nullptr)
 	{
-		ds.Attach(compile_and_create_shader<ID3D11DomainShader>(
+		ds = compile_and_create_shader<ID3D11DomainShader>(
 			desc.sourceFilePath, desc.shaderFuncNames[(int)ShaderStage::DS], "ds_5_0", nullptr,
 			[&](const void* byte_code, SIZE_T byte_code_length, ID3D11DomainShader** out_shader)
 			{
 				return Driver::get().getDevice().CreateDomainShader(
 					byte_code, byte_code_length, nullptr, out_shader);
-			}));
+			});
 	}
 
 	id = Driver::get().registerShaderSet(this);
@@ -109,14 +112,20 @@ ShaderSet::ShaderSet(const ShaderSetDesc& desc_) : desc(desc_)
 
 ShaderSet::~ShaderSet()
 {
+	SAFE_RELEASE(vsBlob);
+	SAFE_RELEASE(vs);
+	SAFE_RELEASE(ps);
+	SAFE_RELEASE(gs);
+	SAFE_RELEASE(hs);
+	SAFE_RELEASE(ds);
 	Driver::get().unregisterShaderSet(id);
 }
 
 void ShaderSet::set()
 {
-	Driver::get().getContext().VSSetShader(vs.Get(), nullptr, 0);
-	Driver::get().getContext().PSSetShader(ps.Get(), nullptr, 0);
-	Driver::get().getContext().GSSetShader(gs.Get(), nullptr, 0);
-	Driver::get().getContext().HSSetShader(hs.Get(), nullptr, 0);
-	Driver::get().getContext().DSSetShader(ds.Get(), nullptr, 0);
+	Driver::get().getContext().VSSetShader(vs, nullptr, 0);
+	Driver::get().getContext().PSSetShader(ps, nullptr, 0);
+	Driver::get().getContext().GSSetShader(gs, nullptr, 0);
+	Driver::get().getContext().HSSetShader(hs, nullptr, 0);
+	Driver::get().getContext().DSSetShader(ds, nullptr, 0);
 }

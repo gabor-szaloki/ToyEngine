@@ -15,6 +15,7 @@ struct ResIdHolder
 	ResIdHolder(ResId id_) : id(id_) {}
 	~ResIdHolder() { close(); }
 	void setId(ResId id_) { id = id_; }
-	void close() { drv->destroyResource(id); }
+	void close() { if (id != BAD_RESID) { drv->destroyResource(id); id = BAD_RESID; } }
 	operator ResId() const { return id; }
+	ResIdHolder& operator=(const ResId& id_) { close(); setId(id_); return *this; }
 };

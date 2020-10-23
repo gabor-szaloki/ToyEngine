@@ -15,17 +15,17 @@ namespace drv_d3d11
 		const ResId& getId() const override { return id; };
 		void updateData(const void* src_data) override;
 
-		ID3D11Buffer* getResource() const { return resource.Get(); }
-		ID3D11ShaderResourceView* getSrv() const { return srv.Get(); }
-		ID3D11UnorderedAccessView* getUav() const { return uav.Get(); }
+		ID3D11Buffer* getResource() const { return resource; }
+		ID3D11ShaderResourceView* getSrv() const { return srv; }
+		ID3D11UnorderedAccessView* getUav() const { return uav; }
 
 	private:
 		void createViews();
 
 		BufferDesc desc;
 		ResId id = BAD_RESID;
-		ComPtr<ID3D11Buffer> resource;
-		ComPtr<ID3D11ShaderResourceView> srv;
-		ComPtr<ID3D11UnorderedAccessView> uav;
+		ID3D11Buffer* resource;
+		ID3D11ShaderResourceView* srv;
+		ID3D11UnorderedAccessView* uav;
 	};
 }

@@ -1,8 +1,11 @@
 #include "InputLayout.h"
-#include "ShaderSet.h"
+
+#include <Common.h>
 
 #include <assert.h>
 #include <vector>
+
+#include "ShaderSet.h"
 
 using namespace drv_d3d11;
 
@@ -55,5 +58,6 @@ InputLayout::InputLayout(const InputLayoutElementDesc* descs, unsigned int num_d
 
 InputLayout::~InputLayout()
 {
+	SAFE_RELEASE(inputLayout);
 	Driver::get().unregisterInputLayout(id);
 }
