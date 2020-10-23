@@ -1,5 +1,6 @@
 #include "WorldRenderer.h"
 
+#include <stdio.h>
 #include <array>
 #include <3rdParty/LodePNG/lodepng.h>
 #include <Renderer/Camera.h>
@@ -227,13 +228,13 @@ void WorldRenderer::closeShaders()
 ITexture* WorldRenderer::loadTextureFromPng(const char* path)
 {
 	std::vector<unsigned char> pngData;
-	UINT width, height;
-	UINT error = lodepng::decode(pngData, width, height, path);
+	unsigned int width, height;
+	unsigned int error = lodepng::decode(pngData, width, height, path);
 	if (error != 0)
 	{
-		char errortext[MAX_PATH];
+		char errortext[256];
 		sprintf_s(errortext, "error %d %s\n", error, lodepng_error_text(error));
-		OutputDebugString(errortext);
+		debug::log(errortext);
 	}
 
 	TextureDesc tDesc(path, width, height, TexFmt::R8G8B8A8_UNORM, 0);

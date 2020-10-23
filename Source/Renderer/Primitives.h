@@ -82,7 +82,7 @@ namespace primitives
 	constexpr unsigned int SPHERE_VERTEX_COUNT = (SPHERE_LONGITUDE_SEGMENTS + 1) * (SPHERE_LATITUDE_SEGMENTS + 1);
 	constexpr unsigned int SPHERE_INDEX_COUNT = SPHERE_LONGITUDE_SEGMENTS * SPHERE_LATITUDE_SEGMENTS * 2 * 3;
 	StandardVertexData sphere_vertices[SPHERE_VERTEX_COUNT];
-	WORD sphere_indices[SPHERE_INDEX_COUNT];
+	unsigned short sphere_indices[SPHERE_INDEX_COUNT];
 
 	void init()
 	{

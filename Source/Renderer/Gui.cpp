@@ -3,7 +3,7 @@
 #include <Driver/ITexture.h>
 
 #include "WorldRenderer.h"
-#include "Renderer/Light.h"
+#include "Light.h"
 
 static void renderer_settings()
 {

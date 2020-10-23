@@ -12,6 +12,8 @@
 
 #include <Driver/IDriver.h>
 
+#define SAFE_RELEASE(resource) { if (resource != nullptr) { resource->Release(); resource = nullptr; } }
+
 namespace drv_d3d11
 {
 	class Texture;

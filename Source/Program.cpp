@@ -1,3 +1,5 @@
+#define NOMINMAX
+#include <Windows.h>
 #include <stdio.h>
 #include <chrono>
 #include <3rdParty/ImGui/imgui.h>

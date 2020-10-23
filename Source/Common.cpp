@@ -1,19 +1,12 @@
 #include "Common.h"
 
+#define NOMINMAX
+#include <Windows.h>
 #include <3rdParty/ImGui/imgui.h>
+#include <Driver/IDriver.h>
 
 IDriver* drv;
 WorldRenderer* wr;
-
-void ThrowIfFailed(HRESULT hr, const char *errorMsg)
-{
-	if (FAILED(hr))
-	{
-		if (errorMsg != nullptr)
-			OutputDebugString(errorMsg);
-		throw;
-	}
-}
 
 static void driver_settings_window()
 {
@@ -37,3 +30,8 @@ static void stats_window()
 	ImGui::Text("Frame time:    %.1f ms", 1000.0f / fps);
 }
 REGISTER_IMGUI_WINDOW("Stats", stats_window);
+
+void debug::log(char* msg)
+{
+	OutputDebugString(msg);
+}
