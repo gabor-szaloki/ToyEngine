@@ -231,11 +231,9 @@ ITexture* WorldRenderer::loadTextureFromPng(const char* path)
 	unsigned int width, height;
 	unsigned int error = lodepng::decode(pngData, width, height, path);
 	if (error != 0)
-	{
-		char errortext[256];
-		sprintf_s(errortext, "error %d %s", error, lodepng_error_text(error));
-		debug::log(errortext);
-	}
+		PLOG_ERROR << "Error loading texture." << std::endl
+			<< "\tFile: " << path << std::endl
+			<< "\tError: " << lodepng_error_text(error);
 
 	TextureDesc tDesc(path, width, height, TexFmt::R8G8B8A8_UNORM, 0);
 	tDesc.bindFlags = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET;
@@ -251,7 +249,7 @@ ITexture* WorldRenderer::loadTextureFromPng(const char* path)
 void WorldRenderer::initScene()
 {
 	std::array<ITexture*, 2> testMaterialTextures;
-	testMaterialTextures[0] = loadTextureFromPng("Assets/Textures/test_base.png");
+	testMaterialTextures[0] = loadTextureFromPng("Assets/Textures/test_base9.png");
 	testMaterialTextures[1] = loadTextureFromPng("Assets/Textures/test_nrm.png");
 	managedTextures.insert(managedTextures.end(), testMaterialTextures.begin(), testMaterialTextures.end());
 

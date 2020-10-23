@@ -1,10 +1,15 @@
 #define NOMINMAX
 #include <Windows.h>
 #include <stdio.h>
+#include <time.h>
+#include <direct.h>
 #include <chrono>
 #include <3rdParty/imgui/imgui.h>
 #include <3rdParty/imgui/implot.h>
 #include <3rdParty/imgui/imgui_impl_win32.h>
+#include <3rdParty/plog/Log.h>
+#include <3rdParty/plog/Appenders/RollingFileAppender.h>
+#include <3rdParty/plog/Appenders/DebugOutputAppender.h>
 #include <Renderer/WorldRenderer.h>
 
 #include "Common.h"
@@ -51,8 +56,32 @@ static void create_hwnd(HINSTANCE h_instance)
 		nullptr, nullptr, h_instance, nullptr);
 }
 
+static void init_logging()
+{
+	const std::time_t t = std::time(0);
+	std::tm timeNow;
+	localtime_s(&timeNow, &t);
+	char timeStampBuf[MAX_PATH];
+	strftime(timeStampBuf, sizeof(timeStampBuf), "%Y_%m_%d_%H_%M_%S", &timeNow);
+	std::string timeStamp(timeStampBuf);
+#if defined(_DEBUG)
+	const plog::Severity logSeverity = plog::debug;
+	std::string logFilePath = ".log/" + timeStamp + "_dbg.log";
+#else
+	const plog::Severity logSeverity = plog::error;
+	std::string logFilePath = ".log/" + timeStamp + "_rel.log";
+#endif
+	_mkdir(".log");
+	static plog::RollingFileAppender<plog::TxtFormatter> fileAppender(logFilePath.c_str(), 100*1024*1024, 1);
+	static plog::DebugOutputAppender<plog::TxtFormatter> debugOutputAppender;
+	plog::init(logSeverity).addAppender(&fileAppender).addAppender(&debugOutputAppender);
+	PLOG_INFO << "Log system initialized. Log file: " << logFilePath;
+}
+
 static bool init()
 {
+	init_logging();
+
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImPlot::CreateContext();
@@ -63,7 +92,7 @@ static bool init()
 	bool success = drv->init(hWnd, DEFAULT_WINDOWED_WIDTH, DEFAULT_WINDOWED_HEIGHT);
 	if (!success)
 	{
-		debug::log("Driver initialization failed. Exiting.");
+		PLOG_FATAL << "Driver initialization failed.";
 		return false;
 	}
 	wr = new WorldRenderer();
@@ -243,7 +272,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 				GetWindowRect(hWnd, &lastWindowedRect);
 
 			fullscreen = !fullscreen;
-			debug::log(fullscreen ? "VK_F11, Going fullscreen\n" : "Going windowed\n");
 
 			HMONITOR hMon = MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY);
 			MONITORINFO monitorInfo;
@@ -273,10 +301,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		GetClientRect(hWnd, &clientRect);
 		int w = clientRect.right - clientRect.left;
 		int h = clientRect.bottom - clientRect.top;
-
-		char str[MAX_PATH];
-		sprintf_s(str, "WM_SIZE, clientRect: x:%d, y:%d, w:%d, h:%d\n", clientRect.left, clientRect.top, w, h);
-		debug::log(str);
+		PLOG_INFO << "WM_SIZE, clientrect: x:" << clientRect.left << ", y:" << clientRect.top << ", w:" << w << ", h:" << h;
 
 		// Minimize sends WM_SIZE requests with 0 size, which is invalid.
 		w = glm::max(8, w);

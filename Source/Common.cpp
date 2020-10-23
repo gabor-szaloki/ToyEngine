@@ -30,9 +30,3 @@ static void stats_window()
 	ImGui::Text("Frame time:    %.1f ms", 1000.0f / fps);
 }
 REGISTER_IMGUI_WINDOW("Stats", stats_window);
-
-void debug::log(const char* msg)
-{
-	OutputDebugString(msg);
-	OutputDebugString("\n");
-}

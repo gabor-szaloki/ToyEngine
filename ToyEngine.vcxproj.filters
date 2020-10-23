@@ -46,6 +46,18 @@
     <Filter Include="Source\3rdParty\mini">
       <UniqueIdentifier>{f32764fe-d298-417d-9547-7893ffd7cf84}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\3rdParty\plog">
+      <UniqueIdentifier>{7987db14-1ef8-4ff1-a67c-5752f7202971}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\3rdParty\plog\Appenders">
+      <UniqueIdentifier>{b7905997-3066-4df0-8b4b-374e484935e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\3rdParty\plog\Converters">
+      <UniqueIdentifier>{f7f8515a-7d1b-44ce-a313-17d2b8e568d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\3rdParty\plog\Formatters">
+      <UniqueIdentifier>{382ba5da-b0cc-4abc-a2f5-9f1175211cd8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Common.cpp">
@@ -1078,6 +1090,66 @@
     </ClInclude>
     <ClInclude Include="Source\3rdParty\mini\ini.h">
       <Filter>Source\3rdParty\mini</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Appenders\AndroidAppender.h">
+      <Filter>Source\3rdParty\plog\Appenders</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Appenders\ColorConsoleAppender.h">
+      <Filter>Source\3rdParty\plog\Appenders</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Appenders\ConsoleAppender.h">
+      <Filter>Source\3rdParty\plog\Appenders</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Appenders\DebugOutputAppender.h">
+      <Filter>Source\3rdParty\plog\Appenders</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Appenders\EventLogAppender.h">
+      <Filter>Source\3rdParty\plog\Appenders</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Appenders\IAppender.h">
+      <Filter>Source\3rdParty\plog\Appenders</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Appenders\RollingFileAppender.h">
+      <Filter>Source\3rdParty\plog\Appenders</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Converters\NativeEOLConverter.h">
+      <Filter>Source\3rdParty\plog\Converters</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Converters\UTF8Converter.h">
+      <Filter>Source\3rdParty\plog\Converters</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Formatters\CsvFormatter.h">
+      <Filter>Source\3rdParty\plog\Formatters</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Formatters\FuncMessageFormatter.h">
+      <Filter>Source\3rdParty\plog\Formatters</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Formatters\MessageOnlyFormatter.h">
+      <Filter>Source\3rdParty\plog\Formatters</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Formatters\TxtFormatter.h">
+      <Filter>Source\3rdParty\plog\Formatters</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Init.h">
+      <Filter>Source\3rdParty\plog</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Log.h">
+      <Filter>Source\3rdParty\plog</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Logger.h">
+      <Filter>Source\3rdParty\plog</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Record.h">
+      <Filter>Source\3rdParty\plog</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Severity.h">
+      <Filter>Source\3rdParty\plog</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\Util.h">
+      <Filter>Source\3rdParty\plog</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\plog\WinApi.h">
+      <Filter>Source\3rdParty\plog</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

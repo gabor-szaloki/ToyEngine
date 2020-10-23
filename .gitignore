@@ -2,6 +2,7 @@
 .vs/
 .build/
 .output/
+.log/
 
 # File types
 *.vcxproj.user

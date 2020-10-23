@@ -37,8 +37,13 @@ static T* compile_and_create_shader(
 		entry_point, target_string, flags1, flags2, &blob, &errorBlob);
 
 	if (errorBlob)
-		debug::log(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()));
-	SAFE_RELEASE(errorBlob);
+	{
+		PLOG_ERROR << "Failed to comiple shader." << std::endl
+			<< "\tFile: " << file_name << std::endl
+			<< "\tFunction: " << entry_point << std::endl
+			<< "\tError: " << reinterpret_cast<const char*>(errorBlob->GetBufferPointer());
+		SAFE_RELEASE(errorBlob);
+	}
 	if (FAILED(hr))
 		return nullptr;
 
