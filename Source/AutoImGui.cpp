@@ -3,6 +3,7 @@
 #include <cstring>
 #include <map>
 #include <3rdParty/ImGui/imgui.h>
+#include <3rdParty/ImGui/implot.h>
 
 using namespace autoimgui;
 
@@ -120,7 +121,7 @@ void autoimgui::perform()
 		if (showImPlotDemoWindow)
 		{
 			bool oldShowImPlotDemoWindow = showImPlotDemoWindow;
-			//ImPlot::ShowDemoWindow(&showImPlotDemoWindow);
+			ImPlot::ShowDemoWindow(&showImPlotDemoWindow);
 			if (showImPlotDemoWindow != oldShowImPlotDemoWindow)
 				set_window_opened(imPlotDemoWindowName, showImPlotDemoWindow);
 		}

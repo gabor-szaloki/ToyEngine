@@ -114,6 +114,15 @@
     <ClCompile Include="Source\Renderer\Material.cpp">
       <Filter>Source\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="Source\3rdParty\ImGui\implot.cpp">
+      <Filter>Source\3rdParty\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\3rdParty\ImGui\implot_demo.cpp">
+      <Filter>Source\3rdParty\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\3rdParty\ImGui\implot_items.cpp">
+      <Filter>Source\3rdParty\ImGui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common.h">
@@ -1058,11 +1067,14 @@
     <ClInclude Include="Source\Renderer\Material.h">
       <Filter>Source\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="Source\3rdParty\ImGui\implot.h">
+      <Filter>Source\3rdParty\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\ImGui\implot_internal.h">
+      <Filter>Source\3rdParty\ImGui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Source\3rdParty\ImGui\LICENSE.txt">
-      <Filter>Source\3rdParty\ImGui</Filter>
-    </Text>
     <Text Include="Source\3rdParty\glm\CMakeLists.txt">
       <Filter>Source\3rdParty\glm</Filter>
     </Text>

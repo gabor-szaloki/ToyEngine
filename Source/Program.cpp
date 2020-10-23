@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <chrono>
 #include <3rdParty/ImGui/imgui.h>
+#include <3rdParty/ImGui/implot.h>
 #include <3rdParty/ImGui/imgui_impl_win32.h>
 #include <Renderer/WorldRenderer.h>
 
@@ -55,6 +56,7 @@ static bool init()
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
+	ImPlot::CreateContext();
 	ImGui_ImplWin32_Init(hWnd);
 
 	create_driver_d3d11();
@@ -74,6 +76,7 @@ static void shutdown()
 	drv->shutdown();
 	delete drv;
 	ImGui_ImplWin32_Shutdown();
+	ImPlot::DestroyContext();
 	ImGui::DestroyContext();
 }
 

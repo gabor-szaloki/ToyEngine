@@ -26,6 +26,9 @@
     <ClCompile Include="Source\3rdParty\ImGui\imgui_impl_dx11.cpp" />
     <ClCompile Include="Source\3rdParty\ImGui\imgui_impl_win32.cpp" />
     <ClCompile Include="Source\3rdParty\ImGui\imgui_widgets.cpp" />
+    <ClCompile Include="Source\3rdParty\ImGui\implot.cpp" />
+    <ClCompile Include="Source\3rdParty\ImGui\implot_demo.cpp" />
+    <ClCompile Include="Source\3rdParty\ImGui\implot_items.cpp" />
     <ClCompile Include="Source\3rdParty\LodePNG\lodepng.cpp" />
     <ClCompile Include="Source\AutoImGui.cpp" />
     <ClCompile Include="Source\Common.cpp" />
@@ -331,6 +334,8 @@
     <ClInclude Include="Source\3rdParty\ImGui\imgui_impl_dx11.h" />
     <ClInclude Include="Source\3rdParty\ImGui\imgui_impl_win32.h" />
     <ClInclude Include="Source\3rdParty\ImGui\imgui_internal.h" />
+    <ClInclude Include="Source\3rdParty\ImGui\implot.h" />
+    <ClInclude Include="Source\3rdParty\ImGui\implot_internal.h" />
     <ClInclude Include="Source\3rdParty\ImGui\imstb_rectpack.h" />
     <ClInclude Include="Source\3rdParty\ImGui\imstb_textedit.h" />
     <ClInclude Include="Source\3rdParty\ImGui\imstb_truetype.h" />
@@ -361,7 +366,6 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="Source\3rdParty\glm\CMakeLists.txt" />
-    <Text Include="Source\3rdParty\ImGui\LICENSE.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\3rdParty\glm\detail\func_common.inl" />
