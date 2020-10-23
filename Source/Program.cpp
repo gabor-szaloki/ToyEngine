@@ -2,9 +2,9 @@
 #include <Windows.h>
 #include <stdio.h>
 #include <chrono>
-#include <3rdParty/ImGui/imgui.h>
-#include <3rdParty/ImGui/implot.h>
-#include <3rdParty/ImGui/imgui_impl_win32.h>
+#include <3rdParty/imgui/imgui.h>
+#include <3rdParty/imgui/implot.h>
+#include <3rdParty/imgui/imgui_impl_win32.h>
 #include <Renderer/WorldRenderer.h>
 
 #include "Common.h"

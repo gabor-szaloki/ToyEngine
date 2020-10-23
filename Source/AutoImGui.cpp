@@ -2,8 +2,8 @@
 
 #include <cstring>
 #include <map>
-#include <3rdParty/ImGui/imgui.h>
-#include <3rdParty/ImGui/implot.h>
+#include <3rdParty/imgui/imgui.h>
+#include <3rdParty/imgui/implot.h>
 
 using namespace autoimgui;
 

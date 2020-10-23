@@ -1,4 +1,4 @@
-#include <3rdParty/ImGui/imgui.h>
+#include <3rdParty/imgui/imgui.h>
 #include <Common.h>
 #include <Driver/ITexture.h>
 

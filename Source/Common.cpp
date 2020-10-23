@@ -2,7 +2,7 @@
 
 #define NOMINMAX
 #include <Windows.h>
-#include <3rdParty/ImGui/imgui.h>
+#include <3rdParty/imgui/imgui.h>
 #include <Driver/IDriver.h>
 
 IDriver* drv;

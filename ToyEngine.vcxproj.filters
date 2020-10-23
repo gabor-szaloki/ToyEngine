@@ -10,9 +10,6 @@
     <Filter Include="Source\3rdParty">
       <UniqueIdentifier>{5022766f-95a4-415f-9581-921d95ed3bac}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source\3rdParty\ImGui">
-      <UniqueIdentifier>{ad4e9038-ee50-438f-ad47-4bb1ea24ec01}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source\3rdParty\LodePNG">
       <UniqueIdentifier>{edb62074-b541-4481-b658-a6fc58a984bc}</UniqueIdentifier>
     </Filter>
@@ -43,6 +40,9 @@
     <Filter Include="Source\Renderer">
       <UniqueIdentifier>{f6db5caa-aca0-48fa-9082-a82a52e2936c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\3rdParty\imgui">
+      <UniqueIdentifier>{ad4e9038-ee50-438f-ad47-4bb1ea24ec01}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Common.cpp">
@@ -52,22 +52,22 @@
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="Source\3rdParty\ImGui\imgui.cpp">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClCompile>
     <ClCompile Include="Source\3rdParty\ImGui\imgui_demo.cpp">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClCompile>
     <ClCompile Include="Source\3rdParty\ImGui\imgui_draw.cpp">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClCompile>
     <ClCompile Include="Source\3rdParty\ImGui\imgui_impl_dx11.cpp">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClCompile>
     <ClCompile Include="Source\3rdParty\ImGui\imgui_impl_win32.cpp">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClCompile>
     <ClCompile Include="Source\3rdParty\ImGui\imgui_widgets.cpp">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClCompile>
     <ClCompile Include="Source\3rdParty\LodePNG\lodepng.cpp">
       <Filter>Source\3rdParty\LodePNG</Filter>
@@ -115,13 +115,13 @@
       <Filter>Source\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="Source\3rdParty\ImGui\implot.cpp">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClCompile>
     <ClCompile Include="Source\3rdParty\ImGui\implot_demo.cpp">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClCompile>
     <ClCompile Include="Source\3rdParty\ImGui\implot_items.cpp">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -129,28 +129,28 @@
       <Filter>Source</Filter>
     </ClInclude>
     <ClInclude Include="Source\3rdParty\ImGui\imconfig.h">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClInclude>
     <ClInclude Include="Source\3rdParty\ImGui\imgui.h">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClInclude>
     <ClInclude Include="Source\3rdParty\ImGui\imgui_impl_dx11.h">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClInclude>
     <ClInclude Include="Source\3rdParty\ImGui\imgui_impl_win32.h">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClInclude>
     <ClInclude Include="Source\3rdParty\ImGui\imgui_internal.h">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClInclude>
     <ClInclude Include="Source\3rdParty\ImGui\imstb_rectpack.h">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClInclude>
     <ClInclude Include="Source\3rdParty\ImGui\imstb_textedit.h">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClInclude>
     <ClInclude Include="Source\3rdParty\ImGui\imstb_truetype.h">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClInclude>
     <ClInclude Include="Source\3rdParty\LodePNG\lodepng.h">
       <Filter>Source\3rdParty\LodePNG</Filter>
@@ -1068,10 +1068,10 @@
       <Filter>Source\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Source\3rdParty\ImGui\implot.h">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClInclude>
     <ClInclude Include="Source\3rdParty\ImGui\implot_internal.h">
-      <Filter>Source\3rdParty\ImGui</Filter>
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

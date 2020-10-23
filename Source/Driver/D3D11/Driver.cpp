@@ -3,8 +3,8 @@
 #include <Common.h>
 
 #include <assert.h>
-#include <3rdParty/ImGui/imgui.h>
-#include <3rdParty/ImGui/imgui_impl_dx11.h>
+#include <3rdParty/imgui/imgui.h>
+#include <3rdParty/imgui/imgui_impl_dx11.h>
 
 #include "Texture.h"
 #include "Buffer.h"
