@@ -7,15 +7,6 @@
 
 using namespace drv_d3d11;
 
-static wchar_t* utf8_to_wcs(const char* utf8_str, wchar_t* wcs_buf, int wcs_buf_len) // TODO: move to some kind of utils
-{
-	int cnt = MultiByteToWideChar(CP_UTF8, 0, utf8_str, -1, wcs_buf, wcs_buf_len);
-	if (!cnt)
-		return nullptr;
-	wcs_buf[cnt < wcs_buf_len ? cnt : wcs_buf_len - 1] = L'\0';
-	return wcs_buf;
-}
-
 template<typename T>
 static T* compile_and_create_shader(
 	const char* file_name, const char* entry_point, const char* target_string, ID3DBlob** out_blob,

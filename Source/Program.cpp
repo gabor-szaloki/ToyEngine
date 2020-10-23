@@ -13,6 +13,7 @@
 #include <Renderer/WorldRenderer.h>
 
 #include "Common.h"
+#include "ImGuiLogWindow.h"
 
 static constexpr int DEFAULT_WINDOWED_POS_X = 100;
 static constexpr int DEFAULT_WINDOWED_POS_Y = 100;
@@ -74,7 +75,7 @@ static void init_logging()
 	_mkdir(".log");
 	static plog::RollingFileAppender<plog::TxtFormatter> fileAppender(logFilePath.c_str(), 100*1024*1024, 1);
 	static plog::DebugOutputAppender<plog::TxtFormatter> debugOutputAppender;
-	plog::init(logSeverity).addAppender(&fileAppender).addAppender(&debugOutputAppender);
+	plog::init(logSeverity).addAppender(&fileAppender).addAppender(&debugOutputAppender).addAppender(&plog::imguiLogWindow);
 	PLOG_INFO << "Log system initialized. Log file: " << logFilePath;
 }
 

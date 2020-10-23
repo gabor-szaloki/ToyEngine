@@ -38,6 +38,7 @@
     <ClCompile Include="Source\Driver\D3D11\RenderState.cpp" />
     <ClCompile Include="Source\Driver\D3D11\ShaderSet.cpp" />
     <ClCompile Include="Source\Driver\D3D11\Texture.cpp" />
+    <ClCompile Include="Source\ImGuiLogWindow.cpp" />
     <ClCompile Include="Source\Program.cpp" />
     <ClCompile Include="Source\Renderer\Camera.cpp" />
     <ClCompile Include="Source\Renderer\Gui.cpp" />
@@ -376,6 +377,7 @@
     <ClInclude Include="Source\Driver\ITexture.h" />
     <ClInclude Include="Source\Driver\DriverConsts.h" />
     <ClInclude Include="Source\Driver\TexFmt.h" />
+    <ClInclude Include="Source\ImGuiLogWindow.h" />
     <ClInclude Include="Source\Renderer\Camera.h" />
     <ClInclude Include="Source\Renderer\ConstantBuffers.h" />
     <ClInclude Include="Source\Renderer\Light.h" />

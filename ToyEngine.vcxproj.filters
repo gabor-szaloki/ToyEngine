@@ -138,6 +138,9 @@
     <ClCompile Include="Source\3rdParty\ImGui\implot_items.cpp">
       <Filter>Source\3rdParty\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="Source\ImGuiLogWindow.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common.h">
@@ -1150,6 +1153,9 @@
     </ClInclude>
     <ClInclude Include="Source\3rdParty\plog\WinApi.h">
       <Filter>Source\3rdParty\plog</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ImGuiLogWindow.h">
+      <Filter>Source</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
