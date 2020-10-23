@@ -1,6 +1,7 @@
 #pragma once
 
 #include <3rdParty/plog/Appenders/IAppender.h>
+#include <3rdParty/imgui/imgui.h>
 #include <vector>
 
 namespace plog
@@ -12,7 +13,13 @@ namespace plog
 		void write(const Record& record) override;
 		void perform();
 	private:
-		std::vector<char*> logMessages;
+		struct LogLine
+		{
+			const char* text;
+			ImColor color;
+		};
+
+		std::vector<LogLine> lines;
 	};
 
 	extern ImGuiLogWindow imguiLogWindow;
