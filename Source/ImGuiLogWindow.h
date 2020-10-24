@@ -4,6 +4,7 @@
 #include <3rdParty/imgui/imgui.h>
 #include <string>
 #include <vector>
+#include <array>
 
 namespace plog
 {
@@ -16,7 +17,7 @@ namespace plog
 		struct LogLine
 		{
 			std::string text;
-			ImColor color;
+			Severity severity;
 		};
 		std::vector<LogLine> lines;
 	};

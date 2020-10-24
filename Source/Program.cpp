@@ -27,6 +27,10 @@ static RECT lastWindowedRect = { DEFAULT_WINDOWED_POS_X, DEFAULT_WINDOWED_POS_Y,
 static bool rightMouseButtonHeldDown = false;
 static POINT lastMousePos;
 static bool ctrl = false;
+static std::string log_file_path;
+
+void* get_hwnd() { return hWnd; }
+const char* get_log_file_path() { return log_file_path.c_str(); }
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -67,16 +71,16 @@ static void init_logging()
 	std::string timeStamp(timeStampBuf);
 #if defined(_DEBUG)
 	const plog::Severity logSeverity = plog::debug;
-	std::string logFilePath = ".log/" + timeStamp + "_dbg.log";
+	log_file_path = ".log/" + timeStamp + "_dbg.log";
 #else
 	const plog::Severity logSeverity = plog::error;
-	std::string logFilePath = ".log/" + timeStamp + "_rel.log";
+	log_file_path = ".log/" + timeStamp + "_rel.log";
 #endif
 	_mkdir(".log");
-	static plog::RollingFileAppender<plog::ToyTxtFormatter> fileAppender(logFilePath.c_str(), 100*1024*1024, 1);
+	static plog::RollingFileAppender<plog::ToyTxtFormatter> fileAppender(log_file_path.c_str(), 100 * 1024 * 1024, 1);
 	static plog::DebugOutputAppender<plog::ToyTxtFormatter> debugOutputAppender;
 	plog::init(logSeverity).addAppender(&fileAppender).addAppender(&debugOutputAppender).addAppender(&plog::imguiLogWindow);
-	PLOG_INFO << "Log system initialized. Log file: " << logFilePath;
+	PLOG_INFO << "Log system initialized. Log file: " << log_file_path;
 }
 
 static bool init()
@@ -315,6 +319,11 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
+void exit_program()
+{
+	PostMessage(hWnd, WM_CLOSE, 0, 0);
+}
+
 REGISTER_IMGUI_FUNCTION_EX("App", "Toggle fullscreen", "F11", 100, [] { PostMessage(hWnd, WM_KEYDOWN, VK_F11, 0); });
-REGISTER_IMGUI_FUNCTION_EX("App", "Exit", "Alt+F4", 999, [] { PostMessage(hWnd, WM_CLOSE, 0, 0); });
+REGISTER_IMGUI_FUNCTION_EX("App", "Exit", "Alt+F4", 999, exit_program);
 REGISTER_IMGUI_FUNCTION_EX("ImGui", "Hide ImGui", "F2", 100, []() { autoimgui::is_active = false; });
