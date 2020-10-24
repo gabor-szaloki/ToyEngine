@@ -109,6 +109,11 @@ void autoimgui::perform()
 			ImGui::EndMenu();
 		}
 
+		// Exit button to the right
+		ImGui::SameLine(ImGui::GetWindowWidth() - 40);
+		if (ImGui::Button("x", ImVec2(32, 0)))
+			exit_program();
+
 		ImGui::EndMainMenuBar();
 	}
 
