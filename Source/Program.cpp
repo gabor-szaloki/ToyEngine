@@ -73,8 +73,8 @@ static void init_logging()
 	std::string logFilePath = ".log/" + timeStamp + "_rel.log";
 #endif
 	_mkdir(".log");
-	static plog::RollingFileAppender<plog::TxtFormatter> fileAppender(logFilePath.c_str(), 100*1024*1024, 1);
-	static plog::DebugOutputAppender<plog::TxtFormatter> debugOutputAppender;
+	static plog::RollingFileAppender<plog::ToyTxtFormatter> fileAppender(logFilePath.c_str(), 100*1024*1024, 1);
+	static plog::DebugOutputAppender<plog::ToyTxtFormatter> debugOutputAppender;
 	plog::init(logSeverity).addAppender(&fileAppender).addAppender(&debugOutputAppender).addAppender(&plog::imguiLogWindow);
 	PLOG_INFO << "Log system initialized. Log file: " << logFilePath;
 }
