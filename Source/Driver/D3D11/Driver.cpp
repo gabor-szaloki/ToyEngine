@@ -591,15 +591,14 @@ static void release_pool(std::map<ResId, T*>& pool)
 
 void Driver::releaseAllResources()
 {
-	// Textures and buffers should be destroyed by the user
 	assert(textures.size() == 0);
 	release_pool(textures);
 	assert(buffers.size() == 0);
 	release_pool(buffers);
-
-	// These are destroyed automatically
-	// TODO: implement a way for the user to destroy these as well to avoid bloating the driver with these
+	assert(renderStates.size() == 0);
 	release_pool(renderStates);
+	assert(shaders.size() == 0);
 	release_pool(shaders);
+	assert(inputLayouts.size() == 0);
 	release_pool(inputLayouts);
 }
