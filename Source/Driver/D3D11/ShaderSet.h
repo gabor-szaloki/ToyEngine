@@ -12,6 +12,7 @@ namespace drv_d3d11
 		const ResId& getId() const { return id; }
 		void recompile();
 		ID3DBlob* getVsBlob() const { return vsBlob; }
+		bool isCompiledSuccessfully() { return compiledSuccessfully; }
 		void set();
 
 	private:
@@ -26,5 +27,6 @@ namespace drv_d3d11
 		ID3D11GeometryShader* gs;
 		ID3D11HullShader* hs;
 		ID3D11DomainShader* ds;
+		bool compiledSuccessfully = false;
 	};
 }

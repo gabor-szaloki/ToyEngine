@@ -39,8 +39,8 @@ static T* compile_and_create_shader(
 	const char* file_name, const char* entry_point, const char* target_string, ID3DBlob** out_blob,
 	std::function<HRESULT(const void* byte_code, SIZE_T byte_code_length, T** out_shader)> create_func)
 {
-	ID3DBlob* blob;
-	ID3DBlob* errorBlob;
+	ID3DBlob* blob = nullptr;
+	ID3DBlob* errorBlob = nullptr;
 
 	wchar_t fileName[MAX_PATH];
 	utf8_to_wcs(file_name, fileName, MAX_PATH);
@@ -54,9 +54,9 @@ static T* compile_and_create_shader(
 		fileName, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE,
 		entry_point, target_string, flags1, flags2, &blob, &errorBlob);
 
-	if (errorBlob)
+	if (errorBlob != nullptr)
 	{
-		PLOG_ERROR << "Failed to comiple shader." << std::endl
+		PLOG_ERROR << "Failed to compile shader." << std::endl
 			<< "\tFile: " << file_name << std::endl
 			<< "\tFunction: " << entry_point << std::endl
 			<< "\tError: " << reinterpret_cast<const char*>(errorBlob->GetBufferPointer());
@@ -89,6 +89,7 @@ void ShaderSet::releaseAll()
 
 void ShaderSet::compileAll()
 {
+	compiledSuccessfully = true;
 	if (desc.shaderFuncNames[(int)ShaderStage::VS] != nullptr)
 	{
 		vs = compile_and_create_shader<ID3D11VertexShader>(
@@ -98,6 +99,8 @@ void ShaderSet::compileAll()
 				return Driver::get().getDevice().CreateVertexShader(
 					byte_code, byte_code_length, nullptr, out_shader);
 			});
+		if (vs == nullptr)
+			compiledSuccessfully = false;
 	}
 	if (desc.shaderFuncNames[(int)ShaderStage::PS] != nullptr)
 	{
@@ -108,6 +111,8 @@ void ShaderSet::compileAll()
 				return Driver::get().getDevice().CreatePixelShader(
 					byte_code, byte_code_length, nullptr, out_shader);
 			});
+		if (ps == nullptr)
+			compiledSuccessfully = false;
 	}
 	if (desc.shaderFuncNames[(int)ShaderStage::GS] != nullptr)
 	{
@@ -118,6 +123,8 @@ void ShaderSet::compileAll()
 				return Driver::get().getDevice().CreateGeometryShader(
 					byte_code, byte_code_length, nullptr, out_shader);
 			});
+		if (gs == nullptr)
+			compiledSuccessfully = false;
 	}
 	if (desc.shaderFuncNames[(int)ShaderStage::HS] != nullptr)
 	{
@@ -128,6 +135,8 @@ void ShaderSet::compileAll()
 				return Driver::get().getDevice().CreateHullShader(
 					byte_code, byte_code_length, nullptr, out_shader);
 			});
+		if (hs == nullptr)
+			compiledSuccessfully = false;
 	}
 	if (desc.shaderFuncNames[(int)ShaderStage::DS] != nullptr)
 	{
@@ -138,5 +147,7 @@ void ShaderSet::compileAll()
 				return Driver::get().getDevice().CreateDomainShader(
 					byte_code, byte_code_length, nullptr, out_shader);
 			});
+		if (ds == nullptr)
+			compiledSuccessfully = false;
 	}
 }

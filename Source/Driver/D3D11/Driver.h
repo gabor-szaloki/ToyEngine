@@ -67,6 +67,7 @@ namespace drv_d3d11
 		const DriverSettings& getSettings() override { return settings; };
 		void setSettings(const DriverSettings& new_settings) override;
 		void recompileShaders() override;
+		void setErrorShaderDesc(const ShaderSetDesc& desc) override;
 
 		ID3D11Device& getDevice() { return *device; }
 		ID3D11DeviceContext& getContext() { return *context; }
@@ -103,7 +104,8 @@ namespace drv_d3d11
 		std::map<ResId, ShaderSet*> shaders;
 		std::map<ResId, InputLayout*> inputLayouts;
 
-		ResId defaultRenderState;
+		ResId defaultRenderState = BAD_RESID;
+		ResId errorShader = BAD_RESID;
 
 		std::array<Texture*, D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT> currentRenderTargets;
 		Texture* currentDepthTarget = nullptr;

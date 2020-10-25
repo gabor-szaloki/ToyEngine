@@ -530,6 +530,7 @@
     <None Include="Source\Shaders\BRDF.hlsl">
       <FileType>Document</FileType>
     </None>
+    <None Include="Source\Shaders\Error.shader" />
     <None Include="Source\Shaders\Standard.shader" />
   </ItemGroup>
   <ItemGroup>

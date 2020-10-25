@@ -64,8 +64,13 @@ void Driver::shutdown()
 {
 	ImGui_ImplDX11_Shutdown();
 
-	backbuffer.reset();
+	if (errorShader != BAD_RESID)
+	{
+		destroyResource(errorShader);
+		errorShader = BAD_RESID;
+	}
 
+	closeResolutionDependentResources();
 	releaseAllResources();
 
 	SAFE_RELEASE(swapchain);
@@ -378,7 +383,10 @@ void Driver::setRenderState(ResId res_id)
 void Driver::setShaderSet(ResId res_id)
 {
 	assert(shaders.find(res_id) != shaders.end());
-	shaders[res_id]->set();
+	ShaderSet* shaderToSet = shaders[res_id];
+	if (!shaderToSet->isCompiledSuccessfully())
+		shaderToSet = shaders[errorShader];
+	shaderToSet->set();
 }
 
 void Driver::setView(float x, float y, float w, float h, float z_min, float z_max)
@@ -456,6 +464,13 @@ void Driver::recompileShaders()
 {
 	for (auto& [k, v] : shaders)
 		v->recompile();
+}
+
+void Driver::setErrorShaderDesc(const ShaderSetDesc& desc)
+{
+	if (errorShader != BAD_RESID)
+		destroyResource(errorShader);
+	errorShader = createShaderSet(desc);
 }
 
 template<typename T>
@@ -568,6 +583,7 @@ bool Driver::initResolutionDependentResources(int display_width, int display_hei
 
 void Driver::closeResolutionDependentResources()
 {
+	destroyResource(defaultRenderState);
 	backbuffer.reset();
 }
 

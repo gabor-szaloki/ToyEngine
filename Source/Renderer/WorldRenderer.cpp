@@ -194,6 +194,11 @@ void WorldRenderer::closeResolutionDependentResources()
 
 void WorldRenderer::initShaders()
 {
+	ShaderSetDesc errorShaderDesc("Source/Shaders/Error.shader");
+	errorShaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "ErrorVS";
+	errorShaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "ErrorPS";
+	drv->setErrorShaderDesc(errorShaderDesc);
+
 	ShaderSetDesc shaderDesc("Source/Shaders/Standard.shader");
 	shaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "StandardForwardVS";
 	shaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "StandardOpaqueForwardPS";

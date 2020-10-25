@@ -1596,5 +1596,8 @@
     <None Include="Source\3rdParty\glm\gtx\wrap.inl">
       <Filter>Source\3rdParty\glm\gtx</Filter>
     </None>
+    <None Include="Source\Shaders\Error.shader">
+      <Filter>Source\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
