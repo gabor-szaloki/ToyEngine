@@ -47,4 +47,5 @@ public:
 	virtual TexFmt getIndexFormat() = 0;
 	virtual const DriverSettings& getSettings() = 0;
 	virtual void setSettings(const DriverSettings& new_settings) = 0;
+	virtual void recompileShaders() = 0;
 };

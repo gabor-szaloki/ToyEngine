@@ -7,6 +7,33 @@
 
 using namespace drv_d3d11;
 
+ShaderSet::ShaderSet(const ShaderSetDesc& desc_) : desc(desc_)
+{
+	compileAll();
+	id = Driver::get().registerShaderSet(this);
+}
+
+ShaderSet::~ShaderSet()
+{
+	releaseAll();
+	Driver::get().unregisterShaderSet(id);
+}
+
+void ShaderSet::recompile()
+{
+	releaseAll();
+	compileAll();
+}
+
+void ShaderSet::set()
+{
+	Driver::get().getContext().VSSetShader(vs, nullptr, 0);
+	Driver::get().getContext().PSSetShader(ps, nullptr, 0);
+	Driver::get().getContext().GSSetShader(gs, nullptr, 0);
+	Driver::get().getContext().HSSetShader(hs, nullptr, 0);
+	Driver::get().getContext().DSSetShader(ds, nullptr, 0);
+}
+
 template<typename T>
 static T* compile_and_create_shader(
 	const char* file_name, const char* entry_point, const char* target_string, ID3DBlob** out_blob,
@@ -50,7 +77,17 @@ static T* compile_and_create_shader(
 	return shader;
 }
 
-ShaderSet::ShaderSet(const ShaderSetDesc& desc_) : desc(desc_)
+void ShaderSet::releaseAll()
+{
+	SAFE_RELEASE(vsBlob);
+	SAFE_RELEASE(vs);
+	SAFE_RELEASE(ps);
+	SAFE_RELEASE(gs);
+	SAFE_RELEASE(hs);
+	SAFE_RELEASE(ds);
+}
+
+void ShaderSet::compileAll()
 {
 	if (desc.shaderFuncNames[(int)ShaderStage::VS] != nullptr)
 	{
@@ -102,26 +139,4 @@ ShaderSet::ShaderSet(const ShaderSetDesc& desc_) : desc(desc_)
 					byte_code, byte_code_length, nullptr, out_shader);
 			});
 	}
-
-	id = Driver::get().registerShaderSet(this);
-}
-
-ShaderSet::~ShaderSet()
-{
-	SAFE_RELEASE(vsBlob);
-	SAFE_RELEASE(vs);
-	SAFE_RELEASE(ps);
-	SAFE_RELEASE(gs);
-	SAFE_RELEASE(hs);
-	SAFE_RELEASE(ds);
-	Driver::get().unregisterShaderSet(id);
-}
-
-void ShaderSet::set()
-{
-	Driver::get().getContext().VSSetShader(vs, nullptr, 0);
-	Driver::get().getContext().PSSetShader(ps, nullptr, 0);
-	Driver::get().getContext().GSSetShader(gs, nullptr, 0);
-	Driver::get().getContext().HSSetShader(hs, nullptr, 0);
-	Driver::get().getContext().DSSetShader(ds, nullptr, 0);
 }

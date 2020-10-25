@@ -452,6 +452,12 @@ void Driver::setSettings(const DriverSettings& new_settings)
 	}
 }
 
+void Driver::recompileShaders()
+{
+	for (auto& [k, v] : shaders)
+		v->recompile();
+}
+
 template<typename T>
 static ResId emplace_resource(T* res, std::map<ResId, T*>& dest)
 {

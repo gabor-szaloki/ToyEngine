@@ -66,6 +66,7 @@ namespace drv_d3d11
 		TexFmt getIndexFormat() override { return TexFmt::R16_UINT; }
 		const DriverSettings& getSettings() override { return settings; };
 		void setSettings(const DriverSettings& new_settings) override;
+		void recompileShaders() override;
 
 		ID3D11Device& getDevice() { return *device; }
 		ID3D11DeviceContext& getContext() { return *context; }

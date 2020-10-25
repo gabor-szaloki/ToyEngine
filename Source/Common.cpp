@@ -33,8 +33,8 @@ static void driver_settings_window()
 
 	changed |= ImGui::SliderInt("Texture filtering anisotropy", (int*)&drvSettings.textureFilteringAnisotropy, 0, 16);
 	changed |= ImGui::Checkbox("V-sync", &drvSettings.vsync);
-	//if (ImGui::Button("Recompile shaders"))
-	//	RecompileShaders();
+	if (ImGui::Button("Recompile shaders"))
+		drv->recompileShaders();
 
 	if (changed)
 		drv->setSettings(drvSettings);
