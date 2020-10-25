@@ -104,8 +104,8 @@ namespace drv_d3d11
 		std::map<ResId, ShaderSet*> shaders;
 		std::map<ResId, InputLayout*> inputLayouts;
 
-		ResId defaultRenderState = BAD_RESID;
-		ResId errorShader = BAD_RESID;
+		std::unique_ptr<RenderState> defaultRenderState;
+		std::unique_ptr<ShaderSet> errorShader;
 
 		std::array<Texture*, D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT> currentRenderTargets;
 		Texture* currentDepthTarget = nullptr;

@@ -52,6 +52,11 @@ bool Driver::init(void* hwnd, int display_width, int display_height)
 
 	initResolutionDependentResources(display_width, display_height);
 
+	// Create default render state
+	RenderStateDesc desc;
+	ResId defaultRenderStateResId = createRenderState(desc);
+	defaultRenderState.reset(renderStates[defaultRenderStateResId]);
+
 	// TODO: Maybe expose this?
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
@@ -64,11 +69,8 @@ void Driver::shutdown()
 {
 	ImGui_ImplDX11_Shutdown();
 
-	if (errorShader != BAD_RESID)
-	{
-		destroyResource(errorShader);
-		errorShader = BAD_RESID;
-	}
+	errorShader.reset();
+	defaultRenderState.reset();
 
 	closeResolutionDependentResources();
 	releaseAllResources();
@@ -375,9 +377,9 @@ void Driver::setRenderState(ResId res_id)
 {
 	assert(res_id == BAD_RESID || renderStates.find(res_id) != renderStates.end());
 	
-	ResId resId = res_id != BAD_RESID ? res_id : defaultRenderState;
-	context->RSSetState(renderStates[resId]->getRasterizerState());
-	context->OMSetDepthStencilState(renderStates[resId]->getDepthStencilState(), 0);
+	RenderState *rs = res_id != BAD_RESID ? renderStates[res_id] : defaultRenderState.get();
+	context->RSSetState(rs->getRasterizerState());
+	context->OMSetDepthStencilState(rs->getDepthStencilState(), 0);
 }
 
 void Driver::setShaderSet(ResId res_id)
@@ -385,7 +387,7 @@ void Driver::setShaderSet(ResId res_id)
 	assert(shaders.find(res_id) != shaders.end());
 	ShaderSet* shaderToSet = shaders[res_id];
 	if (!shaderToSet->isCompiledSuccessfully())
-		shaderToSet = shaders[errorShader];
+		shaderToSet = errorShader.get();
 	shaderToSet->set();
 }
 
@@ -468,9 +470,8 @@ void Driver::recompileShaders()
 
 void Driver::setErrorShaderDesc(const ShaderSetDesc& desc)
 {
-	if (errorShader != BAD_RESID)
-		destroyResource(errorShader);
-	errorShader = createShaderSet(desc);
+	ResId errorShaderResId = createShaderSet(desc);
+	errorShader.reset(shaders[errorShaderResId]);
 }
 
 template<typename T>
@@ -572,18 +573,11 @@ bool Driver::initResolutionDependentResources(int display_width, int display_hei
 		backbuffer = std::make_unique<Texture>(desc, backBufferTexture);
 	}
 
-	// Create default render state
-	{
-		RenderStateDesc desc;
-		defaultRenderState = createRenderState(desc);
-	}
-
 	return true;
 }
 
 void Driver::closeResolutionDependentResources()
 {
-	destroyResource(defaultRenderState);
 	backbuffer.reset();
 }
 
