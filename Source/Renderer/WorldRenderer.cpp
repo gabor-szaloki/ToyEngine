@@ -207,12 +207,11 @@ void WorldRenderer::initShaders()
 	shaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "StandardOpaqueShadowPS";
 	standardShaders[(int)RenderPass::SHADOW] = drv->createShaderSet(shaderDesc);
 
-	constexpr unsigned int NUM_STANDARD_INPUT_LAYOUT_ELEMENTS = 5;
+	constexpr unsigned int NUM_STANDARD_INPUT_LAYOUT_ELEMENTS = 4;
 	InputLayoutElementDesc standardInputLayoutDesc[NUM_STANDARD_INPUT_LAYOUT_ELEMENTS] =
 	{
 		{ VertexInputSemantic::POSITION, 0, TexFmt::R32G32B32_FLOAT    },
 		{ VertexInputSemantic::NORMAL,   0, TexFmt::R32G32B32_FLOAT    },
-		{ VertexInputSemantic::TANGENT,  0, TexFmt::R32G32B32A32_FLOAT },
 		{ VertexInputSemantic::COLOR,    0, TexFmt::R32G32B32A32_FLOAT },
 		{ VertexInputSemantic::TEXCOORD, 0, TexFmt::R32G32_FLOAT       },
 	};
