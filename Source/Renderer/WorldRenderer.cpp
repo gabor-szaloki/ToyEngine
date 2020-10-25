@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <array>
 #include <3rdParty/LodePNG/lodepng.h>
+#include <3rdParty/tinyobjloader/tiny_obj_loader.h>
 #include <Renderer/Camera.h>
 #include <Renderer/Light.h>
 #include <Driver/ITexture.h>
@@ -231,6 +232,8 @@ void WorldRenderer::closeShaders()
 
 ITexture* WorldRenderer::loadTextureFromPng(const char* path)
 {
+	PLOG_INFO << "Loading texture from file: " << path;
+
 	std::vector<unsigned char> pngData;
 	unsigned int width, height;
 	unsigned int error = lodepng::decode(pngData, width, height, path);
@@ -250,8 +253,85 @@ ITexture* WorldRenderer::loadTextureFromPng(const char* path)
 	return texture;
 }
 
+bool WorldRenderer::loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer& mesh_renderer)
+{
+	PLOG_INFO << "Loading mesh from file: " << path;
+
+	tinyobj::attrib_t attrib;
+	std::vector<tinyobj::shape_t> shapes;
+	std::vector<tinyobj::material_t> materials;
+
+	std::string warn;
+	std::string err;
+
+	bool success = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path);
+	if (!warn.empty())
+		PLOG_WARNING << warn;
+	if (!err.empty())
+		PLOG_ERROR << err;
+	if (!success)
+		return false;
+
+	if (shapes.size() != 1)
+		PLOG_WARNING << "Warning loading mesh. Only 1 shape per .obj file is supported now. This file contains " << shapes.size() << ". Using only the first one.";
+
+	tinyobj::shape_t shape = shapes[0];
+	const size_t numFaces = shape.mesh.num_face_vertices.size();
+	constexpr size_t NUM_VERTICES_PER_FACE = 3; // Only triangles are supported now.
+
+	if (attrib.vertices.size() % 3 != 0)
+	{
+		PLOG_ERROR << "Error loading mesh. \"attrib.vertices.size() % 3 != 0\"";
+		return false;
+	}
+
+	std::vector<unsigned short> indexData(numFaces * NUM_VERTICES_PER_FACE);
+	std::vector<StandardVertexData> vertexData(attrib.vertices.size() / 3);
+
+	// Loop over faces
+	for (size_t f = 0; f < numFaces; f++)
+	{
+		if (shape.mesh.num_face_vertices[f] != NUM_VERTICES_PER_FACE)
+		{
+			PLOG_ERROR << "Error loading mesh. Only 3 vertices per face (triangles) are supported now.";
+			return false;
+		}
+
+		// Loop over vertices in the face.
+		for (size_t v = 0; v < NUM_VERTICES_PER_FACE; v++)
+		{
+			tinyobj::index_t idx = shape.mesh.indices[f * NUM_VERTICES_PER_FACE + v];
+
+			indexData[f * NUM_VERTICES_PER_FACE + v] = idx.vertex_index;
+			StandardVertexData& vertex = vertexData[idx.vertex_index];
+			vertex.position.x = attrib.vertices [3 * idx.vertex_index   + 0];
+			vertex.position.y = attrib.vertices [3 * idx.vertex_index   + 1];
+			vertex.position.z = attrib.vertices [3 * idx.vertex_index   + 2];
+			vertex.normal.x   = attrib.normals  [3 * idx.normal_index   + 0];
+			vertex.normal.y   = attrib.normals  [3 * idx.normal_index   + 1];
+			vertex.normal.z   = attrib.normals  [3 * idx.normal_index   + 2];
+			vertex.uv.x       = attrib.texcoords[2 * idx.texcoord_index + 0];
+			vertex.uv.y       = attrib.texcoords[2 * idx.texcoord_index + 1];
+			vertex.color.x    = attrib.colors   [3 * idx.vertex_index   + 0];
+			vertex.color.y    = attrib.colors   [3 * idx.vertex_index   + 1];
+			vertex.color.z    = attrib.colors   [3 * idx.vertex_index   + 2];
+			vertex.color.w    = attrib.texcoord_ws.size() == 0 ? 1.0f : attrib.texcoord_ws[idx.vertex_index];
+		}
+	}
+
+	mesh_renderer.loadIndices((unsigned int)indexData.size(), indexData.data());
+	mesh_renderer.loadVertices((unsigned int)vertexData.size(), sizeof(vertexData[0]), vertexData.data());
+
+	return true;
+}
+
 void WorldRenderer::initScene()
 {
+	std::array<ITexture*, 2> flatGrayMaterialTextures;
+	flatGrayMaterialTextures[0] = loadTextureFromPng("Assets/Textures/gray_base.png");
+	flatGrayMaterialTextures[1] = loadTextureFromPng("Assets/Textures/flat_nrm.png");
+	managedTextures.insert(managedTextures.end(), flatGrayMaterialTextures.begin(), flatGrayMaterialTextures.end());
+
 	std::array<ITexture*, 2> testMaterialTextures;
 	testMaterialTextures[0] = loadTextureFromPng("Assets/Textures/test_base.png");
 	testMaterialTextures[1] = loadTextureFromPng("Assets/Textures/test_nrm.png");
@@ -262,12 +342,15 @@ void WorldRenderer::initScene()
 	blueTilesMaterialTextures[1] = loadTextureFromPng("Assets/Textures/Tiles20_nrm.png");
 	managedTextures.insert(managedTextures.end(), blueTilesMaterialTextures.begin(), blueTilesMaterialTextures.end());
 
+	Material* flatGray = new Material(standardShaders);
+	flatGray->setTextures(ShaderStage::PS, flatGrayMaterialTextures.data(), (unsigned int)flatGrayMaterialTextures.size());
+
 	Material* test = new Material(standardShaders);
-	test->setTextures(ShaderStage::PS, testMaterialTextures.data(), 2);
+	test->setTextures(ShaderStage::PS, testMaterialTextures.data(), (unsigned int)testMaterialTextures.size());
 	managedMaterials.push_back(test);
 
 	Material* blueTiles = new Material(standardShaders);
-	blueTiles->setTextures(ShaderStage::PS, blueTilesMaterialTextures.data(), 2);
+	blueTiles->setTextures(ShaderStage::PS, blueTilesMaterialTextures.data(), (unsigned int)blueTilesMaterialTextures.size());
 	managedMaterials.push_back(blueTiles);
 
 	MeshRenderer* floor = new MeshRenderer("floor", blueTiles, standardInputLayout);
@@ -287,6 +370,27 @@ void WorldRenderer::initScene()
 	sphere->loadIndices(primitives::SPHERE_INDEX_COUNT, (void*)primitives::sphere_indices);
 	sphere->worldTransform = XMMatrixTranslation(1.5f, 1.5f, 0.0f);
 	managedMeshRenderers.push_back(sphere);
+
+	MeshRenderer* teapot = new MeshRenderer("teapot", flatGray, standardInputLayout);
+	teapot->worldTransform = XMMatrixMultiply(XMMatrixScaling(0.05f, 0.05f, 0.05f), XMMatrixTranslation(-4.5f, 0.5f, -3.0f));
+	if (loadMeshFromObjToMeshRenderer("Assets/Models/UtahTeapot/utah-teapot.obj", *teapot))
+		managedMeshRenderers.push_back(teapot);
+	else
+		delete teapot;
+
+	MeshRenderer* bunny = new MeshRenderer("bunny", flatGray, standardInputLayout);
+	bunny->worldTransform = XMMatrixMultiply(XMMatrixScaling(10.0f, 10.f, 10.f), XMMatrixTranslation(-1.5f, 0.0f, -3.0f));
+	if (loadMeshFromObjToMeshRenderer("Assets/Models/StanfordBunny/stanford-bunny.obj", *bunny))
+		managedMeshRenderers.push_back(bunny);
+	else
+		delete bunny;
+
+	MeshRenderer* dragon = new MeshRenderer("dragon", flatGray, standardInputLayout);
+	dragon->worldTransform = XMMatrixMultiply(XMMatrixScaling(0.2f, 0.2f, 0.2f), XMMatrixTranslation(1.5f, 0.0f, -3.0f));
+	if (loadMeshFromObjToMeshRenderer("Assets/Models/StanfordDragon/stanford-dragon.obj", *dragon))
+		managedMeshRenderers.push_back(dragon);
+	else
+		delete dragon;
 }
 
 void WorldRenderer::performShadowPass(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix)

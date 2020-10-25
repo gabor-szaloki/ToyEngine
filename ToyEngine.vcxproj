@@ -30,6 +30,7 @@
     <ClCompile Include="Source\3rdParty\ImGui\implot_demo.cpp" />
     <ClCompile Include="Source\3rdParty\ImGui\implot_items.cpp" />
     <ClCompile Include="Source\3rdParty\LodePNG\lodepng.cpp" />
+    <ClCompile Include="Source\3rdParty\tinyobjloader\tiny_obj_loader.cc" />
     <ClCompile Include="Source\AutoImGui.cpp" />
     <ClCompile Include="Source\Common.cpp" />
     <ClCompile Include="Source\Driver\D3D11\Buffer.cpp" />
@@ -362,6 +363,7 @@
     <ClInclude Include="Source\3rdParty\plog\Severity.h" />
     <ClInclude Include="Source\3rdParty\plog\Util.h" />
     <ClInclude Include="Source\3rdParty\plog\WinApi.h" />
+    <ClInclude Include="Source\3rdParty\tinyobjloader\tiny_obj_loader.h" />
     <ClInclude Include="Source\AutoImGui.h" />
     <ClInclude Include="Source\Common.h" />
     <ClInclude Include="Source\Driver\D3D11\Buffer.h" />

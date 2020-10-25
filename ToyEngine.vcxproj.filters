@@ -58,6 +58,9 @@
     <Filter Include="Source\3rdParty\plog\Formatters">
       <UniqueIdentifier>{382ba5da-b0cc-4abc-a2f5-9f1175211cd8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\3rdParty\tinyobjloader">
+      <UniqueIdentifier>{b727d947-31b7-4a03-b2e5-40d09c333d4a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Common.cpp">
@@ -140,6 +143,9 @@
     </ClCompile>
     <ClCompile Include="Source\ImGuiLogWindow.cpp">
       <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\3rdParty\tinyobjloader\tiny_obj_loader.cc">
+      <Filter>Source\3rdParty\tinyobjloader</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1156,6 +1162,9 @@
     </ClInclude>
     <ClInclude Include="Source\ImGuiLogWindow.h">
       <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\tinyobjloader\tiny_obj_loader.h">
+      <Filter>Source\3rdParty\tinyobjloader</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

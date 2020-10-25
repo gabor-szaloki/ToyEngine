@@ -61,6 +61,7 @@ private:
 	void initShaders();
 	void closeShaders();
 	ITexture* loadTextureFromPng(const char* path);
+	bool loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer& mesh_renderer);
 	void initScene();
 	void performShadowPass(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix);
 	void performForwardPass();
