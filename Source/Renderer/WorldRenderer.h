@@ -7,8 +7,8 @@
 #include <array>
 #include <3rdParty/glm/glm.hpp>
 #include <Driver/IDriver.h>
+#include "Camera.h"
 
-class Camera;
 class Light;
 class ITexture;
 class IBuffer;
@@ -30,6 +30,7 @@ public:
 	void setShadowResolution(unsigned int shadow_resolution);
 	void setShadowBias(int depth_bias, float slope_scaled_depth_bias);
 	ITexture* getShadowMap() const { return shadowMap.get(); };
+	Camera& getCamera() { return camera; };
 
 	struct CameraInputState
 	{
@@ -68,7 +69,7 @@ private:
 
 	float time;
 
-	std::unique_ptr<Camera> camera;
+	Camera camera;
 	float cameraMoveSpeed = 5.0f;
 	float cameraTurnSpeed = 0.002f;
 

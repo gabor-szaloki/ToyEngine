@@ -4,8 +4,6 @@
 #include <array>
 #include <3rdParty/LodePNG/lodepng.h>
 #include <3rdParty/tinyobjloader/tiny_obj_loader.h>
-#include <Renderer/Camera.h>
-#include <Renderer/Light.h>
 #include <Driver/ITexture.h>
 #include <Driver/IBuffer.h>
 
@@ -13,12 +11,12 @@
 #include "Material.h"
 #include "MeshRenderer.h"
 #include "Primitives.h"
+#include "Light.h"
 
 WorldRenderer::WorldRenderer()
 {
-	camera = std::make_unique<Camera>();
-	camera->SetEye(XMVectorSet(2.0f, 3.5f, -3.0f, 0.0f));
-	camera->SetRotation(XM_PI / 6, -XM_PIDIV4);
+	camera.SetEye(XMVectorSet(-4.5f, 3.0f, -6.0f, 1.0f));
+	camera.SetRotation(XM_PI / 6, XM_PI / 6);
 
 	mainLight = std::make_unique<Light>();
 	mainLight->SetRotation(-XM_PI / 3, XM_PI / 3);
@@ -79,16 +77,16 @@ void WorldRenderer::update(float delta_time)
 
 	// Update camera movement
 	XMVECTOR cameraMoveDir =
-		camera->GetRight() * ((cameraInputState.isMovingRight ? 1.0f : 0.0f) + (cameraInputState.isMovingLeft ? -1.0f : 0.0f)) +
-		camera->GetUp() * ((cameraInputState.isMovingUp ? 1.0f : 0.0f) + (cameraInputState.isMovingDown ? -1.0f : 0.0f)) +
-		camera->GetForward() * ((cameraInputState.isMovingForward ? 1.0f : 0.0f) + (cameraInputState.isMovingBackward ? -1.0f : 0.0f));
+		camera.GetRight() * ((cameraInputState.isMovingRight ? 1.0f : 0.0f) + (cameraInputState.isMovingLeft ? -1.0f : 0.0f)) +
+		camera.GetUp() * ((cameraInputState.isMovingUp ? 1.0f : 0.0f) + (cameraInputState.isMovingDown ? -1.0f : 0.0f)) +
+		camera.GetForward() * ((cameraInputState.isMovingForward ? 1.0f : 0.0f) + (cameraInputState.isMovingBackward ? -1.0f : 0.0f));
 	XMVECTOR cameraMoveDelta = cameraMoveDir * cameraMoveSpeed * delta_time;
 	if (cameraInputState.isSpeeding)
 		cameraMoveDelta *= 2.0f;
-	camera->MoveEye(cameraMoveDelta);
+	camera.MoveEye(cameraMoveDelta);
 
 	// Update camera rotation
-	camera->Rotate(cameraInputState.deltaPitch * cameraTurnSpeed, cameraInputState.deltaYaw * cameraTurnSpeed);
+	camera.Rotate(cameraInputState.deltaPitch * cameraTurnSpeed, cameraInputState.deltaYaw * cameraTurnSpeed);
 	cameraInputState.deltaPitch = cameraInputState.deltaYaw = 0;
 
 	// Update scene
@@ -124,7 +122,7 @@ void WorldRenderer::render()
 	PerFrameConstantBufferData perFrameCbData;
 	perFrameCbData.ambientLightColor = get_final_light_color(ambientLightColor, ambientLightIntensity);
 	perFrameCbData.mainLightColor = get_final_light_color(mainLight->GetColor(), mainLight->GetIntensity());
-	XMMATRIX mainLightTranslateMatrix = XMMatrixTranslationFromVector(camera->GetEye() + camera->GetForward() * shadowDistance * 0.5f);
+	XMMATRIX mainLightTranslateMatrix = XMMatrixTranslationFromVector(camera.GetEye() + camera.GetForward() * shadowDistance * 0.5f);
 	XMMATRIX inverseLightViewMatrix = XMMatrixRotationRollPitchYaw(mainLight->GetPitch(), mainLight->GetYaw(), 0.0f) * mainLightTranslateMatrix;
 	XMStoreFloat4(&perFrameCbData.mainLightDirection, inverseLightViewMatrix.r[2]);
 	XMMATRIX lightViewMatrix = XMMatrixInverse(nullptr, inverseLightViewMatrix);
@@ -405,7 +403,7 @@ void WorldRenderer::performShadowPass(const XMMATRIX& lightViewMatrix, const XMM
 	PerCameraConstantBufferData perCameraCbData;
 	perCameraCbData.view = lightViewMatrix;
 	perCameraCbData.projection = lightProjectionMatrix;
-	XMStoreFloat3(&perCameraCbData.cameraWorldPosition, camera->GetEye());
+	XMStoreFloat3(&perCameraCbData.cameraWorldPosition, camera.GetEye());
 	perCameraCb->updateData(&perCameraCbData);
 
 	drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
@@ -432,9 +430,9 @@ void WorldRenderer::performForwardPass()
 	drv->clearRenderTargets(clearParams);
 
 	PerCameraConstantBufferData perCameraCbData;
-	perCameraCbData.view = camera->GetViewMatrix();
-	perCameraCbData.projection = camera->GetProjectionMatrix();
-	XMStoreFloat3(&perCameraCbData.cameraWorldPosition, camera->GetEye());
+	perCameraCbData.view = camera.GetViewMatrix();
+	perCameraCbData.projection = camera.GetProjectionMatrix();
+	XMStoreFloat3(&perCameraCbData.cameraWorldPosition, camera.GetEye());
 	perCameraCb->updateData(&perCameraCbData);
 
 	drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());

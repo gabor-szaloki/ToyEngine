@@ -4,12 +4,37 @@
 
 #include "WorldRenderer.h"
 #include "Light.h"
+#include "Camera.h"
 
 static void renderer_settings()
 {
 	ImGui::Checkbox("Show wireframe", &wr->showWireframe);
 }
 REGISTER_IMGUI_WINDOW("Renderer settings", renderer_settings);
+
+static void camera_settings()
+{
+	Camera& camera = wr->getCamera();
+	XMFLOAT3 eye;
+	XMStoreFloat3(&eye, camera.GetEye());
+	if (ImGui::DragFloat3("Eye", &eye.x, 0.01f))
+		camera.SetEye(XMLoadFloat3(&eye));
+	float yaw = camera.GetYaw();
+	float pitch = camera.GetPitch();
+	bool rotationChanged = ImGui::SliderAngle("Yaw", &yaw, -180.0f, 180.0f);
+	rotationChanged |= ImGui::SliderAngle("Pitch", &pitch, -90.0f, 90.0f);
+	if (rotationChanged)
+		camera.SetRotation(pitch, yaw);
+	float fov = camera.GetFOV();
+	float nearPlane = camera.GetNearPlane();
+	float farPlane = camera.GetFarPlane();
+	bool projChanged = ImGui::SliderAngle("FoV", &fov, 1.0f, 180.0f);
+	projChanged |= ImGui::DragFloatRange2("Clipping planes", &nearPlane, &farPlane, 0.1f, 0.1f, 1000.0f, "%.1f");
+	if (projChanged)
+		camera.SetProjectionParams(camera.GetViewportWidth(), camera.GetViewportHeight(),
+			fmaxf(fov, 1.0f), fmaxf(nearPlane, 0.1f), fmaxf(farPlane, nearPlane + 0.1));
+}
+REGISTER_IMGUI_WINDOW("Camera", camera_settings);
 
 static void lighting_settings()
 {

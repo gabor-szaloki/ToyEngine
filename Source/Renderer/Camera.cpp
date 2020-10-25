@@ -1,5 +1,7 @@
 #include "Camera.h"
 
+#include <3rdParty/glm/glm.hpp>
+
 Camera::Camera()
 {
 	eye = XMVectorSet(0.0f, 0.0f, -5.0f, 0.0f);
@@ -33,8 +35,15 @@ void Camera::MoveEye(XMVECTOR direction)
 
 void Camera::SetRotation(float pitch, float yaw)
 {
+	pitch = glm::clamp(pitch, -XM_PIDIV2, +XM_PIDIV2);
 	this->pitch = pitch;
+
+	while (yaw > XM_PI)
+		yaw -= XM_2PI;
+	while (yaw < -XM_PI)
+		yaw += XM_2PI;
 	this->yaw = yaw;
+
 	RecalculateViewMatrix();
 }
 

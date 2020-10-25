@@ -20,6 +20,8 @@ public:
 	XMVECTOR GetUp() { return up; }
 	XMVECTOR GetForward() { return XMVectorSet(viewMatrixF4X4.m[0][2], viewMatrixF4X4.m[1][2], viewMatrixF4X4.m[2][2], 0.0f); }
 	XMVECTOR GetRight() { return XMVector3Cross(up, GetForward()); }
+	float GetYaw() { return yaw; }
+	float GetPitch() { return pitch; }
 	void SetViewParams(XMVECTOR eye, XMVECTOR up, float pitch, float yaw);
 	XMMATRIX GetViewMatrix() { return viewMatrix; }
 
