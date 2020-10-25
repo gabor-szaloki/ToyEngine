@@ -1599,5 +1599,8 @@
     <None Include="Source\Shaders\Error.shader">
       <Filter>Source\Shaders</Filter>
     </None>
+    <None Include="Source\Shaders\NormalMapping.hlsl">
+      <Filter>Source\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

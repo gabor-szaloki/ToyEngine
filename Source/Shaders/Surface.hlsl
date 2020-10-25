@@ -2,6 +2,7 @@
 #define SURFACE_INCLUDED
 
 #include "Input.hlsl"
+#include "NormalMapping.hlsl"
 
 struct SurfaceOutput
 {
@@ -11,7 +12,7 @@ struct SurfaceOutput
 	float metalness;
 };
 
-SurfaceOutput Surface(float3 normal, float3 tangent, float3 binormal, float2 uv, float4 vertColor)
+SurfaceOutput Surface(float3 pointToEye, float3 normal, float2 uv, float4 vertColor)
 {
 	SurfaceOutput s;
 
@@ -21,9 +22,7 @@ SurfaceOutput Surface(float3 normal, float3 tangent, float3 binormal, float2 uv,
 
 	// Normal
 	float3 normalTextureSample = _NormalTexture.Sample(_Sampler, uv).rgb;
-	normalTextureSample = normalTextureSample * 2.0 - 1.0;
-	s.normal = tangent * normalTextureSample.x + binormal * normalTextureSample.y + normal * normalTextureSample.z;
-	s.normal = normalize(s.normal);
+	s.normal = perturb_normal(normal, normalTextureSample, pointToEye, uv);
 
 	// Roughness
 	s.roughness = baseTextureSample.a;

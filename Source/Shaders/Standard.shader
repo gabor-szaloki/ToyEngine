@@ -23,8 +23,6 @@ struct VSOutputStandardForward
 {
 	float4 position : SV_POSITION;
 	float3 normal : NORMAL;
-	float3 tangent : TANGENT;
-	float3 binormal : BINORMAL;
 	float4 color : COLOR;
 	float2 uv : TEXCOORD0;
 	float3 worldPos : TEXCOORD1;
@@ -52,15 +50,9 @@ VSOutputStandardForward StandardForwardVS(VSInputStandard v)
 	o.position = clipPos;
 
 	o.normal = normalize(mul(_World, float4(v.normal, 0)).xyz);
-	o.tangent = normalize(mul(_World, float4(v.tangent.xyz, 0)).xyz);
-	o.binormal = cross(o.tangent, o.normal) * v.tangent.w;
-
 	o.color = v.color;
-
 	o.uv = v.uv;
-
 	o.worldPos = worldPos.xyz;
-
 	o.shadowCoords = mul(_MainLightShadowMatrix, worldPos);
 
 	return o;
@@ -70,10 +62,11 @@ float4 StandardOpaqueForwardPS(VSOutputStandardForward i) : SV_TARGET
 {
 	float4 c = 1;
 
-	SurfaceOutput s = Surface(i.normal, i.tangent, i.binormal, i.uv, i.color);
+	float3 pointToEye = _CameraWorldPosition - i.worldPos;
+	SurfaceOutput s = Surface(pointToEye, i.normal, i.uv, i.color);
 
 	float mainLightShadowAttenuation = SampleMainLightShadow(i.shadowCoords);
-	c.rgb = Lighting(s, i.worldPos, mainLightShadowAttenuation);
+	c.rgb = Lighting(s, pointToEye, mainLightShadowAttenuation);
 	
 	return c;
 }

@@ -29,10 +29,10 @@ float3 GGX_Specular(float3 lightColor, float3 normal, float3 lightVector, float3
 	return radiance;
 }
 
-float3 Lighting(SurfaceOutput s, float3 worldPos, float mainLightShadowAttenuation)
+float3 Lighting(SurfaceOutput s, float3 pointToEye, float mainLightShadowAttenuation)
 {
 	float3 lightVector = -_MainLightDirection.xyz;
-	float3 viewVector = normalize(_CameraWorldPosition - worldPos);
+	float3 viewVector = normalize(pointToEye);
 
 	// Color at normal incidence
 	float3 F0 = lerp(0.04, s.albedo, s.metalness);
