@@ -114,9 +114,6 @@
     <ClCompile Include="Source\Driver\D3D11\InputLayout.cpp">
       <Filter>Source\Driver\D3D11</Filter>
     </ClCompile>
-    <ClCompile Include="Source\AutoImGui.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Renderer\Camera.cpp">
       <Filter>Source\Renderer</Filter>
     </ClCompile>
@@ -144,13 +141,16 @@
     <ClCompile Include="Source\3rdParty\ImGui\implot_items.cpp">
       <Filter>Source\3rdParty\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Source\ImGuiLogWindow.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="Source\3rdParty\tinyobjloader\tiny_obj_loader.cc">
       <Filter>Source\3rdParty\tinyobjloader</Filter>
     </ClCompile>
     <ClCompile Include="Source\Util\ToyJobSystem.cpp">
+      <Filter>Source\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Util\AutoImGui.cpp">
+      <Filter>Source\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Util\ImGuiLogWindow.cpp">
       <Filter>Source\Util</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1070,9 +1070,6 @@
     <ClInclude Include="Source\Driver\D3D11\InputLayout.h">
       <Filter>Source\Driver\D3D11</Filter>
     </ClInclude>
-    <ClInclude Include="Source\AutoImGui.h">
-      <Filter>Source</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Renderer\Camera.h">
       <Filter>Source\Renderer</Filter>
     </ClInclude>
@@ -1166,13 +1163,16 @@
     <ClInclude Include="Source\3rdParty\plog\WinApi.h">
       <Filter>Source\3rdParty\plog</Filter>
     </ClInclude>
-    <ClInclude Include="Source\ImGuiLogWindow.h">
-      <Filter>Source</Filter>
-    </ClInclude>
     <ClInclude Include="Source\3rdParty\tinyobjloader\tiny_obj_loader.h">
       <Filter>Source\3rdParty\tinyobjloader</Filter>
     </ClInclude>
     <ClInclude Include="Source\Util\ToyJobSystem.h">
+      <Filter>Source\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Util\AutoImGui.h">
+      <Filter>Source\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Util\ImGuiLogWindow.h">
       <Filter>Source\Util</Filter>
     </ClInclude>
   </ItemGroup>

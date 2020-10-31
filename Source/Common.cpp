@@ -4,6 +4,7 @@
 #include <Windows.h>
 #include <3rdParty/imgui/imgui.h>
 #include <Driver/IDriver.h>
+#include <Util/AutoImGui.h>
 
 IDriver* drv;
 WorldRenderer* wr;

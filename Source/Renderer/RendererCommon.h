@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Common.h>
+#include <Driver/IDriver.h>
 
 enum class RenderPass
 {

@@ -11,9 +11,10 @@
 #include <3rdParty/plog/Appenders/RollingFileAppender.h>
 #include <3rdParty/plog/Appenders/DebugOutputAppender.h>
 #include <Renderer/WorldRenderer.h>
+#include <Util/AutoImGui.h>
+#include <Util/ImGuiLogWindow.h>
 
 #include "Common.h"
-#include "ImGuiLogWindow.h"
 
 static constexpr int DEFAULT_WINDOWED_POS_X = 100;
 static constexpr int DEFAULT_WINDOWED_POS_Y = 100;

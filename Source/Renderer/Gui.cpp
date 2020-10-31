@@ -1,5 +1,6 @@
 #include <3rdParty/imgui/imgui.h>
 #include <Common.h>
+#include <Util/AutoImGui.h>
 #include <Driver/ITexture.h>
 
 #include "WorldRenderer.h"

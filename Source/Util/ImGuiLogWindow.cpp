@@ -6,7 +6,7 @@
 #include <string>
 #include <3rdParty/plog/Util.h>
 #include <Common.h>
-
+#include <Util/AutoImGui.h>
 using namespace plog;
 
 plog::ImGuiLogWindow plog::imguiLogWindow;
