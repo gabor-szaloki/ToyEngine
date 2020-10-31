@@ -194,6 +194,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		rightMouseButtonHeldDown = false;
 		ReleaseCapture();
 		ShowCursor(true);
+		wr->cameraInputState = {};
 		break;
 	case WM_RBUTTONDOWN:
 	{
@@ -217,25 +218,25 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		switch (wParam)
 		{
 		case 0x57: // W
-			wr->cameraInputState.isMovingForward = false;
+			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingForward = false;
 			break;
 		case 0x53: // S
-			wr->cameraInputState.isMovingBackward = false;
+			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingBackward = false;
 			break;
 		case 0x44: // D
-			wr->cameraInputState.isMovingRight = false;
+			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingRight = false;
 			break;
 		case 0x41: // A
-			wr->cameraInputState.isMovingLeft = false;
+			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingLeft = false;
 			break;
 		case 0x45: // E
-			wr->cameraInputState.isMovingUp = false;
+			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingUp = false;
 			break;
 		case 0x51: // Q
-			wr->cameraInputState.isMovingDown = false;
+			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingDown = false;
 			break;
 		case VK_SHIFT:
-			wr->cameraInputState.isSpeeding = false;
+			if (rightMouseButtonHeldDown) wr->cameraInputState.isSpeeding = false;
 			break;
 		case VK_CONTROL:
 			ctrl = false;
@@ -246,25 +247,25 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		switch (wParam)
 		{
 		case 0x57: // W
-			wr->cameraInputState.isMovingForward = true;
+			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingForward = true;
 			break;
 		case 0x53: // S
-			wr->cameraInputState.isMovingBackward = true;
+			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingBackward = true;
 			break;
 		case 0x44: // D
-			wr->cameraInputState.isMovingRight = true;
+			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingRight = true;
 			break;
 		case 0x41: // A
-			wr->cameraInputState.isMovingLeft = true;
+			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingLeft = true;
 			break;
 		case 0x45: // E
-			wr->cameraInputState.isMovingUp = true;
+			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingUp = true;
 			break;
 		case 0x51: // Q
-			wr->cameraInputState.isMovingDown = true;
+			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingDown = true;
 			break;
 		case VK_SHIFT:
-			wr->cameraInputState.isSpeeding = true;
+			if (rightMouseButtonHeldDown) wr->cameraInputState.isSpeeding = true;
 			break;
 		case VK_F2:
 			autoimgui::is_active = !autoimgui::is_active;

@@ -80,15 +80,27 @@ void ImGuiLogWindow::perform()
 			initSeverityFiltersTo(false);
 		ImGui::EndMenu();
 	}
+	static ImGuiTextFilter filter;
+	ImGui::Separator();
+	ImGui::Text("Search:");
+	filter.Draw("", 100);
+	if (ImGui::Button("x"))
+		filter.Clear();
 	ImGui::EndMenuBar();
 
 	for (LogLine& l : lines)
 	{
-		if (!severityFilters[l.severity])
+		if (!severityFilters[l.severity] || !filter.PassFilter(l.text.c_str()))
 			continue;
 		ImGui::TextColored(get_severity_color(l.severity), l.text.c_str());
 		if (ImGui::IsItemHovered())
 			ImGui::SetTooltip(l.text.c_str());
+		if (ImGui::BeginPopupContextItem(l.text.c_str()))
+		{
+			if (ImGui::MenuItem("Copy to clipboard"))
+				ImGui::SetClipboardText(l.text.c_str());
+			ImGui::EndPopup();
+		}
 	}
 
 	if (autoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
