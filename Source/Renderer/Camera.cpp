@@ -71,6 +71,13 @@ void Camera::SetProjectionParams(float viewportWidth, float viewportHeight, floa
 	RecalculateProjectionMatrix();
 }
 
+void Camera::Resize(float viewportWidth, float viewportHeight)
+{
+	this->viewportWidth = viewportWidth;
+	this->viewportHeight = viewportHeight;
+	RecalculateProjectionMatrix();
+}
+
 void Camera::RecalculateViewMatrix()
 {
 	XMMATRIX cameraRotationMatrix = XMMatrixRotationRollPitchYaw(pitch, yaw, 0.0f);

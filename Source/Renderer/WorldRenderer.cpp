@@ -81,6 +81,7 @@ void WorldRenderer::onResize(int display_width, int display_height)
 	closeResolutionDependentResources();
 	drv->resize(display_width, display_height);
 	initResolutionDependentResources();
+	camera.Resize((float)display_width, (float)display_height);
 }
 
 void WorldRenderer::update(float delta_time)

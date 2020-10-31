@@ -32,6 +32,7 @@ public:
 	float GetFarPlane() { return farPlane; }
 	void SetProjectionParams(float viewportWidth, float viewportHeight, float fov, float nearPlane, float farPlane);
 	XMMATRIX GetProjectionMatrix() { return projectionMatrix; }
+	void Resize(float viewportWidth, float viewportHeight);
 
 private:
 
