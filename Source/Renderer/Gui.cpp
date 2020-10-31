@@ -32,7 +32,7 @@ static void camera_settings()
 	projChanged |= ImGui::DragFloatRange2("Clipping planes", &nearPlane, &farPlane, 0.1f, 0.1f, 1000.0f, "%.1f");
 	if (projChanged)
 		camera.SetProjectionParams(camera.GetViewportWidth(), camera.GetViewportHeight(),
-			fmaxf(fov, 1.0f), fmaxf(nearPlane, 0.1f), fmaxf(farPlane, nearPlane + 0.1f));
+			fmaxf(fov, to_rad(1.0f)), fmaxf(nearPlane, 0.1f), fmaxf(farPlane, nearPlane + 0.1f));
 }
 REGISTER_IMGUI_WINDOW("Camera", camera_settings);
 
