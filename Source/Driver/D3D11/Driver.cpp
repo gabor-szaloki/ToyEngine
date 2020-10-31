@@ -492,8 +492,14 @@ void Driver::setSettings(const DriverSettings& new_settings)
 
 void Driver::recompileShaders()
 {
+	bool allCompiledSuccessfully = true;
 	for (auto& [k, v] : shaders)
-		v->recompile();
+		if (!v->recompile())
+			allCompiledSuccessfully = false;
+	if (allCompiledSuccessfully)
+		PLOG_INFO << "Shaders recompiled successfully";
+	else
+		PLOG_ERROR << "There were errors during shader recompilation.";
 }
 
 void Driver::setErrorShaderDesc(const ShaderSetDesc& desc)

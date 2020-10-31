@@ -19,10 +19,10 @@ ShaderSet::~ShaderSet()
 	Driver::get().unregisterShaderSet(id);
 }
 
-void ShaderSet::recompile()
+bool ShaderSet::recompile()
 {
 	releaseAll();
-	compileAll();
+	return compileAll();
 }
 
 void ShaderSet::set()
@@ -55,16 +55,18 @@ static T* compile_and_create_shader(
 		fileName, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE,
 		entry_point, target_string, flags1, flags2, &blob, &errorBlob);
 
-	if (errorBlob != nullptr)
-	{
-		PLOG_ERROR << "Failed to compile shader." << std::endl
-			<< "\tFile: " << file_name << std::endl
-			<< "\tFunction: " << entry_point << std::endl
-			<< "\tError: " << reinterpret_cast<const char*>(errorBlob->GetBufferPointer());
-		SAFE_RELEASE(errorBlob);
-	}
 	if (FAILED(hr))
+	{
+		PLOG_ERROR << "Failed to compile shader " << entry_point << std::endl
+			<< reinterpret_cast<const char*>(errorBlob->GetBufferPointer());
 		return nullptr;
+	}
+	else if (errorBlob != nullptr)
+	{
+		PLOG_WARNING << "Shader " << entry_point << " compiled with warnings" << std::endl
+			<< reinterpret_cast<const char*>(errorBlob->GetBufferPointer());
+	}
+	SAFE_RELEASE(errorBlob);
 
 	T* shader;
 	hr = create_func(blob->GetBufferPointer(), blob->GetBufferSize(), &shader);
@@ -88,7 +90,7 @@ void ShaderSet::releaseAll()
 	SAFE_RELEASE(ds);
 }
 
-void ShaderSet::compileAll()
+bool ShaderSet::compileAll()
 {
 	compiledSuccessfully = true;
 	if (desc.shaderFuncNames[(int)ShaderStage::VS] != nullptr)
@@ -151,4 +153,5 @@ void ShaderSet::compileAll()
 		if (ds == nullptr)
 			compiledSuccessfully = false;
 	}
+	return compiledSuccessfully;
 }

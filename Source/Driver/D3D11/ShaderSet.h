@@ -10,14 +10,14 @@ namespace drv_d3d11
 		ShaderSet(const ShaderSetDesc& desc_);
 		~ShaderSet();
 		const ResId& getId() const { return id; }
-		void recompile();
+		bool recompile();
 		ID3DBlob* getVsBlob() const { return vsBlob; }
 		bool isCompiledSuccessfully() { return compiledSuccessfully; }
 		void set();
 
 	private:
 		void releaseAll();
-		void compileAll();
+		bool compileAll();
 
 		ShaderSetDesc desc;
 		ResId id = BAD_RESID;
