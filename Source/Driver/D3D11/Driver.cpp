@@ -58,6 +58,7 @@ bool Driver::init(void* hwnd, int display_width, int display_height)
 	defaultRenderState.reset(renderStates[defaultRenderStateResId]);
 
 	// TODO: Maybe expose this?
+	CONTEXT_LOCK_GUARD
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	ImGui_ImplDX11_Init(device, context);
@@ -84,7 +85,10 @@ void Driver::resize(int display_width, int display_height)
 {
 	if (display_width == displayWidth && display_height == displayHeight)
 		return;
-	context->OMSetRenderTargets(0, nullptr, nullptr);
+	{
+		CONTEXT_LOCK_GUARD
+		context->OMSetRenderTargets(0, nullptr, nullptr);
+	}
 	closeResolutionDependentResources();
 	HRESULT hr = swapchain->ResizeBuffers(0, display_width, display_height, DXGI_FORMAT_UNKNOWN, 0);
 	assert(SUCCEEDED(hr));
@@ -99,7 +103,12 @@ void Driver::getDisplaySize(int& display_width, int& display_height)
 
 ITexture* Driver::createTexture(const TextureDesc& desc)
 {
-	return new Texture(desc);
+	return new Texture(&desc);
+}
+
+ITexture* Driver::createTextureStub()
+{
+	return new Texture();
 }
 
 IBuffer* Driver::createBuffer(const BufferDesc& desc)
@@ -168,6 +177,7 @@ void Driver::setInputLayout(ResId res_id)
 {
 	assert(res_id != BAD_RESID);
 	assert(inputLayouts.find(res_id) != inputLayouts.end());
+	CONTEXT_LOCK_GUARD
 	context->IASetInputLayout(inputLayouts[res_id]->getResource());
 }
 
@@ -177,6 +187,7 @@ void Driver::setIndexBuffer(ResId res_id)
 	assert(buffers.find(res_id) != buffers.end());
 	assert(buffers[res_id]->getDesc().bindFlags & BIND_INDEX_BUFFER);
 
+	CONTEXT_LOCK_GUARD
 	context->IASetIndexBuffer(buffers[res_id]->getResource(), (DXGI_FORMAT)getIndexFormat(), 0);
 }
 
@@ -189,6 +200,7 @@ void Driver::setVertexBuffer(ResId res_id)
 	ID3D11Buffer* res = buffers[res_id]->getResource();
 	unsigned int stride = buffers[res_id]->getDesc().elementByteSize;
 	unsigned int offset = 0;
+	CONTEXT_LOCK_GUARD
 	context->IASetVertexBuffers(0, 1, &res, &stride, &offset);
 }
 
@@ -198,6 +210,7 @@ void Driver::setConstantBuffer(ShaderStage stage, unsigned int slot, ResId res_i
 	assert(res_id == BAD_RESID || buffers[res_id]->getDesc().bindFlags & BIND_CONSTANT_BUFFER);
 
 	ID3D11Buffer* res = res_id != BAD_RESID ? buffers[res_id]->getResource() : nullptr;
+	CONTEXT_LOCK_GUARD
 	switch (stage)
 	{
 	case ShaderStage::VS:
@@ -230,6 +243,7 @@ void Driver::setBuffer(ShaderStage stage, unsigned int slot, ResId res_id)
 	assert(res_id == BAD_RESID || buffers[res_id]->getDesc().bindFlags & BIND_SHADER_RESOURCE);
 
 	ID3D11ShaderResourceView* srv = res_id != BAD_RESID ? buffers[res_id]->getSrv() : nullptr;
+	CONTEXT_LOCK_GUARD
 	switch (stage)
 	{
 	case ShaderStage::VS:
@@ -262,6 +276,7 @@ void Driver::setRwBuffer(unsigned int slot, ResId res_id)
 	assert(res_id == BAD_RESID || buffers[res_id]->getDesc().bindFlags & BIND_UNORDERED_ACCESS);
 
 	ID3D11UnorderedAccessView* uav = res_id != BAD_RESID ? buffers[res_id]->getUav() : nullptr;
+	CONTEXT_LOCK_GUARD
 	context->CSSetUnorderedAccessViews(slot, 1, &uav, nullptr);
 }
 
@@ -271,6 +286,7 @@ void Driver::setTexture(ShaderStage stage, unsigned int slot, ResId res_id, bool
 	assert(res_id == BAD_RESID || textures[res_id]->getDesc().bindFlags & BIND_SHADER_RESOURCE);
 
 	ID3D11ShaderResourceView* srv = res_id != BAD_RESID ? textures[res_id]->getSrv() : nullptr;
+	CONTEXT_LOCK_GUARD
 	switch (stage)
 	{
 	case ShaderStage::VS:
@@ -332,6 +348,7 @@ void Driver::setRwTexture(unsigned int slot, ResId res_id)
 	assert(res_id == BAD_RESID || textures[res_id]->getDesc().bindFlags & BIND_UNORDERED_ACCESS);
 
 	ID3D11UnorderedAccessView* uav = res_id != BAD_RESID ? textures[res_id]->getUav() : nullptr;
+	CONTEXT_LOCK_GUARD
 	context->CSSetUnorderedAccessViews(slot, 1, &uav, nullptr);
 }
 
@@ -348,6 +365,7 @@ void Driver::setRenderTarget(ResId target_id, ResId depth_id)
 	currentDepthTarget = depth_id != BAD_RESID ? textures[depth_id] : nullptr;
 	ID3D11DepthStencilView* dsv = currentDepthTarget != nullptr ? currentDepthTarget->getDsv() : nullptr;
 	
+	CONTEXT_LOCK_GUARD
 	context->OMSetRenderTargets(1, &rtv, dsv);
 }
 
@@ -370,6 +388,7 @@ void Driver::setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId
 		rtvs[i] = currentRenderTargets[i] != nullptr ? currentRenderTargets[i]->getRtv() : nullptr;
 	}
 
+	CONTEXT_LOCK_GUARD
 	context->OMSetRenderTargets(num_targets, rtvs, dsv);
 }
 
@@ -378,6 +397,7 @@ void Driver::setRenderState(ResId res_id)
 	assert(res_id == BAD_RESID || renderStates.find(res_id) != renderStates.end());
 	
 	RenderState *rs = res_id != BAD_RESID ? renderStates[res_id] : defaultRenderState.get();
+	CONTEXT_LOCK_GUARD
 	context->RSSetState(rs->getRasterizerState());
 	context->OMSetDepthStencilState(rs->getDepthStencilState(), 0);
 }
@@ -394,16 +414,19 @@ void Driver::setShaderSet(ResId res_id)
 void Driver::setView(float x, float y, float w, float h, float z_min, float z_max)
 {
 	D3D11_VIEWPORT viewport{x, y, w, h, z_min, z_max};
+	CONTEXT_LOCK_GUARD
 	context->RSSetViewports(1, &viewport);
 }
 
 void Driver::draw(unsigned int vertex_count, unsigned int start_vertex)
 {
+	CONTEXT_LOCK_GUARD
 	context->Draw(vertex_count, start_vertex);
 }
 
 void Driver::drawIndexed(unsigned int index_count, unsigned int start_index, int base_vertex)
 {
+	CONTEXT_LOCK_GUARD
 	context->DrawIndexed(index_count, start_index, base_vertex);
 }
 
@@ -411,6 +434,7 @@ void Driver::clearRenderTargets(const RenderTargetClearParams clear_params)
 {
 	if (clear_params.clearFlags & CLEAR_FLAG_COLOR)
 	{
+		CONTEXT_LOCK_GUARD
 		for (unsigned int i = 0, mask = clear_params.colorTargetMask;
 			mask && i < currentRenderTargets.size();
 			i++, mask >>= mask)
@@ -421,6 +445,7 @@ void Driver::clearRenderTargets(const RenderTargetClearParams clear_params)
 	}
 	if ((clear_params.clearFlags & (CLEAR_FLAG_DEPTH | CLEAR_FLAG_STENCIL)) && currentDepthTarget != nullptr)
 	{
+		CONTEXT_LOCK_GUARD
 		unsigned int dsvClearFlags = 0;
 		if (clear_params.clearFlags & CLEAR_FLAG_DEPTH)
 			dsvClearFlags |= D3D11_CLEAR_DEPTH;
@@ -439,7 +464,10 @@ void Driver::endFrame()
 {
 	ImDrawData* drawData = ImGui::GetDrawData();
 	if (drawData != nullptr)
+	{
+		CONTEXT_LOCK_GUARD
 		ImGui_ImplDX11_RenderDrawData(drawData);
+	}
 }
 
 void Driver::present()
@@ -570,7 +598,7 @@ bool Driver::initResolutionDependentResources(int display_width, int display_hei
 		desc.cpuAccessFlags = td.CPUAccessFlags;
 		desc.miscFlags = td.MiscFlags;
 		desc.hasSampler = false;
-		backbuffer = std::make_unique<Texture>(desc, backBufferTexture);
+		backbuffer = std::make_unique<Texture>(&desc, backBufferTexture);
 	}
 
 	return true;

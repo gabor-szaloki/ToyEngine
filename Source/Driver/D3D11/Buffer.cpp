@@ -47,6 +47,7 @@ Buffer::~Buffer()
 
 void Buffer::updateData(const void* src_data)
 {
+	CONTEXT_LOCK_GUARD
 	Driver::get().getContext().UpdateSubresource(resource, 0, nullptr, src_data, 0, 0);
 	// TODO: use Map for dynamic buffers
 }

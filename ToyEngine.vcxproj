@@ -47,6 +47,7 @@
     <ClCompile Include="Source\Renderer\Material.cpp" />
     <ClCompile Include="Source\Renderer\MeshRenderer.cpp" />
     <ClCompile Include="Source\Renderer\WorldRenderer.cpp" />
+    <ClCompile Include="Source\Util\ToyJobSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\3rdParty\glm\common.hpp" />
@@ -388,6 +389,7 @@
     <ClInclude Include="Source\Renderer\Primitives.h" />
     <ClInclude Include="Source\Renderer\RendererCommon.h" />
     <ClInclude Include="Source\Renderer\WorldRenderer.h" />
+    <ClInclude Include="Source\Util\ToyJobSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Source\3rdParty\glm\CMakeLists.txt" />

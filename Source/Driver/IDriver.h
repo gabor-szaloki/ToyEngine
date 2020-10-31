@@ -15,6 +15,7 @@ public:
 
 	virtual ITexture* getBackbufferTexture() = 0;
 	virtual ITexture* createTexture(const TextureDesc& desc) = 0;
+	virtual ITexture* createTextureStub() = 0;
 	virtual IBuffer* createBuffer(const BufferDesc& desc) = 0;
 	virtual ResId createRenderState(const RenderStateDesc& desc) = 0;
 	virtual ResId createShaderSet(const ShaderSetDesc& desc) = 0;

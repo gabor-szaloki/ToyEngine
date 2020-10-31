@@ -11,4 +11,7 @@ public:
 	virtual void* getViewHandle() const = 0;
 	virtual void updateData(unsigned int dst_subresource, const IntBox* dst_box, const void* src_data) = 0;
 	virtual void generateMips() = 0;
+	virtual bool isStub() = 0;
+	virtual void setStub(bool is_stub) = 0;
+	virtual void recreate(const TextureDesc& desc_) = 0;
 };

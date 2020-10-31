@@ -8,11 +8,12 @@
 #include <memory>
 #include <map>
 #include <array>
-#include <wrl/client.h>
+#include <mutex>
 
 #include <Driver/IDriver.h>
 
 #define SAFE_RELEASE(resource) { if (resource != nullptr) { resource->Release(); resource = nullptr; } }
+#define CONTEXT_LOCK_GUARD const std::lock_guard<std::mutex> contextLock(Driver::get().getContextMutex());
 
 namespace drv_d3d11
 {
@@ -34,6 +35,7 @@ namespace drv_d3d11
 
 		ITexture* getBackbufferTexture() override { return (ITexture*)backbuffer.get(); };
 		ITexture* createTexture(const TextureDesc& desc) override;
+		ITexture* createTextureStub() override;
 		IBuffer* createBuffer(const BufferDesc& desc) override;
 		ResId createRenderState(const RenderStateDesc& desc) override;
 		ResId createShaderSet(const ShaderSetDesc& desc) override;
@@ -71,6 +73,7 @@ namespace drv_d3d11
 
 		ID3D11Device& getDevice() { return *device; }
 		ID3D11DeviceContext& getContext() { return *context; }
+		std::mutex& getContextMutex() { return contextMutex; }
 
 		ResId registerTexture(Texture* tex);
 		void unregisterTexture(ResId id);
@@ -97,6 +100,8 @@ namespace drv_d3d11
 		ID3D11DeviceContext* context;
 		IDXGISwapChain* swapchain;
 		std::unique_ptr<Texture> backbuffer;
+
+		std::mutex contextMutex;
 
 		std::map<ResId, Texture*> textures;
 		std::map<ResId, Buffer*> buffers;

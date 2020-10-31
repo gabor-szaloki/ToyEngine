@@ -8,7 +8,7 @@ namespace drv_d3d11
 	class Texture : public ITexture
 	{
 	public:
-		Texture(const TextureDesc& desc_, ID3D11Texture2D* tex = nullptr);
+		Texture(const TextureDesc* desc_ = nullptr, ID3D11Texture2D* tex = nullptr);
 		~Texture() override;
 
 		const TextureDesc& getDesc() const override { return desc; }
@@ -16,6 +16,9 @@ namespace drv_d3d11
 		void* getViewHandle() const override { return srv; };
 		void updateData(unsigned int dst_subresource, const IntBox* dst_box, const void* src_data) override;
 		void generateMips() override;
+		bool isStub() override { return isStub_; }
+		void setStub(bool is_stub) override { isStub_ = is_stub; }
+		void recreate(const TextureDesc& desc_) override;
 
 		void destroySampler();
 		void createSampler();
@@ -29,6 +32,7 @@ namespace drv_d3d11
 
 	private:
 		void createViews();
+		void releaseAll();
 
 		TextureDesc desc;
 		ResId id = BAD_RESID;
@@ -38,5 +42,7 @@ namespace drv_d3d11
 		ID3D11UnorderedAccessView* uav;
 		ID3D11RenderTargetView* rtv;
 		ID3D11DepthStencilView* dsv;
+
+		bool isStub_ = false;
 	};
 }

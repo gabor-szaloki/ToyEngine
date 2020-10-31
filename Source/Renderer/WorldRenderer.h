@@ -8,12 +8,12 @@
 #include <3rdParty/glm/glm.hpp>
 #include <Driver/IDriver.h>
 #include "Camera.h"
+#include "Material.h"
 
 class Light;
 class ITexture;
 class IBuffer;
 
-class Material;
 class MeshRenderer;
 
 class WorldRenderer
@@ -56,12 +56,14 @@ public:
 	float shadowDistance = 20.0f;
 	float directionalShadowDistance = 20.0f;
 
+	std::array<ITexture*, (int)MaterialTexture::Purpose::_COUNT> defaultTextures;
+
 private:
 	void initResolutionDependentResources();
 	void closeResolutionDependentResources();
 	void initShaders();
 	void closeShaders();
-	ITexture* loadTextureFromPng(const char* path);
+	ITexture* loadTextureFromPng(const char* path, bool sync = false);
 	bool loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer& mesh_renderer);
 	void initScene();
 	void performShadowPass(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix);

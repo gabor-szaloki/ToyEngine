@@ -6,9 +6,9 @@
 #include <3rdParty/tinyobjloader/tiny_obj_loader.h>
 #include <Driver/ITexture.h>
 #include <Driver/IBuffer.h>
+#include <Util/ToyJobSystem.h>
 
 #include "ConstantBuffers.h"
-#include "Material.h"
 #include "MeshRenderer.h"
 #include "Primitives.h"
 #include "Light.h"
@@ -34,6 +34,16 @@ WorldRenderer::WorldRenderer()
 	cbDesc.elementByteSize = sizeof(PerObjectConstantBufferData);
 	perObjectCb.reset(drv->createBuffer(cbDesc));
 
+	ToyJobSystem::init();
+
+	ITexture* stubColor = loadTextureFromPng("Assets/Textures/gray_base.png", true);
+	ITexture* stubNormal = loadTextureFromPng("Assets/Textures/flat_nrm.png", true);
+	managedTextures.push_back(stubColor);
+	managedTextures.push_back(stubNormal);
+	defaultTextures[(int)MaterialTexture::Purpose::COLOR] = stubColor;
+	defaultTextures[(int)MaterialTexture::Purpose::NORMAL] = stubNormal;
+	defaultTextures[(int)MaterialTexture::Purpose::OTHER] = stubColor;
+
 	initShaders();
 
 	setShadowResolution(2048);
@@ -46,6 +56,8 @@ WorldRenderer::WorldRenderer()
 
 WorldRenderer::~WorldRenderer()
 {
+	ToyJobSystem::shutdown();
+
 	for (ITexture* t : managedTextures)
 		delete t;
 	managedTextures.clear();
@@ -73,7 +85,7 @@ void WorldRenderer::onResize(int display_width, int display_height)
 void WorldRenderer::update(float delta_time)
 {
 	// Update time
-	time += delta_time;;
+	time += delta_time;
 
 	// Update camera movement
 	XMVECTOR cameraMoveDir =
@@ -228,25 +240,31 @@ void WorldRenderer::closeShaders()
 	}
 }
 
-ITexture* WorldRenderer::loadTextureFromPng(const char* path)
+ITexture* WorldRenderer::loadTextureFromPng(const char* path, bool sync)
 {
 	PLOG_INFO << "Loading texture from file: " << path;
 
-	std::vector<unsigned char> pngData;
-	unsigned int width, height;
-	unsigned int error = lodepng::decode(pngData, width, height, path);
-	if (error != 0)
-		PLOG_ERROR << "Error loading texture." << std::endl
-			<< "\tFile: " << path << std::endl
-			<< "\tError: " << lodepng_error_text(error);
+	ITexture* texture = drv->createTextureStub();
 
-	TextureDesc tDesc(path, width, height, TexFmt::R8G8B8A8_UNORM, 0);
-	tDesc.bindFlags = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET;
-	tDesc.miscFlags = RESOURCE_MISC_GENERATE_MIPS;
-	ITexture* texture = drv->createTexture(tDesc);
+	ToyJobSystem::get()->schedule(
+		[path, texture]
+		{
+			std::vector<unsigned char> pngData;
+			unsigned int width, height;
+			unsigned int error = lodepng::decode(pngData, width, height, path);
+			if (error != 0)
+				PLOG_ERROR << "Error loading texture." << std::endl
+				<< "\tFile: " << path << std::endl
+				<< "\tError: " << lodepng_error_text(error);
 
-	texture->updateData(0, nullptr, (void*)pngData.data());
-	texture->generateMips();
+			TextureDesc tDesc(path, width, height, TexFmt::R8G8B8A8_UNORM, 0);
+			tDesc.bindFlags = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET;
+			tDesc.miscFlags = RESOURCE_MISC_GENERATE_MIPS;
+			texture->recreate(tDesc);
+			texture->updateData(0, nullptr, (void*)pngData.data());
+			texture->generateMips();
+		},
+		sync);
 
 	return texture;
 }
@@ -325,11 +343,6 @@ bool WorldRenderer::loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer
 
 void WorldRenderer::initScene()
 {
-	std::array<ITexture*, 2> flatGrayMaterialTextures;
-	flatGrayMaterialTextures[0] = loadTextureFromPng("Assets/Textures/gray_base.png");
-	flatGrayMaterialTextures[1] = loadTextureFromPng("Assets/Textures/flat_nrm.png");
-	managedTextures.insert(managedTextures.end(), flatGrayMaterialTextures.begin(), flatGrayMaterialTextures.end());
-
 	std::array<ITexture*, 2> testMaterialTextures;
 	testMaterialTextures[0] = loadTextureFromPng("Assets/Textures/test_base.png");
 	testMaterialTextures[1] = loadTextureFromPng("Assets/Textures/test_nrm.png");
@@ -341,14 +354,18 @@ void WorldRenderer::initScene()
 	managedTextures.insert(managedTextures.end(), blueTilesMaterialTextures.begin(), blueTilesMaterialTextures.end());
 
 	Material* flatGray = new Material(standardShaders);
-	flatGray->setTextures(ShaderStage::PS, flatGrayMaterialTextures.data(), (unsigned int)flatGrayMaterialTextures.size());
+	flatGray->setTexture(ShaderStage::PS, 0, defaultTextures[(int)MaterialTexture::Purpose::COLOR]);
+	flatGray->setTexture(ShaderStage::PS, 1, defaultTextures[(int)MaterialTexture::Purpose::NORMAL]);
+	managedMaterials.push_back(flatGray);
 
 	Material* test = new Material(standardShaders);
-	test->setTextures(ShaderStage::PS, testMaterialTextures.data(), (unsigned int)testMaterialTextures.size());
+	test->setTexture(ShaderStage::PS, 0, testMaterialTextures[0]);
+	test->setTexture(ShaderStage::PS, 1, testMaterialTextures[1], MaterialTexture::Purpose::NORMAL);
 	managedMaterials.push_back(test);
 
 	Material* blueTiles = new Material(standardShaders);
-	blueTiles->setTextures(ShaderStage::PS, blueTilesMaterialTextures.data(), (unsigned int)blueTilesMaterialTextures.size());
+	blueTiles->setTexture(ShaderStage::PS, 0, blueTilesMaterialTextures[0]);
+	blueTiles->setTexture(ShaderStage::PS, 1, blueTilesMaterialTextures[1], MaterialTexture::Purpose::NORMAL);
 	managedMaterials.push_back(blueTiles);
 
 	MeshRenderer* floor = new MeshRenderer("floor", blueTiles, standardInputLayout);
@@ -369,6 +386,7 @@ void WorldRenderer::initScene()
 	sphere->worldTransform = XMMatrixTranslation(1.5f, 1.5f, 0.0f);
 	managedMeshRenderers.push_back(sphere);
 
+	/*
 	MeshRenderer* teapot = new MeshRenderer("teapot", flatGray, standardInputLayout);
 	teapot->worldTransform = XMMatrixMultiply(XMMatrixScaling(0.05f, 0.05f, 0.05f), XMMatrixTranslation(-4.5f, 0.5f, -3.0f));
 	if (loadMeshFromObjToMeshRenderer("Assets/Models/UtahTeapot/utah-teapot.obj", *teapot))
@@ -389,6 +407,7 @@ void WorldRenderer::initScene()
 		managedMeshRenderers.push_back(dragon);
 	else
 		delete dragon;
+	*/
 }
 
 void WorldRenderer::performShadowPass(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix)

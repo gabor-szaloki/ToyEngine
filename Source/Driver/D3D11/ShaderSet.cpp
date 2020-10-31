@@ -27,6 +27,7 @@ void ShaderSet::recompile()
 
 void ShaderSet::set()
 {
+	CONTEXT_LOCK_GUARD
 	Driver::get().getContext().VSSetShader(vs, nullptr, 0);
 	Driver::get().getContext().PSSetShader(ps, nullptr, 0);
 	Driver::get().getContext().GSSetShader(gs, nullptr, 0);

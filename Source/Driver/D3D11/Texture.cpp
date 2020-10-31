@@ -6,40 +6,54 @@
 
 using namespace drv_d3d11;
 
-Texture::Texture(const TextureDesc& desc_, ID3D11Texture2D* tex) : desc(desc_), resource(tex)
+static D3D11_TEXTURE2D_DESC convert_desc(const TextureDesc& desc)
 {
-	if (resource == nullptr)
-	{
-		D3D11_TEXTURE2D_DESC td{};
-		td.Width = desc.width;
-		td.Height = desc.height;
-		td.MipLevels = desc.mips;
-		td.ArraySize = 1;
-		td.Format = (DXGI_FORMAT)desc.format;
-		td.SampleDesc.Count = 1;
-		td.SampleDesc.Quality = 0;
-		td.Usage = (D3D11_USAGE)desc.usageFlags;
-		td.BindFlags = desc.bindFlags;
-		td.CPUAccessFlags = desc.cpuAccessFlags;
-		td.MiscFlags = desc.miscFlags;
-		HRESULT hr = Driver::get().getDevice().CreateTexture2D(&td, nullptr, &resource);
-		assert(SUCCEEDED(hr));
-	}
+	D3D11_TEXTURE2D_DESC td{};
+	td.Width = desc.width;
+	td.Height = desc.height;
+	td.MipLevels = desc.mips;
+	td.ArraySize = 1;
+	td.Format = (DXGI_FORMAT)desc.format;
+	td.SampleDesc.Count = 1;
+	td.SampleDesc.Quality = 0;
+	td.Usage = (D3D11_USAGE)desc.usageFlags;
+	td.BindFlags = desc.bindFlags;
+	td.CPUAccessFlags = desc.cpuAccessFlags;
+	td.MiscFlags = desc.miscFlags;
+	return td;
+}
 
-	createViews();
-	createSampler();
+Texture::Texture(const TextureDesc* desc_, ID3D11Texture2D* tex) : resource(tex)
+{
+	if (desc_ != nullptr)
+	{
+		desc = *desc_;
+
+		if (resource == nullptr)
+		{
+			D3D11_TEXTURE2D_DESC td = convert_desc(desc);
+			HRESULT hr = Driver::get().getDevice().CreateTexture2D(&td, nullptr, &resource);
+			assert(SUCCEEDED(hr));
+		}
+		else
+		{
+			// TODO: Check if desc matches with given desc of resource
+		}
+
+		createViews();
+		createSampler();
+	}
+	else
+	{
+		isStub_ = true;
+	}
 
 	id = Driver::get().registerTexture(this);
 }
 
 Texture::~Texture()
 {
-	SAFE_RELEASE(resource);
-	SAFE_RELEASE(sampler);
-	SAFE_RELEASE(srv);
-	SAFE_RELEASE(uav);
-	SAFE_RELEASE(rtv);
-	SAFE_RELEASE(dsv);
+	releaseAll();
 	Driver::get().unregisterTexture(id);
 }
 
@@ -47,6 +61,7 @@ void Texture::updateData(unsigned int dst_subresource, const IntBox* dst_box, co
 {
 	unsigned int rowPitch = desc.width * get_byte_size_for_texfmt(desc.format);
 
+	CONTEXT_LOCK_GUARD
 	if (dst_box != nullptr)
 	{
 		D3D11_BOX dstBox;
@@ -69,7 +84,23 @@ void Texture::generateMips()
 	assert(desc.miscFlags & RESOURCE_MISC_GENERATE_MIPS);
 	assert(desc.bindFlags & BIND_RENDER_TARGET);
 	assert(srv != nullptr);
+	CONTEXT_LOCK_GUARD
 	Driver::get().getContext().GenerateMips(srv);
+}
+
+void Texture::recreate(const TextureDesc& desc_)
+{
+	releaseAll();
+
+	desc = desc_;
+	D3D11_TEXTURE2D_DESC td = convert_desc(desc);
+	HRESULT hr = Driver::get().getDevice().CreateTexture2D(&td, nullptr, &resource);
+	assert(SUCCEEDED(hr));
+
+	createViews();
+	createSampler();
+
+	isStub_ = false;
 }
 
 void Texture::destroySampler()
@@ -143,4 +174,14 @@ void Texture::createViews()
 		hr = Driver::get().getDevice().CreateDepthStencilView(resource, &dsvDesc, &dsv);
 		assert(SUCCEEDED(hr));
 	}
+}
+
+void Texture::releaseAll()
+{
+	SAFE_RELEASE(resource);
+	SAFE_RELEASE(sampler);
+	SAFE_RELEASE(srv);
+	SAFE_RELEASE(uav);
+	SAFE_RELEASE(rtv);
+	SAFE_RELEASE(dsv);
 }
