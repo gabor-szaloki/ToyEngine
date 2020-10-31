@@ -34,17 +34,11 @@ WorldRenderer::WorldRenderer()
 	cbDesc.elementByteSize = sizeof(PerObjectConstantBufferData);
 	perObjectCb.reset(drv->createBuffer(cbDesc));
 
+	initShaders();
+
 	ToyJobSystem::init();
 
-	ITexture* stubColor = loadTextureFromPng("Assets/Textures/gray_base.png", true);
-	ITexture* stubNormal = loadTextureFromPng("Assets/Textures/flat_nrm.png", true);
-	managedTextures.push_back(stubColor);
-	managedTextures.push_back(stubNormal);
-	defaultTextures[(int)MaterialTexture::Purpose::COLOR] = stubColor;
-	defaultTextures[(int)MaterialTexture::Purpose::NORMAL] = stubNormal;
-	defaultTextures[(int)MaterialTexture::Purpose::OTHER] = stubColor;
-
-	initShaders();
+	initDefaultAssets();
 
 	setShadowResolution(2048);
 	setShadowBias(50000, 1.0f);
@@ -57,6 +51,9 @@ WorldRenderer::WorldRenderer()
 WorldRenderer::~WorldRenderer()
 {
 	ToyJobSystem::shutdown();
+
+	defaultMeshVb.reset();
+	defaultMeshIb.reset();
 
 	for (ITexture* t : managedTextures)
 		delete t;
@@ -240,15 +237,36 @@ void WorldRenderer::closeShaders()
 	}
 }
 
+void WorldRenderer::initDefaultAssets()
+{
+	ITexture* stubColor = loadTextureFromPng("Assets/Textures/gray_base.png", true);
+	ITexture* stubNormal = loadTextureFromPng("Assets/Textures/flat_nrm.png", true);
+	managedTextures.push_back(stubColor);
+	managedTextures.push_back(stubNormal);
+	defaultTextures[(int)MaterialTexture::Purpose::COLOR] = stubColor;
+	defaultTextures[(int)MaterialTexture::Purpose::NORMAL] = stubNormal;
+	defaultTextures[(int)MaterialTexture::Purpose::OTHER] = stubColor;
+
+	BufferDesc vbDesc("defaultMeshVb", sizeof(primitives::box_vertices[0]), primitives::BOX_VERTEX_COUNT, ResourceUsage::DEFAULT, BIND_VERTEX_BUFFER);
+	vbDesc.initialData = primitives::box_vertices;
+	defaultMeshVb.reset(drv->createBuffer(vbDesc));
+	unsigned int indexByteSize = ::get_byte_size_for_texfmt(drv->getIndexFormat());
+	BufferDesc ibDesc("defaultMeshIb", indexByteSize, primitives::BOX_INDEX_COUNT, ResourceUsage::DEFAULT, BIND_INDEX_BUFFER);
+	ibDesc.initialData = primitives::box_indices;
+	defaultMeshIb.reset(drv->createBuffer(ibDesc));
+
+	defaultInputLayout = standardInputLayout;
+}
+
 ITexture* WorldRenderer::loadTextureFromPng(const char* path, bool sync)
 {
-	PLOG_INFO << "Loading texture from file: " << path;
-
 	ITexture* texture = drv->createTextureStub();
 
 	ToyJobSystem::get()->schedule(
 		[path, texture]
 		{
+			PLOG_INFO << "Loading texture from file: " << path;
+
 			std::vector<unsigned char> pngData;
 			unsigned int width, height;
 			unsigned int error = lodepng::decode(pngData, width, height, path);
@@ -341,6 +359,11 @@ bool WorldRenderer::loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer
 	return true;
 }
 
+void WorldRenderer::loadMeshFromObjToMeshRendererAsync(const char* path, MeshRenderer& mesh_renderer)
+{
+	ToyJobSystem::get()->schedule([&, path] { loadMeshFromObjToMeshRenderer(path, mesh_renderer); });
+}
+
 void WorldRenderer::initScene()
 {
 	std::array<ITexture*, 2> testMaterialTextures;
@@ -386,28 +409,20 @@ void WorldRenderer::initScene()
 	sphere->worldTransform = XMMatrixTranslation(1.5f, 1.5f, 0.0f);
 	managedMeshRenderers.push_back(sphere);
 
-	/*
 	MeshRenderer* teapot = new MeshRenderer("teapot", flatGray, standardInputLayout);
 	teapot->worldTransform = XMMatrixMultiply(XMMatrixScaling(0.05f, 0.05f, 0.05f), XMMatrixTranslation(-4.5f, 0.5f, -3.0f));
-	if (loadMeshFromObjToMeshRenderer("Assets/Models/UtahTeapot/utah-teapot.obj", *teapot))
-		managedMeshRenderers.push_back(teapot);
-	else
-		delete teapot;
+	loadMeshFromObjToMeshRendererAsync("Assets/Models/UtahTeapot/utah-teapot.obj", *teapot);
+	managedMeshRenderers.push_back(teapot);
 
 	MeshRenderer* bunny = new MeshRenderer("bunny", flatGray, standardInputLayout);
 	bunny->worldTransform = XMMatrixMultiply(XMMatrixScaling(10.0f, 10.f, 10.f), XMMatrixTranslation(-1.5f, 0.0f, -3.0f));
-	if (loadMeshFromObjToMeshRenderer("Assets/Models/StanfordBunny/stanford-bunny.obj", *bunny))
-		managedMeshRenderers.push_back(bunny);
-	else
-		delete bunny;
+	loadMeshFromObjToMeshRendererAsync("Assets/Models/StanfordBunny/stanford-bunny.obj", *bunny);
+	managedMeshRenderers.push_back(bunny);
 
 	MeshRenderer* dragon = new MeshRenderer("dragon", flatGray, standardInputLayout);
 	dragon->worldTransform = XMMatrixMultiply(XMMatrixScaling(0.2f, 0.2f, 0.2f), XMMatrixTranslation(1.5f, 0.0f, -3.0f));
-	if (loadMeshFromObjToMeshRenderer("Assets/Models/StanfordDragon/stanford-dragon.obj", *dragon))
-		managedMeshRenderers.push_back(dragon);
-	else
-		delete dragon;
-	*/
+	loadMeshFromObjToMeshRendererAsync("Assets/Models/StanfordDragon/stanford-dragon.obj", *dragon);
+	managedMeshRenderers.push_back(dragon);
 }
 
 void WorldRenderer::performShadowPass(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix)

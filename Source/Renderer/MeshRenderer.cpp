@@ -4,6 +4,7 @@
 
 #include "Material.h"
 #include "ConstantBuffers.h"
+#include "WorldRenderer.h"
 
 MeshRenderer::MeshRenderer(const char* name_, Material* material_, ResId input_layout_id)
 	: name(name_), material(material_), inputLayoutId(input_layout_id)
@@ -38,14 +39,34 @@ void MeshRenderer::loadIndices(unsigned int num_indices, void* data)
 
 void MeshRenderer::render(RenderPass render_pass)
 {
+	IBuffer* ibToUse;
+	IBuffer* vbToUse;
+	ResId ilToUse;
+	XMMATRIX wtToUse;
+	if (vb != nullptr && ib != nullptr)
+	{
+		ibToUse = ib.get();
+		vbToUse = vb.get();
+		ilToUse = inputLayoutId;
+		wtToUse = worldTransform;
+	}
+	else
+	{
+		ibToUse = wr->defaultMeshIb.get();
+		vbToUse = wr->defaultMeshVb.get();
+		ilToUse = wr->defaultInputLayout;
+		wtToUse = XMMatrixScaling(.1f, .1f, .1f) * XMMatrixRotationY(wr->getTime() * 10.f) * XMMatrixTranslationFromVector(worldTransform.r[3]);
+	}
+
 	PerObjectConstantBufferData perObjectCbData;
-	perObjectCbData.world = worldTransform;
+	perObjectCbData.world = wtToUse;
 	cb->updateData(&perObjectCbData);
 
 	material->set(render_pass);
-	drv->setInputLayout(inputLayoutId);
-	drv->setIndexBuffer(ib->getId());
-	drv->setVertexBuffer(vb->getId());
 	drv->setConstantBuffer(ShaderStage::VS, 2, cb->getId());
-	drv->drawIndexed(ib->getDesc().numElements, 0, 0);
+
+	drv->setInputLayout(ilToUse);
+	drv->setIndexBuffer(ibToUse->getId());
+	drv->setVertexBuffer(vbToUse->getId());
+	drv->drawIndexed(ibToUse->getDesc().numElements, 0, 0);
 }

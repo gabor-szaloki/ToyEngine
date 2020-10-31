@@ -31,6 +31,7 @@ public:
 	void setShadowBias(int depth_bias, float slope_scaled_depth_bias);
 	ITexture* getShadowMap() const { return shadowMap.get(); };
 	Camera& getCamera() { return camera; };
+	float getTime() { return time; }
 
 	struct CameraInputState
 	{
@@ -57,14 +58,19 @@ public:
 	float directionalShadowDistance = 20.0f;
 
 	std::array<ITexture*, (int)MaterialTexture::Purpose::_COUNT> defaultTextures;
+	std::unique_ptr<IBuffer> defaultMeshIb;
+	std::unique_ptr<IBuffer> defaultMeshVb;
+	ResId defaultInputLayout;
 
 private:
 	void initResolutionDependentResources();
 	void closeResolutionDependentResources();
 	void initShaders();
 	void closeShaders();
+	void initDefaultAssets();
 	ITexture* loadTextureFromPng(const char* path, bool sync = false);
 	bool loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer& mesh_renderer);
+	void loadMeshFromObjToMeshRendererAsync(const char* path, MeshRenderer& mesh_renderer);
 	void initScene();
 	void performShadowPass(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix);
 	void performForwardPass();
