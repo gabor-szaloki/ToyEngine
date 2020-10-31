@@ -39,39 +39,44 @@ REGISTER_IMGUI_WINDOW("Camera", camera_settings);
 
 static void lighting_settings()
 {
-	ImGui::Text("Ambient light");
-	ImGui::SliderFloat("Intensity##ambient", &wr->ambientLightIntensity, 0.0f, 1.0f);
-	ImGui::ColorEdit3("Color##ambient", reinterpret_cast<float*>(&wr->ambientLightColor));
+	if (ImGui::CollapsingHeader("Ambient light", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::SliderFloat("Intensity##ambient", &wr->ambientLightIntensity, 0.0f, 1.0f);
+		ImGui::ColorEdit3("Color##ambient", reinterpret_cast<float*>(&wr->ambientLightColor));
+	}
 
-	ImGui::Text("Main light");
-	Light& mainLight = *wr->mainLight.get();
-	float mainLightYaw = mainLight.GetYaw();
-	float mainLightPitch = mainLight.GetPitch();
-	float mainLightIntensity = mainLight.GetIntensity();
-	XMFLOAT4 mainLightColor = mainLight.GetColor();
-	if (ImGui::SliderAngle("Yaw", &mainLightYaw, -180.0f, 180.0f))
-		mainLight.SetYaw(mainLightYaw);
-	if (ImGui::SliderAngle("Pitch", &mainLightPitch, 0.0f, 90.0f))
-		mainLight.SetPitch(mainLightPitch);
-	if (ImGui::SliderFloat("Intensity##main", &mainLightIntensity, 0.0f, 2.0f))
-		mainLight.SetIntensity(mainLightIntensity);
-	if (ImGui::ColorEdit3("Color##main", reinterpret_cast<float*>(&mainLightColor)))
-		mainLight.SetColor(mainLightColor);
+	if (ImGui::CollapsingHeader("Main light", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		Light& mainLight = *wr->mainLight.get();
+		float mainLightYaw = mainLight.GetYaw();
+		float mainLightPitch = mainLight.GetPitch();
+		float mainLightIntensity = mainLight.GetIntensity();
+		XMFLOAT4 mainLightColor = mainLight.GetColor();
+		if (ImGui::SliderAngle("Yaw", &mainLightYaw, -180.0f, 180.0f))
+			mainLight.SetYaw(mainLightYaw);
+		if (ImGui::SliderAngle("Pitch", &mainLightPitch, 0.0f, 90.0f))
+			mainLight.SetPitch(mainLightPitch);
+		if (ImGui::SliderFloat("Intensity##main", &mainLightIntensity, 0.0f, 2.0f))
+			mainLight.SetIntensity(mainLightIntensity);
+		if (ImGui::ColorEdit3("Color##main", reinterpret_cast<float*>(&mainLightColor)))
+			mainLight.SetColor(mainLightColor);
+	}
 
-	ImGui::Text("Main light shadows");
-	ImGui::SliderFloat("Shadow distance", &wr->shadowDistance, 1.0f, 100.0f);
-	ImGui::SliderFloat("Directional distance", &wr->directionalShadowDistance, 1.0f, 100.0f);
-	int shadowResolution = wr->getShadowResolution();
-	if (ImGui::InputInt("Resolution", &shadowResolution, 512, 1024))
-		wr->setShadowResolution((int)fmaxf((float)shadowResolution, 128));
-	bool setShadowBias = false;
-	setShadowBias |= ImGui::DragInt("Depth bias", &wr->shadowDepthBias, 100.0f);
-	setShadowBias |= ImGui::DragFloat("Slope scaled depth bias", &wr->shadowSlopeScaledDepthBias, 0.01f);
-	if (setShadowBias)
-		wr->setShadowBias(wr->shadowDepthBias, wr->shadowSlopeScaledDepthBias);
-
-	if (ImGui::Button("Show shadowmap"))
-		autoimgui::set_window_opened("Shadowmap debug", !autoimgui::is_window_opened("Shadowmap debug"));
+	if (ImGui::CollapsingHeader("Main light shadows", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::SliderFloat("Shadow distance", &wr->shadowDistance, 1.0f, 100.0f);
+		ImGui::SliderFloat("Directional distance", &wr->directionalShadowDistance, 1.0f, 100.0f);
+		int shadowResolution = wr->getShadowResolution();
+		if (ImGui::InputInt("Resolution", &shadowResolution, 512, 1024))
+			wr->setShadowResolution((int)fmaxf((float)shadowResolution, 128));
+		bool setShadowBias = false;
+		setShadowBias |= ImGui::DragInt("Depth bias", &wr->shadowDepthBias, 100.0f);
+		setShadowBias |= ImGui::DragFloat("Slope scaled depth bias", &wr->shadowSlopeScaledDepthBias, 0.01f);
+		if (setShadowBias)
+			wr->setShadowBias(wr->shadowDepthBias, wr->shadowSlopeScaledDepthBias);
+		if (ImGui::Button("Show shadowmap"))
+			autoimgui::set_window_opened("Shadowmap debug", !autoimgui::is_window_opened("Shadowmap debug"));
+	}
 }
 REGISTER_IMGUI_WINDOW("Lighting settings", lighting_settings);
 
