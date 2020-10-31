@@ -10,10 +10,11 @@
 #include "Camera.h"
 #include "Material.h"
 
-class Light;
 class ITexture;
 class IBuffer;
 
+class ThreadPool;
+class Light;
 class MeshRenderer;
 
 class WorldRenderer
@@ -97,4 +98,6 @@ private:
 	std::vector<ITexture*> managedTextures;
 	std::vector<Material*> managedMaterials;
 	std::vector<MeshRenderer*> managedMeshRenderers;
+
+	std::unique_ptr<ThreadPool> threadPool;
 };

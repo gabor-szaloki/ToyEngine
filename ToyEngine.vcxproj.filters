@@ -144,9 +144,6 @@
     <ClCompile Include="Source\3rdParty\tinyobjloader\tiny_obj_loader.cc">
       <Filter>Source\3rdParty\tinyobjloader</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Util\ToyJobSystem.cpp">
-      <Filter>Source\Util</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Util\AutoImGui.cpp">
       <Filter>Source\Util</Filter>
     </ClCompile>
@@ -1166,13 +1163,13 @@
     <ClInclude Include="Source\3rdParty\tinyobjloader\tiny_obj_loader.h">
       <Filter>Source\3rdParty\tinyobjloader</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Util\ToyJobSystem.h">
-      <Filter>Source\Util</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Util\AutoImGui.h">
       <Filter>Source\Util</Filter>
     </ClInclude>
     <ClInclude Include="Source\Util\ImGuiLogWindow.h">
+      <Filter>Source\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Util\ThreadPool.h">
       <Filter>Source\Util</Filter>
     </ClInclude>
   </ItemGroup>

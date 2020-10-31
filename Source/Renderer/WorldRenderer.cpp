@@ -2,11 +2,12 @@
 
 #include <stdio.h>
 #include <array>
+#include <3rdParty/glm/glm.hpp>
 #include <3rdParty/LodePNG/lodepng.h>
 #include <3rdParty/tinyobjloader/tiny_obj_loader.h>
 #include <Driver/ITexture.h>
 #include <Driver/IBuffer.h>
-#include <Util/ToyJobSystem.h>
+#include <Util/ThreadPool.h>
 
 #include "ConstantBuffers.h"
 #include "MeshRenderer.h"
@@ -36,7 +37,11 @@ WorldRenderer::WorldRenderer()
 
 	initShaders();
 
-	ToyJobSystem::init();
+	const int numCores = std::thread::hardware_concurrency();
+	const int numWorkerThreads = glm::clamp(numCores - 1, 3, 12);
+	PLOG_INFO << "Detected number of processor cores: " << numCores;
+	PLOG_INFO << "Initializing thread pool with " << numWorkerThreads << " threads";
+	threadPool = std::make_unique<ThreadPool>(numWorkerThreads);
 
 	initDefaultAssets();
 
@@ -50,8 +55,6 @@ WorldRenderer::WorldRenderer()
 
 WorldRenderer::~WorldRenderer()
 {
-	ToyJobSystem::shutdown();
-
 	defaultMeshVb.reset();
 	defaultMeshIb.reset();
 
@@ -262,27 +265,30 @@ ITexture* WorldRenderer::loadTextureFromPng(const char* path, bool sync)
 {
 	ITexture* texture = drv->createTextureStub();
 
-	ToyJobSystem::get()->schedule(
-		[path, texture]
-		{
-			PLOG_INFO << "Loading texture from file: " << path;
+	auto load = [path, texture]
+	{
+		PLOG_INFO << "Loading texture from file: " << path;
 
-			std::vector<unsigned char> pngData;
-			unsigned int width, height;
-			unsigned int error = lodepng::decode(pngData, width, height, path);
-			if (error != 0)
-				PLOG_ERROR << "Error loading texture." << std::endl
-				<< "\tFile: " << path << std::endl
-				<< "\tError: " << lodepng_error_text(error);
+		std::vector<unsigned char> pngData;
+		unsigned int width, height;
+		unsigned int error = lodepng::decode(pngData, width, height, path);
+		if (error != 0)
+			PLOG_ERROR << "Error loading texture." << std::endl
+			<< "\tFile: " << path << std::endl
+			<< "\tError: " << lodepng_error_text(error);
 
-			TextureDesc tDesc(path, width, height, TexFmt::R8G8B8A8_UNORM, 0);
-			tDesc.bindFlags = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET;
-			tDesc.miscFlags = RESOURCE_MISC_GENERATE_MIPS;
-			texture->recreate(tDesc);
-			texture->updateData(0, nullptr, (void*)pngData.data());
-			texture->generateMips();
-		},
-		sync);
+		TextureDesc tDesc(path, width, height, TexFmt::R8G8B8A8_UNORM, 0);
+		tDesc.bindFlags = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET;
+		tDesc.miscFlags = RESOURCE_MISC_GENERATE_MIPS;
+		texture->recreate(tDesc);
+		texture->updateData(0, nullptr, (void*)pngData.data());
+		texture->generateMips();
+	};
+
+	if (sync)
+		load();
+	else
+		threadPool->enqueue(load);
 
 	return texture;
 }
@@ -361,7 +367,7 @@ bool WorldRenderer::loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer
 
 void WorldRenderer::loadMeshFromObjToMeshRendererAsync(const char* path, MeshRenderer& mesh_renderer)
 {
-	ToyJobSystem::get()->schedule([&, path] { loadMeshFromObjToMeshRenderer(path, mesh_renderer); });
+	threadPool->enqueue([&, path] { loadMeshFromObjToMeshRenderer(path, mesh_renderer); });
 }
 
 void WorldRenderer::initScene()
