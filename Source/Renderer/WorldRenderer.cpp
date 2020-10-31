@@ -13,6 +13,7 @@
 #include "MeshRenderer.h"
 #include "Primitives.h"
 #include "Light.h"
+#include "Sky.h"
 
 WorldRenderer::WorldRenderer()
 {
@@ -372,6 +373,8 @@ void WorldRenderer::loadMeshFromObjToMeshRendererAsync(const char* path, MeshRen
 
 void WorldRenderer::initScene()
 {
+	sky = std::make_unique<Sky>();
+
 	std::array<ITexture*, 2> testMaterialTextures;
 	testMaterialTextures[0] = loadTextureFromPng("Assets/Textures/test_base.png");
 	testMaterialTextures[1] = loadTextureFromPng("Assets/Textures/test_nrm.png");
@@ -440,10 +443,9 @@ void WorldRenderer::performShadowPass(const XMMATRIX& lightViewMatrix, const XMM
 	RenderTargetClearParams clearParams(CLEAR_FLAG_DEPTH, 0, 1.0f);
 	drv->clearRenderTargets(clearParams);
 
-	PerCameraConstantBufferData perCameraCbData;
+	PerCameraConstantBufferData perCameraCbData{};
 	perCameraCbData.view = lightViewMatrix;
 	perCameraCbData.projection = lightProjectionMatrix;
-	XMStoreFloat3(&perCameraCbData.cameraWorldPosition, camera.GetEye());
 	perCameraCb->updateData(&perCameraCbData);
 
 	drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
@@ -472,7 +474,12 @@ void WorldRenderer::performForwardPass()
 	PerCameraConstantBufferData perCameraCbData;
 	perCameraCbData.view = camera.GetViewMatrix();
 	perCameraCbData.projection = camera.GetProjectionMatrix();
-	XMStoreFloat3(&perCameraCbData.cameraWorldPosition, camera.GetEye());
+	XMStoreFloat4(&perCameraCbData.cameraWorldPosition, camera.GetEye());
+	XMMATRIX invViewMatrix = XMMatrixInverse(nullptr, camera.GetViewMatrix());
+	XMStoreFloat4(&perCameraCbData.viewVecLT, XMVector4Transform(XMVectorSet(-1.f, +1.f, 1.f, 0.f), invViewMatrix));
+	XMStoreFloat4(&perCameraCbData.viewVecRT, XMVector4Transform(XMVectorSet(+1.f, +1.f, 1.f, 0.f), invViewMatrix));
+	XMStoreFloat4(&perCameraCbData.viewVecLB, XMVector4Transform(XMVectorSet(-1.f, -1.f, 1.f, 0.f), invViewMatrix));
+	XMStoreFloat4(&perCameraCbData.viewVecRB, XMVector4Transform(XMVectorSet(+1.f, -1.f, 1.f, 0.f), invViewMatrix));
 	perCameraCb->updateData(&perCameraCbData);
 
 	drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
@@ -482,6 +489,8 @@ void WorldRenderer::performForwardPass()
 
 	for (MeshRenderer* mr : managedMeshRenderers)
 		mr->render(RenderPass::FORWARD);
+
+	sky->render();
 
 	drv->setTexture(ShaderStage::PS, 2, BAD_RESID, true);
 }

@@ -12,8 +12,8 @@ enum class RenderPass
 
 struct ResIdHolder
 {
-	ResId id = BAD_RESID;
-	ResIdHolder(ResId id_) : id(id_) {}
+	ResId id;
+	ResIdHolder(ResId id_ = BAD_RESID) : id(id_) {}
 	~ResIdHolder() { close(); }
 	void setId(ResId id_) { id = id_; }
 	void close() { if (id != BAD_RESID) { drv->destroyResource(id); id = BAD_RESID; } }

@@ -112,7 +112,7 @@ struct DepthStencilDesc
 {
 	bool depthTest = true;
 	bool depthWrite = true;
-	ComparisonFunc DepthFunc = ComparisonFunc::LESS;
+	ComparisonFunc DepthFunc = ComparisonFunc::LESS_EQUAL;
 };
 
 struct RenderStateDesc

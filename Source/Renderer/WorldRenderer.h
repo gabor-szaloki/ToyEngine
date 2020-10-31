@@ -16,6 +16,7 @@ class IBuffer;
 class ThreadPool;
 class Light;
 class MeshRenderer;
+class Sky;
 
 class WorldRenderer
 {
@@ -33,6 +34,7 @@ public:
 	ITexture* getShadowMap() const { return shadowMap.get(); };
 	Camera& getCamera() { return camera; };
 	float getTime() { return time; }
+	Sky& getSky() { return *sky; }
 
 	struct CameraInputState
 	{
@@ -100,4 +102,6 @@ private:
 	std::vector<MeshRenderer*> managedMeshRenderers;
 
 	std::unique_ptr<ThreadPool> threadPool;
+
+	std::unique_ptr<Sky> sky;
 };

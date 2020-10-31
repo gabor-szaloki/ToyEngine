@@ -61,7 +61,7 @@ float4 StandardOpaqueForwardPS(VSOutputStandardForward i) : SV_TARGET
 {
 	float4 c = 1;
 
-	float3 pointToEye = _CameraWorldPosition - i.worldPos;
+	float3 pointToEye = _CameraWorldPosition.xyz - i.worldPos;
 	SurfaceOutput s = Surface(pointToEye, i.normal, i.uv, i.color);
 
 	float mainLightShadowAttenuation = SampleMainLightShadow(i.shadowCoords);

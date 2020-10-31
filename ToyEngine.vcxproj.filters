@@ -150,6 +150,9 @@
     <ClCompile Include="Source\Util\ImGuiLogWindow.cpp">
       <Filter>Source\Util</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Renderer\Sky.cpp">
+      <Filter>Source\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common.h">
@@ -1172,6 +1175,9 @@
     <ClInclude Include="Source\Util\ThreadPool.h">
       <Filter>Source\Util</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Renderer\Sky.h">
+      <Filter>Source\Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Source\3rdParty\glm\CMakeLists.txt">
@@ -1615,6 +1621,9 @@
       <Filter>Source\Shaders</Filter>
     </None>
     <None Include="Source\Shaders\NormalMapping.hlsl">
+      <Filter>Source\Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\Sky.shader">
       <Filter>Source\Shaders</Filter>
     </None>
   </ItemGroup>

@@ -18,7 +18,11 @@ cbuffer PerCameraConstantBuffer : register(b1)
 {
 	float4x4 _View;
 	float4x4 _Projection;
-	float3 _CameraWorldPosition;
+	float4 _CameraWorldPosition;
+	float4 _ViewVecLT;
+	float4 _ViewVecRT;
+	float4 _ViewVecLB;
+	float4 _ViewVecRB;
 }
 
 cbuffer PerObjectConstantBuffer : register(b2)

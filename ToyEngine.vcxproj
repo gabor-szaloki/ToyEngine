@@ -44,6 +44,7 @@
     <ClCompile Include="Source\Renderer\Light.cpp" />
     <ClCompile Include="Source\Renderer\Material.cpp" />
     <ClCompile Include="Source\Renderer\MeshRenderer.cpp" />
+    <ClCompile Include="Source\Renderer\Sky.cpp" />
     <ClCompile Include="Source\Renderer\WorldRenderer.cpp" />
     <ClCompile Include="Source\Util\AutoImGui.cpp" />
     <ClCompile Include="Source\Util\ImGuiLogWindow.cpp" />
@@ -385,6 +386,7 @@
     <ClInclude Include="Source\Renderer\MeshRenderer.h" />
     <ClInclude Include="Source\Renderer\Primitives.h" />
     <ClInclude Include="Source\Renderer\RendererCommon.h" />
+    <ClInclude Include="Source\Renderer\Sky.h" />
     <ClInclude Include="Source\Renderer\WorldRenderer.h" />
     <ClInclude Include="Source\Util\AutoImGui.h" />
     <ClInclude Include="Source\Util\ImGuiLogWindow.h" />
@@ -534,6 +536,7 @@
       <FileType>Document</FileType>
     </None>
     <None Include="Source\Shaders\Error.shader" />
+    <None Include="Source\Shaders\Sky.shader" />
     <None Include="Source\Shaders\Standard.shader" />
   </ItemGroup>
   <ItemGroup>
