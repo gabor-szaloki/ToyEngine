@@ -72,7 +72,7 @@ private:
 	void initShaders();
 	void closeShaders();
 	void initDefaultAssets();
-	ITexture* loadTextureFromPng(const char* path, bool sync = false);
+	ITexture* loadTextureFromPng(const char* path, bool srgb, bool sync = false);
 	bool loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer& mesh_renderer);
 	void loadMeshFromObjToMeshRendererAsync(const char* path, MeshRenderer& mesh_renderer);
 	void initScene();

@@ -8,5 +8,6 @@ float4 PostFxPS(DefaultPostFxVsOutput i) : SV_TARGET
 {
 	float4 sceneColor = _HdrTarget.Sample(_HdrTarget_Sampler, i.uv);
 	sceneColor.rgb = tonemap(sceneColor.rgb);
+	sceneColor.rgb = pow(sceneColor.rgb, 1.0f/2.2f);
 	return sceneColor;
 }

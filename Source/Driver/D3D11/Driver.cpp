@@ -32,7 +32,7 @@ bool Driver::init(void* hwnd, int display_width, int display_height)
 
 	DXGI_SWAP_CHAIN_DESC scd{};
 	scd.BufferCount = 2;
-	scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // Not _SRGB because then ImGui looks weird :( SRGB conversion is done in postfx
 	scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	scd.OutputWindow = (HWND)hwnd;
 	scd.SampleDesc.Count = 1;

@@ -248,8 +248,8 @@ void WorldRenderer::closeShaders()
 
 void WorldRenderer::initDefaultAssets()
 {
-	ITexture* stubColor = loadTextureFromPng("Assets/Textures/gray_base.png", true);
-	ITexture* stubNormal = loadTextureFromPng("Assets/Textures/flat_nrm.png", true);
+	ITexture* stubColor = loadTextureFromPng("Assets/Textures/gray_base.png", true, true);
+	ITexture* stubNormal = loadTextureFromPng("Assets/Textures/flat_nrm.png", false, true);
 	managedTextures.push_back(stubColor);
 	managedTextures.push_back(stubNormal);
 	defaultTextures[(int)MaterialTexture::Purpose::COLOR] = stubColor;
@@ -267,11 +267,11 @@ void WorldRenderer::initDefaultAssets()
 	defaultInputLayout = standardInputLayout;
 }
 
-ITexture* WorldRenderer::loadTextureFromPng(const char* path, bool sync)
+ITexture* WorldRenderer::loadTextureFromPng(const char* path, bool srgb, bool sync)
 {
 	ITexture* texture = drv->createTextureStub();
 
-	auto load = [path, texture]
+	auto load = [path, srgb, texture]
 	{
 		PLOG_INFO << "Loading texture from file: " << path;
 
@@ -283,7 +283,7 @@ ITexture* WorldRenderer::loadTextureFromPng(const char* path, bool sync)
 			<< "\tFile: " << path << std::endl
 			<< "\tError: " << lodepng_error_text(error);
 
-		TextureDesc tDesc(path, width, height, TexFmt::R8G8B8A8_UNORM, 0);
+		TextureDesc tDesc(path, width, height, srgb ? TexFmt::R8G8B8A8_UNORM_SRGB : TexFmt::R8G8B8A8_UNORM, 0);
 		tDesc.bindFlags = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET;
 		tDesc.miscFlags = RESOURCE_MISC_GENERATE_MIPS;
 		texture->recreate(tDesc);
@@ -387,13 +387,13 @@ void WorldRenderer::initScene()
 	sky = std::make_unique<Sky>();
 
 	std::array<ITexture*, 2> testMaterialTextures;
-	testMaterialTextures[0] = loadTextureFromPng("Assets/Textures/test_base.png");
-	testMaterialTextures[1] = loadTextureFromPng("Assets/Textures/test_nrm.png");
+	testMaterialTextures[0] = loadTextureFromPng("Assets/Textures/test_base.png", true);
+	testMaterialTextures[1] = loadTextureFromPng("Assets/Textures/test_nrm.png", false);
 	managedTextures.insert(managedTextures.end(), testMaterialTextures.begin(), testMaterialTextures.end());
 
 	std::array<ITexture*, 2> blueTilesMaterialTextures;
-	blueTilesMaterialTextures[0] = loadTextureFromPng("Assets/Textures/Tiles20_base.png");
-	blueTilesMaterialTextures[1] = loadTextureFromPng("Assets/Textures/Tiles20_nrm.png");
+	blueTilesMaterialTextures[0] = loadTextureFromPng("Assets/Textures/Tiles20_base.png", true);
+	blueTilesMaterialTextures[1] = loadTextureFromPng("Assets/Textures/Tiles20_nrm.png", false);
 	managedTextures.insert(managedTextures.end(), blueTilesMaterialTextures.begin(), blueTilesMaterialTextures.end());
 
 	Material* flatGray = new Material(standardShaders);
