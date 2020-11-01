@@ -29,10 +29,5 @@ struct ProfileScopeHelper
 #define TOY_PS_CC1(a, b) TOY_PS_CC0(a, b)
 #define PROFILE_SCOPE(label) ProfileScopeHelper TOY_PS_CC1(profileScope, __LINE__)(label)
 
-#define TOY_IGQ_CC0(a, b) a##b
-#define TOY_IGQ_CC1(a, b) TOY_IGQ_CC0(a, b)
-#define REGISTER_IMGUI_WINDOW(name, func)\
-  static autoimgui::ImGuiFunctionQueue TOY_IGQ_CC1(AutoImGuiWindow, __LINE__)(nullptr, name, nullptr, 100, 0, func, true)
-
 // For DirectXMath
 using namespace DirectX;
