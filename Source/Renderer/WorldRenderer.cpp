@@ -476,11 +476,14 @@ void WorldRenderer::performForwardPass()
 	perCameraCbData.view = camera.GetViewMatrix();
 	perCameraCbData.projection = camera.GetProjectionMatrix();
 	XMStoreFloat4(&perCameraCbData.cameraWorldPosition, camera.GetEye());
-	XMMATRIX invViewMatrix = XMMatrixInverse(nullptr, camera.GetViewMatrix());
-	XMStoreFloat4(&perCameraCbData.viewVecLT, XMVector4Transform(XMVectorSet(-1.f, +1.f, 1.f, 0.f), invViewMatrix));
-	XMStoreFloat4(&perCameraCbData.viewVecRT, XMVector4Transform(XMVectorSet(+1.f, +1.f, 1.f, 0.f), invViewMatrix));
-	XMStoreFloat4(&perCameraCbData.viewVecLB, XMVector4Transform(XMVectorSet(-1.f, -1.f, 1.f, 0.f), invViewMatrix));
-	XMStoreFloat4(&perCameraCbData.viewVecRB, XMVector4Transform(XMVectorSet(+1.f, -1.f, 1.f, 0.f), invViewMatrix));
+	XMMATRIX viewRotMatrix = perCameraCbData.view;
+	viewRotMatrix.r[3] = XMVectorSet(0, 0, 0, 1);
+	XMMATRIX viewRotProjMatrix = viewRotMatrix * perCameraCbData.projection;
+	XMMATRIX invViewRotProjMatrix = XMMatrixInverse(nullptr, viewRotProjMatrix);
+	XMStoreFloat4(&perCameraCbData.viewVecLT, XMVector3TransformCoord(XMVectorSet(-1.f, +1.f, 1.f, 0.f), invViewRotProjMatrix));
+	XMStoreFloat4(&perCameraCbData.viewVecRT, XMVector3TransformCoord(XMVectorSet(+1.f, +1.f, 1.f, 0.f), invViewRotProjMatrix));
+	XMStoreFloat4(&perCameraCbData.viewVecLB, XMVector3TransformCoord(XMVectorSet(-1.f, -1.f, 1.f, 0.f), invViewRotProjMatrix));
+	XMStoreFloat4(&perCameraCbData.viewVecRB, XMVector3TransformCoord(XMVectorSet(+1.f, -1.f, 1.f, 0.f), invViewRotProjMatrix));
 	perCameraCb->updateData(&perCameraCbData);
 
 	drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
