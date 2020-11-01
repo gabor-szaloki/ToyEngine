@@ -19,5 +19,20 @@ char* wcs_to_utf8(const wchar_t* wcs_str, char* utf8_buf, int utf8_buf_len);
 inline float to_deg(float rad) { return rad * RAD_TO_DEG; }
 inline float to_rad(float deg) { return deg * DEG_TO_RAD; }
 
+struct ProfileScopeHelper
+{
+	ProfileScopeHelper(const char* label);
+	~ProfileScopeHelper();
+};
+
+#define TOY_PS_CC0(a, b) a##b
+#define TOY_PS_CC1(a, b) TOY_PS_CC0(a, b)
+#define PROFILE_SCOPE(label) ProfileScopeHelper TOY_PS_CC1(profileScope, __LINE__)(label)
+
+#define TOY_IGQ_CC0(a, b) a##b
+#define TOY_IGQ_CC1(a, b) TOY_IGQ_CC0(a, b)
+#define REGISTER_IMGUI_WINDOW(name, func)\
+  static autoimgui::ImGuiFunctionQueue TOY_IGQ_CC1(AutoImGuiWindow, __LINE__)(nullptr, name, nullptr, 100, 0, func, true)
+
 // For DirectXMath
 using namespace DirectX;

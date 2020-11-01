@@ -1,6 +1,7 @@
 #pragma once
 
 #include <d3d11.h>
+#include <d3d11_1.h>
 #pragma comment (lib, "d3d11.lib")
 #include <d3dcompiler.h>
 #pragma comment(lib,"d3dcompiler.lib")
@@ -65,6 +66,9 @@ namespace drv_d3d11
 		void endFrame() override;
 		void present() override;
 
+		void beginEvent(const char* label) override;
+		void endEvent() override;
+
 		TexFmt getIndexFormat() override { return TexFmt::R16_UINT; }
 		const DriverSettings& getSettings() override { return settings; };
 		void setSettings(const DriverSettings& new_settings) override;
@@ -99,6 +103,7 @@ namespace drv_d3d11
 		ID3D11Device* device;
 		ID3D11DeviceContext* context;
 		IDXGISwapChain* swapchain;
+		ID3DUserDefinedAnnotation* perf;
 		std::unique_ptr<Texture> backbuffer;
 
 		std::mutex contextMutex;

@@ -40,6 +40,7 @@ Sky::Sky()
 
 void Sky::render()
 {
+	PROFILE_SCOPE("Sky");
 	drv->setShaderSet(skyShader);
 	drv->setRenderState(skyRenderState);
 	drv->setConstantBuffer(ShaderStage::PS, 3, cb->getId());

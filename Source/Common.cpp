@@ -49,3 +49,13 @@ static void stats_window()
 	ImGui::Text("Frame time:    %.1f ms", 1000.0f / fps);
 }
 REGISTER_IMGUI_WINDOW("Stats", stats_window);
+
+ProfileScopeHelper::ProfileScopeHelper(const char* label)
+{
+	drv->beginEvent(label);
+}
+
+ProfileScopeHelper::~ProfileScopeHelper()
+{
+	drv->endEvent();
+}

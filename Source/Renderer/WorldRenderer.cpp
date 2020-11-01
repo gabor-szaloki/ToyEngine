@@ -137,6 +137,8 @@ static XMMATRIX get_shadow_matrix(XMMATRIX& lightView, XMMATRIX& lightProj)
 
 void WorldRenderer::render()
 {
+	PROFILE_SCOPE("RenderWorld");
+
 	// Update per-frame constant buffer
 	PerFrameConstantBufferData perFrameCbData;
 	perFrameCbData.ambientLightColor = get_final_light_color(ambientLightColor, ambientLightIntensity);
@@ -157,6 +159,12 @@ void WorldRenderer::render()
 
 	performShadowPass(lightViewMatrix, lightProjectionMatrix);
 	performForwardPass();
+
+	sky->render();
+
+	drv->setRenderTarget(drv->getBackbufferTexture()->getId(), BAD_RESID);
+	drv->setTexture(ShaderStage::PS, 0, hdrTarget->getId(), true);
+	postFx.perform();
 }
 
 unsigned int WorldRenderer::getShadowResolution()
@@ -447,6 +455,8 @@ void WorldRenderer::initScene()
 
 void WorldRenderer::performShadowPass(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix)
 {
+	PROFILE_SCOPE("ShadowPass");
+
 	drv->setRenderState(shadowRenderStateId);
 	drv->setRenderTarget(BAD_RESID, shadowMap->getId());
 	drv->setView(0, 0, (float)shadowMap->getDesc().width, (float)shadowMap->getDesc().height, 0, 1);
@@ -468,6 +478,8 @@ void WorldRenderer::performShadowPass(const XMMATRIX& lightViewMatrix, const XMM
 
 void WorldRenderer::performForwardPass()
 {
+	PROFILE_SCOPE("ForwardPass");
+
 	drv->setRenderState(showWireframe ? forwardWireframeRenderStateId : forwardRenderStateId);
 
 	const TextureDesc& targetDesc = hdrTarget->getDesc();
@@ -502,12 +514,6 @@ void WorldRenderer::performForwardPass()
 
 	for (MeshRenderer* mr : managedMeshRenderers)
 		mr->render(RenderPass::FORWARD);
-
-	sky->render();
-
-	drv->setRenderTarget(drv->getBackbufferTexture()->getId(), BAD_RESID);
-	drv->setTexture(ShaderStage::PS, 0, hdrTarget->getId(), true);
-	postFx.perform();
 
 	drv->setTexture(ShaderStage::PS, 2, BAD_RESID, true);
 }

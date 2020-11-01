@@ -12,6 +12,8 @@
 #include "ShaderSet.h"
 #include "InputLayout.h"
 
+#define PROFILE_MARKERS_ENABLED _DEBUG
+
 using namespace drv_d3d11;
 
 static ResId nextAvailableResId = 0;
@@ -57,8 +59,13 @@ bool Driver::init(void* hwnd, int display_width, int display_height)
 	ResId defaultRenderStateResId = createRenderState(desc);
 	defaultRenderState.reset(renderStates[defaultRenderStateResId]);
 
-	// TODO: Maybe expose this?
 	CONTEXT_LOCK_GUARD
+#if PROFILE_MARKERS_ENABLED
+	hr = context->QueryInterface(__uuidof(perf), reinterpret_cast<void**>(&perf));
+	assert(SUCCEEDED(hr));
+#endif
+
+	// TODO: Maybe expose this?
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	ImGui_ImplDX11_Init(device, context);
@@ -466,6 +473,7 @@ void Driver::endFrame()
 	if (drawData != nullptr)
 	{
 		CONTEXT_LOCK_GUARD
+		PROFILE_SCOPE("ImGui");
 		ImGui_ImplDX11_RenderDrawData(drawData);
 	}
 }
@@ -473,6 +481,22 @@ void Driver::endFrame()
 void Driver::present()
 {
 	swapchain->Present(settings.vsync ? 1 : 0, 0);
+}
+
+void Driver::beginEvent(const char* label)
+{
+#if PROFILE_MARKERS_ENABLED
+	wchar_t wlabel[128];
+	utf8_to_wcs(label, wlabel, 128);
+	perf->BeginEvent(wlabel);
+#endif
+}
+
+void Driver::endEvent()
+{
+#if PROFILE_MARKERS_ENABLED
+	perf->EndEvent();
+#endif
 }
 
 void Driver::setSettings(const DriverSettings& new_settings)

@@ -45,6 +45,9 @@ public:
 	virtual void endFrame() = 0;
 	virtual void present() = 0;
 
+	virtual void beginEvent(const char* label) = 0;
+	virtual void endEvent() = 0;
+
 	virtual TexFmt getIndexFormat() = 0;
 	virtual const DriverSettings& getSettings() = 0;
 	virtual void setSettings(const DriverSettings& new_settings) = 0;
