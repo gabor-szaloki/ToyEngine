@@ -223,10 +223,10 @@ void WorldRenderer::initShaders()
 	constexpr unsigned int NUM_STANDARD_INPUT_LAYOUT_ELEMENTS = 4;
 	InputLayoutElementDesc standardInputLayoutDesc[NUM_STANDARD_INPUT_LAYOUT_ELEMENTS] =
 	{
-		{ VertexInputSemantic::POSITION, 0, TexFmt::R32G32B32_FLOAT    },
-		{ VertexInputSemantic::NORMAL,   0, TexFmt::R32G32B32_FLOAT    },
-		{ VertexInputSemantic::COLOR,    0, TexFmt::R32G32B32A32_FLOAT },
-		{ VertexInputSemantic::TEXCOORD, 0, TexFmt::R32G32_FLOAT       },
+		{ VertexInputSemantic::POSITION, 0, TexFmt::R32G32B32_FLOAT },
+		{ VertexInputSemantic::NORMAL,   0, TexFmt::R32G32B32_FLOAT },
+		{ VertexInputSemantic::COLOR,    0, TexFmt::R8G8B8A8_UNORM  },
+		{ VertexInputSemantic::TEXCOORD, 0, TexFmt::R32G32_FLOAT    },
 	};
 	standardInputLayout = drv->createInputLayout(standardInputLayoutDesc,
 		NUM_STANDARD_INPUT_LAYOUT_ELEMENTS, standardShaders[(int)RenderPass::FORWARD]);
@@ -354,10 +354,16 @@ bool WorldRenderer::loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer
 			vertex.normal.z   = attrib.normals  [3 * idx.normal_index   + 2];
 			vertex.uv.x       = attrib.texcoords[2 * idx.texcoord_index + 0];
 			vertex.uv.y       = attrib.texcoords[2 * idx.texcoord_index + 1];
-			vertex.color.x    = attrib.colors   [3 * idx.vertex_index   + 0];
-			vertex.color.y    = attrib.colors   [3 * idx.vertex_index   + 1];
-			vertex.color.z    = attrib.colors   [3 * idx.vertex_index   + 2];
-			vertex.color.w    = attrib.texcoord_ws.size() == 0 ? 1.0f : attrib.texcoord_ws[idx.vertex_index];
+
+			XMFLOAT4 colorF4;
+			colorF4.x = attrib.colors   [3 * idx.vertex_index   + 0];
+			colorF4.y = attrib.colors   [3 * idx.vertex_index   + 1];
+			colorF4.z = attrib.colors   [3 * idx.vertex_index   + 2];
+			colorF4.w = attrib.texcoord_ws.size() == 0 ? 1.0f : attrib.texcoord_ws[idx.vertex_index];
+			vertex.color = (((unsigned int)(colorF4.x * 255u)) & 0xFFu) <<  0 |
+						   (((unsigned int)(colorF4.y * 255u)) & 0xFFu) <<  8 |
+						   (((unsigned int)(colorF4.z * 255u)) & 0xFFu) << 16 |
+						   (((unsigned int)(colorF4.w * 255u)) & 0xFFu) << 24;
 		}
 	}
 
