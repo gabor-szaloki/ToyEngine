@@ -1,8 +1,12 @@
 #ifndef SURFACE_INCLUDED
 #define SURFACE_INCLUDED
 
-#include "Input.hlsl"
+#include "ConstantBuffers.hlsl"
 #include "NormalMapping.hlsl"
+
+Texture2D _BaseTexture   : register(t0);
+Texture2D _NormalTexture : register(t1);
+SamplerState _Sampler    : register(s0);
 
 struct SurfaceOutput
 {

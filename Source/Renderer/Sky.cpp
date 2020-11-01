@@ -8,7 +8,7 @@
 Sky::Sky()
 {
 	ShaderSetDesc skyShaderDesc("Source/Shaders/Sky.shader");
-	skyShaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "SkyVS";
+	skyShaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "DefaultPostFxVsFunc";
 	skyShaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "SkyPS";
 	skyShader = drv->createShaderSet(skyShaderDesc);
 

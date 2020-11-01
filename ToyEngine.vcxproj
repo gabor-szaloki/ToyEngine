@@ -44,6 +44,7 @@
     <ClCompile Include="Source\Renderer\Light.cpp" />
     <ClCompile Include="Source\Renderer\Material.cpp" />
     <ClCompile Include="Source\Renderer\MeshRenderer.cpp" />
+    <ClCompile Include="Source\Renderer\PostFx.cpp" />
     <ClCompile Include="Source\Renderer\Sky.cpp" />
     <ClCompile Include="Source\Renderer\WorldRenderer.cpp" />
     <ClCompile Include="Source\Util\AutoImGui.cpp" />
@@ -384,6 +385,7 @@
     <ClInclude Include="Source\Renderer\Light.h" />
     <ClInclude Include="Source\Renderer\Material.h" />
     <ClInclude Include="Source\Renderer\MeshRenderer.h" />
+    <ClInclude Include="Source\Renderer\PostFx.h" />
     <ClInclude Include="Source\Renderer\Primitives.h" />
     <ClInclude Include="Source\Renderer\RendererCommon.h" />
     <ClInclude Include="Source\Renderer\Sky.h" />
@@ -536,6 +538,7 @@
       <FileType>Document</FileType>
     </None>
     <None Include="Source\Shaders\Error.shader" />
+    <None Include="Source\Shaders\PostFx.shader" />
     <None Include="Source\Shaders\Sky.shader" />
     <None Include="Source\Shaders\Standard.shader" />
   </ItemGroup>
@@ -543,7 +546,7 @@
     <None Include="Source\Shaders\Common.hlsl">
       <FileType>Document</FileType>
     </None>
-    <None Include="Source\Shaders\Input.hlsl">
+    <None Include="Source\Shaders\ConstantBuffers.hlsl">
       <FileType>Document</FileType>
     </None>
     <None Include="Source\Shaders\Lighting.hlsl">
@@ -561,6 +564,16 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\Shaders\NormalMapping.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Source\Shaders\PostFxCommon.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Source\Shaders\Tonemapping.hlsl">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>

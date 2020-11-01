@@ -1,8 +1,11 @@
 #ifndef SHADOW_INCLUDED
 #define SHADOW_INCLUDED
 
-#include "Input.hlsl"
+#include "ConstantBuffers.hlsl"
 #include "ShadowSamplingTent.hlsl"
+
+Texture2D<float> _MainLightShadowmap : register(t2);
+SamplerComparisonState _ShadowCmpSampler : register(s2);
 
 #define SOFT_SHADOWS
 #ifdef SOFT_SHADOWS

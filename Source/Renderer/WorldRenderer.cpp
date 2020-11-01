@@ -44,6 +44,11 @@ WorldRenderer::WorldRenderer()
 	PLOG_INFO << "Initializing thread pool with " << numWorkerThreads << " threads";
 	threadPool = std::make_unique<ThreadPool>(numWorkerThreads);
 
+	RenderStateDesc forwaredRsDesc;
+	forwardRenderStateId = drv->createRenderState(forwaredRsDesc);
+	forwaredRsDesc.rasterizerDesc.wireframe = true;
+	forwardWireframeRenderStateId = drv->createRenderState(forwaredRsDesc);
+
 	initDefaultAssets();
 
 	setShadowResolution(2048);
@@ -186,13 +191,13 @@ void WorldRenderer::setShadowBias(int depth_bias, float slope_scaled_depth_bias)
 
 void WorldRenderer::initResolutionDependentResources()
 {
-	RenderStateDesc forwaredRsDesc;
-	forwardRenderStateId = drv->createRenderState(forwaredRsDesc);
-	forwaredRsDesc.rasterizerDesc.wireframe = true;
-	forwardWireframeRenderStateId = drv->createRenderState(forwaredRsDesc);
-
-	glm::ivec2 displayResolution;
+	XMINT2 displayResolution;
 	drv->getDisplaySize(displayResolution.x, displayResolution.y);
+
+	TextureDesc hdrTargetDesc("hdrTarget", displayResolution.x, displayResolution.y,
+		TexFmt::R16G16B16A16_FLOAT, 1, ResourceUsage::DEFAULT, BIND_RENDER_TARGET | BIND_SHADER_RESOURCE);
+	hdrTarget.reset(drv->createTexture(hdrTargetDesc));
+
 	TextureDesc depthTexDesc("depthTex", displayResolution.x, displayResolution.y,
 		TexFmt::D32_FLOAT_S8X24_UINT, 1, ResourceUsage::DEFAULT, BIND_DEPTH_STENCIL);
 	depthTex.reset(drv->createTexture(depthTexDesc));
@@ -201,8 +206,7 @@ void WorldRenderer::initResolutionDependentResources()
 void WorldRenderer::closeResolutionDependentResources()
 {
 	depthTex.reset();
-	forwardRenderStateId.close();
-	forwardWireframeRenderStateId.close();
+	hdrTarget.reset();
 }
 
 void WorldRenderer::initShaders()
@@ -466,10 +470,9 @@ void WorldRenderer::performForwardPass()
 {
 	drv->setRenderState(showWireframe ? forwardWireframeRenderStateId : forwardRenderStateId);
 
-	ITexture* backbuffer = drv->getBackbufferTexture();
-	const TextureDesc& bbDesc = backbuffer->getDesc();
-	drv->setRenderTarget(backbuffer->getId(), depthTex->getId());
-	drv->setView(0, 0, (float)bbDesc.width, (float)bbDesc.height, 0, 1);
+	const TextureDesc& targetDesc = hdrTarget->getDesc();
+	drv->setRenderTarget(hdrTarget->getId(), depthTex->getId());
+	drv->setView(0, 0, (float)targetDesc.width, (float)targetDesc.height, 0, 1);
 
 	RenderTargetClearParams clearParams;
 	clearParams.color[0] = 0.0f;
@@ -501,6 +504,10 @@ void WorldRenderer::performForwardPass()
 		mr->render(RenderPass::FORWARD);
 
 	sky->render();
+
+	drv->setRenderTarget(drv->getBackbufferTexture()->getId(), BAD_RESID);
+	drv->setTexture(ShaderStage::PS, 0, hdrTarget->getId(), true);
+	postFx.perform();
 
 	drv->setTexture(ShaderStage::PS, 2, BAD_RESID, true);
 }

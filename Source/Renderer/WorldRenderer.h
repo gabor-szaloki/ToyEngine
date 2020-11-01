@@ -9,6 +9,7 @@
 #include <Driver/IDriver.h>
 #include "Camera.h"
 #include "Material.h"
+#include "PostFx.h"
 
 class ITexture;
 class IBuffer;
@@ -84,6 +85,7 @@ private:
 	float cameraMoveSpeed = 5.0f;
 	float cameraTurnSpeed = 0.002f;
 
+	std::unique_ptr<ITexture> hdrTarget;
 	std::unique_ptr<ITexture> depthTex;
 	ResIdHolder forwardRenderStateId = BAD_RESID;
 	ResIdHolder forwardWireframeRenderStateId = BAD_RESID;
@@ -104,4 +106,5 @@ private:
 	std::unique_ptr<ThreadPool> threadPool;
 
 	std::unique_ptr<Sky> sky;
+	PostFx postFx;
 };

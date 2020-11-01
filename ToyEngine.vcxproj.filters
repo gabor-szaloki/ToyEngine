@@ -153,6 +153,9 @@
     <ClCompile Include="Source\Renderer\Sky.cpp">
       <Filter>Source\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Renderer\PostFx.cpp">
+      <Filter>Source\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common.h">
@@ -1178,6 +1181,9 @@
     <ClInclude Include="Source\Renderer\Sky.h">
       <Filter>Source\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Renderer\PostFx.h">
+      <Filter>Source\Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Source\3rdParty\glm\CMakeLists.txt">
@@ -1194,13 +1200,7 @@
     <None Include="Source\Shaders\Common.hlsl">
       <Filter>Source\Shaders</Filter>
     </None>
-    <None Include="Source\Shaders\Input.hlsl">
-      <Filter>Source\Shaders</Filter>
-    </None>
     <None Include="Source\Shaders\Lighting.hlsl">
-      <Filter>Source\Shaders</Filter>
-    </None>
-    <None Include="Source\Shaders\Shadow.hlsl">
       <Filter>Source\Shaders</Filter>
     </None>
     <None Include="Source\Shaders\ShadowSamplingTent.hlsl">
@@ -1624,6 +1624,21 @@
       <Filter>Source\Shaders</Filter>
     </None>
     <None Include="Source\Shaders\Sky.shader">
+      <Filter>Source\Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\PostFx.shader">
+      <Filter>Source\Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\PostFxCommon.hlsl">
+      <Filter>Source\Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\Shadow.hlsl">
+      <Filter>Source\Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\ConstantBuffers.hlsl">
+      <Filter>Source\Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\Tonemapping.hlsl">
       <Filter>Source\Shaders</Filter>
     </None>
   </ItemGroup>
