@@ -12,26 +12,26 @@ public:
 	void* operator new(size_t i) { return _mm_malloc(i, 16); }
 	void operator delete(void* p) { _mm_free(p); }
 
-	XMVECTOR GetEye() { return eye; }
-	void SetEye(XMVECTOR eye);
-	void MoveEye(XMVECTOR direction);
+	const XMVECTOR& GetEye() const { return eye; }
+	void SetEye(const XMVECTOR& eye);
+	void MoveEye(const XMVECTOR& direction);
 	void SetRotation(float pitch, float yaw);
 	void Rotate(float deltaPitch, float deltaYaw);
-	XMVECTOR GetUp() { return up; }
-	XMVECTOR GetForward() { return XMVectorSet(viewMatrixF4X4.m[0][2], viewMatrixF4X4.m[1][2], viewMatrixF4X4.m[2][2], 0.0f); }
-	XMVECTOR GetRight() { return XMVector3Cross(up, GetForward()); }
-	float GetYaw() { return yaw; }
-	float GetPitch() { return pitch; }
-	void SetViewParams(XMVECTOR eye, XMVECTOR up, float pitch, float yaw);
-	XMMATRIX GetViewMatrix() { return viewMatrix; }
+	const XMVECTOR& GetUp() const { return up; }
+	XMVECTOR GetForward() const { return XMVectorSet(viewMatrixF4X4.m[0][2], viewMatrixF4X4.m[1][2], viewMatrixF4X4.m[2][2], 0.0f); }
+	XMVECTOR GetRight() const { return XMVector3Normalize(XMVector3Cross(up, GetForward())); }
+	float GetYaw() const { return yaw; }
+	float GetPitch() const { return pitch; }
+	void SetViewParams(const XMVECTOR& eye, const XMVECTOR& up, float pitch, float yaw);
+	const XMMATRIX& GetViewMatrix() const { return viewMatrix; }
 
-	float GetViewportWidth() { return viewportWidth; }
-	float GetViewportHeight() { return viewportHeight; }
-	float GetFOV() { return fov; }
-	float GetNearPlane() { return nearPlane; }
-	float GetFarPlane() { return farPlane; }
+	float GetViewportWidth() const { return viewportWidth; }
+	float GetViewportHeight() const { return viewportHeight; }
+	float GetFOV() const { return fov; }
+	float GetNearPlane() const { return nearPlane; }
+	float GetFarPlane() const { return farPlane; }
 	void SetProjectionParams(float viewportWidth, float viewportHeight, float fov, float nearPlane, float farPlane);
-	XMMATRIX GetProjectionMatrix() { return projectionMatrix; }
+	const XMMATRIX& GetProjectionMatrix() const { return projectionMatrix; }
 	void Resize(float viewportWidth, float viewportHeight);
 
 private:

@@ -22,13 +22,13 @@ Camera::~Camera()
 {
 }
 
-void Camera::SetEye(XMVECTOR eye)
+void Camera::SetEye(const XMVECTOR& eye)
 {
 	this->eye = eye;
 	RecalculateViewMatrix();
 }
 
-void Camera::MoveEye(XMVECTOR direction)
+void Camera::MoveEye(const XMVECTOR& direction)
 {
 	SetEye(eye + direction);
 }
@@ -52,7 +52,7 @@ void Camera::Rotate(float deltaPitch, float deltaYaw)
 	SetRotation(pitch + deltaPitch, yaw + deltaYaw);
 }
 
-void Camera::SetViewParams(XMVECTOR eye, XMVECTOR up, float pitch, float yaw)
+void Camera::SetViewParams(const XMVECTOR& eye, const XMVECTOR& up, float pitch, float yaw)
 {
 	this->eye = eye;
 	this->up = up;
