@@ -472,8 +472,8 @@ void Driver::endFrame()
 	ImDrawData* drawData = ImGui::GetDrawData();
 	if (drawData != nullptr)
 	{
-		CONTEXT_LOCK_GUARD
 		PROFILE_SCOPE("ImGui");
+		CONTEXT_LOCK_GUARD
 		ImGui_ImplDX11_RenderDrawData(drawData);
 	}
 }
@@ -488,6 +488,7 @@ void Driver::beginEvent(const char* label)
 #if PROFILE_MARKERS_ENABLED
 	wchar_t wlabel[128];
 	utf8_to_wcs(label, wlabel, 128);
+	CONTEXT_LOCK_GUARD
 	perf->BeginEvent(wlabel);
 #endif
 }
@@ -495,6 +496,7 @@ void Driver::beginEvent(const char* label)
 void Driver::endEvent()
 {
 #if PROFILE_MARKERS_ENABLED
+	CONTEXT_LOCK_GUARD
 	perf->EndEvent();
 #endif
 }
