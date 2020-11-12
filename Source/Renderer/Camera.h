@@ -34,6 +34,8 @@ public:
 	const XMMATRIX& GetProjectionMatrix() const { return projectionMatrix; }
 	void Resize(float viewportWidth, float viewportHeight);
 
+	void gui();
+
 private:
 
 	XMVECTOR eye, up;

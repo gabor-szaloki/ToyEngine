@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "RendererCommon.h"
+#include "Transform.h"
 
 class IBuffer;
 class Material;
@@ -16,10 +17,23 @@ public:
 	void loadIndices(unsigned int num_indices, void* data);
 	void render(RenderPass render_pass);
 
-	XMMATRIX worldTransform = XMMatrixIdentity();
+	const Transform& getTransform() const { return transform; }
+	void setTransform(const Transform& t) { transform = t; transformMatrix = t.getMatrix(); }
+	void setPosition(XMVECTOR position) { transform.position = position; transformMatrix = transform.getMatrix(); }
+	void setPosition(XMFLOAT3 position) { setPosition(XMLoadFloat3(&position)); }
+	void setPosition(float x, float y, float z) { setPosition(XMFLOAT3(x, y, z)); }
+	void setRotation(XMVECTOR rotation) { transform.rotation = rotation; transformMatrix = transform.getMatrix(); }
+	void setRotation(XMFLOAT3 rotation) { setRotation(XMLoadFloat3(&rotation)); }
+	void setRotation(float pitch, float yaw, float roll) { setRotation(XMFLOAT3(pitch, yaw, roll)); }
+	void setScale(float scale) { transform.scale = scale; transformMatrix = transform.getMatrix(); }
+	const XMMATRIX& getTransformMatrix() const { return transformMatrix; }
+
+	const char* name = nullptr;
 
 private:
-	const char* name = nullptr;
+	Transform transform;
+	XMMATRIX transformMatrix = XMMatrixIdentity();
+
 	Material* material = nullptr;
 	ResId inputLayoutId = BAD_RESID;
 	std::unique_ptr<IBuffer> cb;

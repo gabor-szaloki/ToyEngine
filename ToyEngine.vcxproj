@@ -40,13 +40,13 @@
     <ClCompile Include="Source\Driver\D3D11\Texture.cpp" />
     <ClCompile Include="Source\Program.cpp" />
     <ClCompile Include="Source\Renderer\Camera.cpp" />
-    <ClCompile Include="Source\Renderer\Gui.cpp" />
     <ClCompile Include="Source\Renderer\Light.cpp" />
     <ClCompile Include="Source\Renderer\Material.cpp" />
     <ClCompile Include="Source\Renderer\MeshRenderer.cpp" />
     <ClCompile Include="Source\Renderer\PostFx.cpp" />
     <ClCompile Include="Source\Renderer\Sky.cpp" />
     <ClCompile Include="Source\Renderer\WorldRenderer.cpp" />
+    <ClCompile Include="Source\Renderer\WorldRendererGui.cpp" />
     <ClCompile Include="Source\Util\AutoImGui.cpp" />
     <ClCompile Include="Source\Util\ImGuiLogWindow.cpp" />
   </ItemGroup>
@@ -389,6 +389,7 @@
     <ClInclude Include="Source\Renderer\Primitives.h" />
     <ClInclude Include="Source\Renderer\RendererCommon.h" />
     <ClInclude Include="Source\Renderer\Sky.h" />
+    <ClInclude Include="Source\Renderer\Transform.h" />
     <ClInclude Include="Source\Renderer\WorldRenderer.h" />
     <ClInclude Include="Source\Util\AutoImGui.h" />
     <ClInclude Include="Source\Util\ImGuiLogWindow.h" />

@@ -37,6 +37,11 @@ public:
 	float getTime() { return time; }
 	Sky& getSky() { return *sky; }
 
+	void rendererSettingsGui();
+	void lightingGui();
+	void shadowMapGui();
+	void meshRendererGui();
+
 	struct CameraInputState
 	{
 		bool isMovingForward = false;

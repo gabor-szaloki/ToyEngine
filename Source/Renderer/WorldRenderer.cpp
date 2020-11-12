@@ -110,9 +110,9 @@ void WorldRenderer::update(float delta_time)
 
 	// Update scene
 	MeshRenderer* box = managedMeshRenderers[1];
-	box->worldTransform = XMMatrixRotationY(time * 0.05f) * XMMatrixTranslation(-1.5f, 1.5f, 0.0f);
+	box->setTransform(Transform(XMFLOAT3(-1.5f, 1.5f, 0.0f), XMFLOAT3(0.0f, time * 0.05f, 0.0f)));
 	MeshRenderer* sphere = managedMeshRenderers[2];
-	sphere->worldTransform = XMMatrixRotationY(time * 0.05f) * XMMatrixTranslation(1.5f, 1.5f, 0.0f);
+	sphere->setTransform(Transform(XMFLOAT3(1.5f, 1.5f, 0.0f), XMFLOAT3(0.0f, time * 0.05f, 0.0f)));
 }
 
 template<typename T>
@@ -422,33 +422,33 @@ void WorldRenderer::initScene()
 	MeshRenderer* floor = new MeshRenderer("floor", blueTiles, standardInputLayout);
 	floor->loadVertices(primitives::PLANE_VERTEX_COUNT, sizeof(primitives::plane_vertices[0]), (void*)primitives::plane_vertices);
 	floor->loadIndices(primitives::PLANE_INDEX_COUNT, (void*)primitives::plane_indices);
-	floor->worldTransform = XMMatrixScaling(10.0f, 10.0f, 10.0f);
+	floor->setScale(10.0f);
 	managedMeshRenderers.push_back(floor);
 
 	MeshRenderer* box = new MeshRenderer("box", blueTiles, standardInputLayout);
 	box->loadVertices(primitives::BOX_VERTEX_COUNT, sizeof(primitives::box_vertices[0]), (void*)primitives::box_vertices);
 	box->loadIndices(primitives::BOX_INDEX_COUNT, (void*)primitives::box_indices);
-	box->worldTransform = XMMatrixTranslation(-1.5f, 1.5f, 0.0f);
+	box->setPosition(-1.5f, 1.5f, 0.0f);
 	managedMeshRenderers.push_back(box);
 
 	MeshRenderer* sphere = new MeshRenderer("sphere", blueTiles, standardInputLayout);
 	sphere->loadVertices(primitives::SPHERE_VERTEX_COUNT, sizeof(primitives::sphere_vertices[0]), (void*)primitives::sphere_vertices);
 	sphere->loadIndices(primitives::SPHERE_INDEX_COUNT, (void*)primitives::sphere_indices);
-	sphere->worldTransform = XMMatrixTranslation(1.5f, 1.5f, 0.0f);
+	sphere->setPosition(1.5f, 1.5f, 0.0f);
 	managedMeshRenderers.push_back(sphere);
 
 	MeshRenderer* teapot = new MeshRenderer("teapot", flatGray, standardInputLayout);
-	teapot->worldTransform = XMMatrixMultiply(XMMatrixScaling(0.05f, 0.05f, 0.05f), XMMatrixTranslation(-4.5f, 0.5f, -3.0f));
+	teapot->setTransform(Transform(XMFLOAT3(-4.5f, 0.5f, -3.0f), XMFLOAT3(0, 0, 0), 0.05f));
 	loadMeshFromObjToMeshRendererAsync("Assets/Models/UtahTeapot/utah-teapot.obj", *teapot);
 	managedMeshRenderers.push_back(teapot);
 
 	MeshRenderer* bunny = new MeshRenderer("bunny", flatGray, standardInputLayout);
-	bunny->worldTransform = XMMatrixMultiply(XMMatrixScaling(10.0f, 10.f, 10.f), XMMatrixTranslation(-1.5f, 0.0f, -3.0f));
+	bunny->setTransform(Transform(XMFLOAT3(-1.5f, 0.0f, -3.0f), XMFLOAT3(0, 0, 0), 10.0f));
 	loadMeshFromObjToMeshRendererAsync("Assets/Models/StanfordBunny/stanford-bunny.obj", *bunny);
 	managedMeshRenderers.push_back(bunny);
 
 	MeshRenderer* dragon = new MeshRenderer("dragon", flatGray, standardInputLayout);
-	dragon->worldTransform = XMMatrixMultiply(XMMatrixScaling(0.2f, 0.2f, 0.2f), XMMatrixTranslation(1.5f, 0.0f, -3.0f));
+	dragon->setTransform(Transform(XMFLOAT3(1.5f, 0.0f, -3.0f), XMFLOAT3(0, 0, 0), 0.2f));
 	loadMeshFromObjToMeshRendererAsync("Assets/Models/StanfordDragon/stanford-dragon.obj", *dragon);
 	managedMeshRenderers.push_back(dragon);
 }

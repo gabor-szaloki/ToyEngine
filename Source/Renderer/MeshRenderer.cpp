@@ -42,24 +42,24 @@ void MeshRenderer::render(RenderPass render_pass)
 	IBuffer* ibToUse;
 	IBuffer* vbToUse;
 	ResId ilToUse;
-	XMMATRIX wtToUse;
+	XMMATRIX tmToUse;
 	if (vb != nullptr && ib != nullptr)
 	{
 		ibToUse = ib.get();
 		vbToUse = vb.get();
 		ilToUse = inputLayoutId;
-		wtToUse = worldTransform;
+		tmToUse = transformMatrix;
 	}
 	else
 	{
 		ibToUse = wr->defaultMeshIb.get();
 		vbToUse = wr->defaultMeshVb.get();
 		ilToUse = wr->defaultInputLayout;
-		wtToUse = XMMatrixScaling(.1f, .1f, .1f) * XMMatrixRotationY(wr->getTime() * 10.f) * XMMatrixTranslationFromVector(worldTransform.r[3]);
+		tmToUse = XMMatrixScaling(.1f, .1f, .1f) * XMMatrixRotationY(wr->getTime() * 10.f) * XMMatrixTranslationFromVector(transformMatrix.r[3]);
 	}
 
 	PerObjectConstantBufferData perObjectCbData;
-	perObjectCbData.world = wtToUse;
+	perObjectCbData.world = tmToUse;
 	cb->updateData(&perObjectCbData);
 
 	material->set(render_pass);

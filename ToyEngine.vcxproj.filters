@@ -126,9 +126,6 @@
     <ClCompile Include="Source\Renderer\WorldRenderer.cpp">
       <Filter>Source\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer\Gui.cpp">
-      <Filter>Source\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Renderer\Material.cpp">
       <Filter>Source\Renderer</Filter>
     </ClCompile>
@@ -154,6 +151,9 @@
       <Filter>Source\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="Source\Renderer\PostFx.cpp">
+      <Filter>Source\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\WorldRendererGui.cpp">
       <Filter>Source\Renderer</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1182,6 +1182,9 @@
       <Filter>Source\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Source\Renderer\PostFx.h">
+      <Filter>Source\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\Transform.h">
       <Filter>Source\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
