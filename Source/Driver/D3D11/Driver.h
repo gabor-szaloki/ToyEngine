@@ -14,7 +14,7 @@
 #include <Driver/IDriver.h>
 
 #define SAFE_RELEASE(resource) { if (resource != nullptr) { resource->Release(); resource = nullptr; } }
-#define CONTEXT_LOCK_GUARD const std::lock_guard<std::mutex> contextLock(Driver::get().getContextMutex());
+#define CONTEXT_LOCK_GUARD const std::scoped_lock<std::mutex> contextLock(Driver::get().getContextMutex());
 
 namespace drv_d3d11
 {

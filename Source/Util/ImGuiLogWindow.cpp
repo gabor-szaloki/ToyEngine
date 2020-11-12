@@ -4,6 +4,7 @@
 #include <Windows.h>
 #include <vector>
 #include <string>
+#include <mutex>
 #include <3rdParty/plog/Util.h>
 #include <Common.h>
 #include <Util/AutoImGui.h>
@@ -34,6 +35,9 @@ void ImGuiLogWindow::write(const Record& record)
 	LogLine l;
 	l.text = plog::util::toNarrow(ToyTxtFormatter::format(record).c_str(), CP_UTF8);
 	l.severity = record.getSeverity();
+
+	static std::mutex m;
+	std::scoped_lock<std::mutex> lock(m);	
 	lines.push_back(l);
 }
 
