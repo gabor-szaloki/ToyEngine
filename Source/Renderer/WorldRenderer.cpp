@@ -5,6 +5,7 @@
 #include <3rdParty/glm/glm.hpp>
 #include <3rdParty/LodePNG/lodepng.h>
 #include <3rdParty/tinyobjloader/tiny_obj_loader.h>
+#include <3rdParty/mini/ini.h>
 #include <Driver/ITexture.h>
 #include <Driver/IBuffer.h>
 #include <Util/ThreadPool.h>
@@ -339,6 +340,18 @@ bool WorldRenderer::loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer
 		return false;
 	}
 
+	std::string pathStr(path);
+	std::string iniPath = pathStr.substr(0, pathStr.find_last_of('.')) + ".ini";
+	mINI::INIFile iniFile(iniPath);
+	mINI::INIStructure ini;
+	float importScale = 1.0f;
+	if (iniFile.read(ini))
+	{
+		mINI::INIMap importSettings = ini["import"];
+		if (importSettings.has("scale"))
+			importScale = std::stof(importSettings["scale"]);
+	}
+
 	std::vector<unsigned short> indexData(numFaces * NUM_VERTICES_PER_FACE);
 	std::vector<StandardVertexData> vertexData(attrib.vertices.size() / 3);
 
@@ -358,9 +371,9 @@ bool WorldRenderer::loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer
 
 			indexData[f * NUM_VERTICES_PER_FACE + v] = idx.vertex_index;
 			StandardVertexData& vertex = vertexData[idx.vertex_index];
-			vertex.position.x = attrib.vertices [3 * idx.vertex_index   + 0];
-			vertex.position.y = attrib.vertices [3 * idx.vertex_index   + 1];
-			vertex.position.z = attrib.vertices [3 * idx.vertex_index   + 2];
+			vertex.position.x = attrib.vertices [3 * idx.vertex_index   + 0] * importScale;
+			vertex.position.y = attrib.vertices [3 * idx.vertex_index   + 1] * importScale;
+			vertex.position.z = attrib.vertices [3 * idx.vertex_index   + 2] * importScale;
 			vertex.normal.x   = attrib.normals  [3 * idx.normal_index   + 0];
 			vertex.normal.y   = attrib.normals  [3 * idx.normal_index   + 1];
 			vertex.normal.z   = attrib.normals  [3 * idx.normal_index   + 2];
@@ -438,17 +451,17 @@ void WorldRenderer::initScene()
 	managedMeshRenderers.push_back(sphere);
 
 	MeshRenderer* teapot = new MeshRenderer("teapot", flatGray, standardInputLayout);
-	teapot->setTransform(Transform(XMFLOAT3(-4.5f, 0.5f, -3.0f), XMFLOAT3(0, 0, 0), 0.05f));
+	teapot->setPosition(-4.5f, 0.5f, -3.0f);
 	loadMeshFromObjToMeshRendererAsync("Assets/Models/UtahTeapot/utah-teapot.obj", *teapot);
 	managedMeshRenderers.push_back(teapot);
 
 	MeshRenderer* bunny = new MeshRenderer("bunny", flatGray, standardInputLayout);
-	bunny->setTransform(Transform(XMFLOAT3(-1.5f, 0.0f, -3.0f), XMFLOAT3(0, 0, 0), 10.0f));
+	bunny->setPosition(-1.5f, 0.0f, -3.0f);
 	loadMeshFromObjToMeshRendererAsync("Assets/Models/StanfordBunny/stanford-bunny.obj", *bunny);
 	managedMeshRenderers.push_back(bunny);
 
 	MeshRenderer* dragon = new MeshRenderer("dragon", flatGray, standardInputLayout);
-	dragon->setTransform(Transform(XMFLOAT3(1.5f, 0.0f, -3.0f), XMFLOAT3(0, 0, 0), 0.2f));
+	dragon->setPosition(1.5f, 0.0f, -3.0f);
 	loadMeshFromObjToMeshRendererAsync("Assets/Models/StanfordDragon/stanford-dragon.obj", *dragon);
 	managedMeshRenderers.push_back(dragon);
 }
