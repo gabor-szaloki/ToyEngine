@@ -1091,9 +1091,6 @@
     <ClInclude Include="Source\Renderer\WorldRenderer.h">
       <Filter>Source\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Renderer\Primitives.h">
-      <Filter>Source\Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Renderer\Material.h">
       <Filter>Source\Renderer</Filter>
     </ClInclude>

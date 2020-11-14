@@ -19,6 +19,8 @@ class Light;
 class MeshRenderer;
 class Sky;
 
+struct StandardVertexData;
+
 class WorldRenderer
 {
 public:
@@ -78,6 +80,7 @@ private:
 	void closeShaders();
 	void initDefaultAssets();
 	ITexture* loadTextureFromPng(const char* path, bool srgb, bool sync = false);
+	bool loadMeshFromObj(const char* path, std::vector<StandardVertexData>& vertex_data, std::vector<unsigned short>& index_data);
 	bool loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer& mesh_renderer);
 	void loadMeshFromObjToMeshRendererAsync(const char* path, MeshRenderer& mesh_renderer);
 	void initScene();

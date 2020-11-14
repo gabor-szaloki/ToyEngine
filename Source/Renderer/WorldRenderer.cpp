@@ -12,7 +12,6 @@
 
 #include "ConstantBuffers.h"
 #include "MeshRenderer.h"
-#include "Primitives.h"
 #include "Light.h"
 #include "Sky.h"
 
@@ -56,7 +55,6 @@ WorldRenderer::WorldRenderer()
 	setShadowBias(50000, 1.0f);
 	initResolutionDependentResources();
 
-	primitives::init();
 	initScene();
 }
 
@@ -265,12 +263,15 @@ void WorldRenderer::initDefaultAssets()
 	defaultTextures[(int)MaterialTexture::Purpose::NORMAL] = stubNormal;
 	defaultTextures[(int)MaterialTexture::Purpose::OTHER] = stubColor;
 
-	BufferDesc vbDesc("defaultMeshVb", sizeof(primitives::box_vertices[0]), primitives::BOX_VERTEX_COUNT, ResourceUsage::DEFAULT, BIND_VERTEX_BUFFER);
-	vbDesc.initialData = primitives::box_vertices;
+	std::vector<StandardVertexData> defaultMeshVertexData;
+	std::vector<unsigned short> defaultMeshIndexData;
+	loadMeshFromObj("Assets/Models/box.obj", defaultMeshVertexData, defaultMeshIndexData);
+	BufferDesc vbDesc("defaultMeshVb", sizeof(defaultMeshVertexData[0]), (unsigned int)defaultMeshVertexData.size(), ResourceUsage::DEFAULT, BIND_VERTEX_BUFFER);
+	vbDesc.initialData = defaultMeshVertexData.data();
 	defaultMeshVb.reset(drv->createBuffer(vbDesc));
 	unsigned int indexByteSize = ::get_byte_size_for_texfmt(drv->getIndexFormat());
-	BufferDesc ibDesc("defaultMeshIb", indexByteSize, primitives::BOX_INDEX_COUNT, ResourceUsage::DEFAULT, BIND_INDEX_BUFFER);
-	ibDesc.initialData = primitives::box_indices;
+	BufferDesc ibDesc("defaultMeshIb", indexByteSize, (unsigned int)defaultMeshIndexData.size(), ResourceUsage::DEFAULT, BIND_INDEX_BUFFER);
+	ibDesc.initialData = defaultMeshIndexData.data();
 	defaultMeshIb.reset(drv->createBuffer(ibDesc));
 
 	defaultInputLayout = standardInputLayout;
@@ -308,7 +309,7 @@ ITexture* WorldRenderer::loadTextureFromPng(const char* path, bool srgb, bool sy
 	return texture;
 }
 
-bool WorldRenderer::loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer& mesh_renderer)
+bool WorldRenderer::loadMeshFromObj(const char* path, std::vector<StandardVertexData>& vertex_data, std::vector<unsigned short>& index_data)
 {
 	PLOG_INFO << "Loading mesh from file: " << path;
 
@@ -352,8 +353,8 @@ bool WorldRenderer::loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer
 			importScale = std::stof(importSettings["scale"]);
 	}
 
-	std::vector<unsigned short> indexData(numFaces * NUM_VERTICES_PER_FACE);
-	std::vector<StandardVertexData> vertexData(attrib.vertices.size() / 3);
+	index_data.resize(numFaces * NUM_VERTICES_PER_FACE);
+	vertex_data.resize(attrib.vertices.size() / 3);
 
 	// Loop over faces
 	for (size_t f = 0; f < numFaces; f++)
@@ -369,8 +370,8 @@ bool WorldRenderer::loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer
 		{
 			tinyobj::index_t idx = shape.mesh.indices[f * NUM_VERTICES_PER_FACE + v];
 
-			indexData[f * NUM_VERTICES_PER_FACE + v] = idx.vertex_index;
-			StandardVertexData& vertex = vertexData[idx.vertex_index];
+			index_data[f * NUM_VERTICES_PER_FACE + v] = idx.vertex_index;
+			StandardVertexData& vertex = vertex_data[idx.vertex_index];
 			vertex.position.x = attrib.vertices [3 * idx.vertex_index   + 0] * importScale;
 			vertex.position.y = attrib.vertices [3 * idx.vertex_index   + 1] * importScale;
 			vertex.position.z = attrib.vertices [3 * idx.vertex_index   + 2] * importScale;
@@ -391,6 +392,17 @@ bool WorldRenderer::loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer
 						   (((unsigned int)(colorF4.w * 255u)) & 0xFFu) << 24;
 		}
 	}
+
+	return true;
+}
+
+bool WorldRenderer::loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer& mesh_renderer)
+{
+	std::vector<StandardVertexData> vertexData;
+	std::vector<unsigned short> indexData;
+
+	if (!loadMeshFromObj(path, vertexData, indexData))
+		return false;
 
 	mesh_renderer.loadIndices((unsigned int)indexData.size(), indexData.data());
 	mesh_renderer.loadVertices((unsigned int)vertexData.size(), sizeof(vertexData[0]), vertexData.data());
@@ -432,21 +444,18 @@ void WorldRenderer::initScene()
 	blueTiles->setTexture(ShaderStage::PS, 1, blueTilesMaterialTextures[1], MaterialTexture::Purpose::NORMAL);
 	managedMaterials.push_back(blueTiles);
 
-	MeshRenderer* floor = new MeshRenderer("floor", blueTiles, standardInputLayout);
-	floor->loadVertices(primitives::PLANE_VERTEX_COUNT, sizeof(primitives::plane_vertices[0]), (void*)primitives::plane_vertices);
-	floor->loadIndices(primitives::PLANE_INDEX_COUNT, (void*)primitives::plane_indices);
+	MeshRenderer* floor = new MeshRenderer("floor", test, standardInputLayout);
+	loadMeshFromObjToMeshRendererAsync("Assets/Models/plane.obj", *floor);
 	floor->setScale(10.0f);
 	managedMeshRenderers.push_back(floor);
 
-	MeshRenderer* box = new MeshRenderer("box", blueTiles, standardInputLayout);
-	box->loadVertices(primitives::BOX_VERTEX_COUNT, sizeof(primitives::box_vertices[0]), (void*)primitives::box_vertices);
-	box->loadIndices(primitives::BOX_INDEX_COUNT, (void*)primitives::box_indices);
+	MeshRenderer* box = new MeshRenderer("box", test, standardInputLayout);
+	loadMeshFromObjToMeshRendererAsync("Assets/Models/box.obj", *box);
 	box->setPosition(-1.5f, 1.5f, 0.0f);
 	managedMeshRenderers.push_back(box);
 
 	MeshRenderer* sphere = new MeshRenderer("sphere", blueTiles, standardInputLayout);
-	sphere->loadVertices(primitives::SPHERE_VERTEX_COUNT, sizeof(primitives::sphere_vertices[0]), (void*)primitives::sphere_vertices);
-	sphere->loadIndices(primitives::SPHERE_INDEX_COUNT, (void*)primitives::sphere_indices);
+	loadMeshFromObjToMeshRendererAsync("Assets/Models/sphere.obj", *sphere);
 	sphere->setPosition(1.5f, 1.5f, 0.0f);
 	managedMeshRenderers.push_back(sphere);
 

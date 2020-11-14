@@ -386,7 +386,6 @@
     <ClInclude Include="Source\Renderer\Material.h" />
     <ClInclude Include="Source\Renderer\MeshRenderer.h" />
     <ClInclude Include="Source\Renderer\PostFx.h" />
-    <ClInclude Include="Source\Renderer\Primitives.h" />
     <ClInclude Include="Source\Renderer\RendererCommon.h" />
     <ClInclude Include="Source\Renderer\Sky.h" />
     <ClInclude Include="Source\Renderer\Transform.h" />
