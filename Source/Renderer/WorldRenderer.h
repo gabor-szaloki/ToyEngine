@@ -89,7 +89,8 @@ private:
 	ITexture* loadTextureFromPng(const std::string& path, bool srgb, LoadExecutionMode lem = LoadExecutionMode::ASYNC);
 	bool loadMesh(const std::string& name, std::vector<StandardVertexData>& vertex_data, std::vector<unsigned short>& index_data);
 	bool loadMeshToMeshRenderer(const std::string& name, MeshRenderer& mesh_renderer, LoadExecutionMode lem = LoadExecutionMode::ASYNC);
-	void initScene(const char* scene_file);
+	void loadScene(const std::string& scene_file);
+	void unloadCurrentScene();
 	void performShadowPass(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix);
 	void performForwardPass();
 
@@ -119,10 +120,12 @@ private:
 	mINI::INIStructure modelsIni;
 	std::unique_ptr<mINI::INIFile> currentSceneIniFile;
 	mINI::INIStructure currentSceneIni;
+	std::string currentSceneIniFilePath;
 
 	std::vector<ITexture*> managedTextures;
-	std::vector<Material*> managedMaterials;
-	std::vector<MeshRenderer*> managedMeshRenderers;
+	std::vector<ITexture*> sceneTextures;
+	std::vector<Material*> sceneMaterials;
+	std::vector<MeshRenderer*> sceneMeshRenderers;
 
 	std::unique_ptr<ThreadPool> threadPool;
 

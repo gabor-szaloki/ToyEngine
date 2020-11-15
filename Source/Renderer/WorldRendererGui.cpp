@@ -38,6 +38,11 @@ static XMVECTOR euler_to_quaternion(XMVECTOR e)
 void WorldRenderer::rendererSettingsGui()
 {
 	ImGui::Checkbox("Show wireframe", &showWireframe);
+	if (ImGui::Button("Reload scene"))
+	{
+		unloadCurrentScene();
+		loadScene(currentSceneIniFilePath);
+	}
 }
 
 void WorldRenderer::lightingGui()
@@ -91,7 +96,7 @@ void WorldRenderer::shadowMapGui()
 
 void WorldRenderer::meshRendererGui()
 {
-	for (MeshRenderer* mr : managedMeshRenderers)
+	for (MeshRenderer* mr : sceneMeshRenderers)
 	{
 		if (ImGui::CollapsingHeader(mr->name.c_str()))
 		{

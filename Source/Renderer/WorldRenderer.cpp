@@ -70,23 +70,19 @@ WorldRenderer::WorldRenderer()
 
 	initDefaultAssets();
 	sky = std::make_unique<Sky>();
-	initScene("Assets/Scenes/default.ini");
+	loadScene("Assets/Scenes/default.ini");
 }
 
 WorldRenderer::~WorldRenderer()
 {
+	unloadCurrentScene();
+
 	defaultMeshVb.reset();
 	defaultMeshIb.reset();
 
 	for (ITexture* t : managedTextures)
 		delete t;
 	managedTextures.clear();
-	for (Material* m : managedMaterials)
-		delete m;
-	managedMaterials.clear();
-	for (MeshRenderer* mr : managedMeshRenderers)
-		delete mr;
-	managedMeshRenderers.clear();
 
 	closeShaders();
 }
@@ -123,9 +119,9 @@ void WorldRenderer::update(float delta_time)
 	cameraInputState.deltaPitch = cameraInputState.deltaYaw = 0;
 
 	// Update scene
-	MeshRenderer* box = managedMeshRenderers[1];
+	MeshRenderer* box = sceneMeshRenderers[1];
 	box->setTransform(Transform(XMFLOAT3(-1.5f, 1.5f, 0.0f), XMFLOAT3(0.0f, time * 0.05f, 0.0f)));
-	MeshRenderer* sphere = managedMeshRenderers[2];
+	MeshRenderer* sphere = sceneMeshRenderers[2];
 	sphere->setTransform(Transform(XMFLOAT3(1.5f, 1.5f, 0.0f), XMFLOAT3(0.0f, time * 0.05f, 0.0f)));
 }
 
@@ -327,7 +323,7 @@ bool WorldRenderer::loadMesh(const std::string& name, std::vector<StandardVertex
 {
 	if (!modelsIni.has(name))
 	{
-		PLOG_WARNING << "No model found with name: " << name;
+		PLOG_ERROR << "No model found with name: " << name;
 		return false;
 	}
 
@@ -413,23 +409,23 @@ bool WorldRenderer::loadMeshToMeshRenderer(const std::string& name, MeshRenderer
 	{
 		std::vector<StandardVertexData> vertexData;
 		std::vector<unsigned short> indexData;
-
 		if (!loadMesh(name, vertexData, indexData))
 			return false;
-
 		mesh_renderer.loadIndices((unsigned int)indexData.size(), indexData.data());
 		mesh_renderer.loadVertices((unsigned int)vertexData.size(), sizeof(vertexData[0]), vertexData.data());
+		return true;
 	};
 
 	if (lem == LoadExecutionMode::ASYNC)
+	{
 		threadPool->enqueue(load);
+		return true;
+	}
 	else
-		load();
-
-	return true;
+		return load();
 }
 
-void WorldRenderer::initScene(const char* scene_file)
+void WorldRenderer::loadScene(const std::string& scene_file)
 {
 	currentSceneIniFile = std::make_unique<mINI::INIFile>(scene_file);
 	if (!currentSceneIniFile->read(currentSceneIni))
@@ -437,6 +433,7 @@ void WorldRenderer::initScene(const char* scene_file)
 		PLOG_ERROR << "Couldn't find scene file: " << scene_file;
 		return;
 	}
+	currentSceneIniFilePath = scene_file;
 
 	std::map<std::string, ITexture*> texturePathMap;
 
@@ -446,14 +443,14 @@ void WorldRenderer::initScene(const char* scene_file)
 
 		std::string materialName = elemProperties["material"];
 		Material* material = nullptr;
-		auto it = std::find_if(managedMaterials.begin(), managedMaterials.end(), [&materialName](Material* m) { return materialName == m->name; });
-		if (it != managedMaterials.end())
+		auto it = std::find_if(sceneMaterials.begin(), sceneMaterials.end(), [&materialName](Material* m) { return materialName == m->name; });
+		if (it != sceneMaterials.end())
 			material = *it;
 		else
 		{
 			if (!materialsIni.has(materialName))
 			{
-				PLOG_WARNING << "No material found with name: " << materialName;
+				PLOG_ERROR << "No material found with name: " << materialName;
 				material = new Material(materialName.c_str(), { drv->getErrorShader(), drv->getErrorShader() });
 			}
 			else
@@ -471,16 +468,16 @@ void WorldRenderer::initScene(const char* scene_file)
 					{
 						tex = loadTextureFromPng(texturePaths[i].c_str(), i == 0); // This is ugly :(
 						texturePathMap[texturePaths[i]] = tex;
-						managedTextures.push_back(tex);
+						sceneTextures.push_back(tex);
 					}
 					material->setTexture(ShaderStage::PS, i, tex, (MaterialTexture::Purpose)i); // This is even uglier :((
 				}
 			}
-			managedMaterials.push_back(material);
+			sceneMaterials.push_back(material);
 		}
 
 		MeshRenderer* mr = new MeshRenderer(sceneElem.first.c_str(), material, standardInputLayout);
-		managedMeshRenderers.push_back(mr);
+		sceneMeshRenderers.push_back(mr);
 
 		std::string modelName = elemProperties["model"];
 		loadMeshToMeshRenderer(modelName, *mr);
@@ -512,6 +509,19 @@ void WorldRenderer::initScene(const char* scene_file)
 	}
 }
 
+void WorldRenderer::unloadCurrentScene()
+{
+	for (MeshRenderer* mr : sceneMeshRenderers)
+		delete mr;
+	sceneMeshRenderers.clear();
+	for (Material* m : sceneMaterials)
+		delete m;
+	sceneMaterials.clear();
+	for (ITexture* t : sceneTextures)
+		delete t;
+	sceneTextures.clear();
+}
+
 void WorldRenderer::performShadowPass(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix)
 {
 	PROFILE_SCOPE("ShadowPass");
@@ -531,7 +541,7 @@ void WorldRenderer::performShadowPass(const XMMATRIX& lightViewMatrix, const XMM
 	drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
 	drv->setConstantBuffer(ShaderStage::PS, 1, perCameraCb->getId());
 
-	for (MeshRenderer* mr : managedMeshRenderers)
+	for (MeshRenderer* mr : sceneMeshRenderers)
 		mr->render(RenderPass::SHADOW);
 }
 
@@ -571,7 +581,7 @@ void WorldRenderer::performForwardPass()
 
 	drv->setTexture(ShaderStage::PS, 2, shadowMap->getId(), true);
 
-	for (MeshRenderer* mr : managedMeshRenderers)
+	for (MeshRenderer* mr : sceneMeshRenderers)
 		mr->render(RenderPass::FORWARD);
 
 	drv->setTexture(ShaderStage::PS, 2, BAD_RESID, true);
