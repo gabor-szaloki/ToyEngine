@@ -74,6 +74,7 @@ namespace drv_d3d11
 		void setSettings(const DriverSettings& new_settings) override;
 		void recompileShaders() override;
 		void setErrorShaderDesc(const ShaderSetDesc& desc) override;
+		ResId getErrorShader() override;
 
 		ID3D11Device& getDevice() { return *device; }
 		ID3D11DeviceContext& getContext() { return *context; }

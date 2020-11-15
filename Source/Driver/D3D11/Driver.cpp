@@ -123,15 +123,6 @@ IBuffer* Driver::createBuffer(const BufferDesc& desc)
 	return new Buffer(desc);
 }
 
-template<typename T>
-static void destroy_resource(ResId id, std::map<ResId, T*>& from)
-{
-	assert(id != BAD_RESID);
-	assert(from.find(id) != from.end());
-	delete from[id];
-	from.erase(id);
-}
-
 ResId Driver::createRenderState(const RenderStateDesc& desc)
 {
 	RenderState* rs = new RenderState(desc);
@@ -532,6 +523,11 @@ void Driver::setErrorShaderDesc(const ShaderSetDesc& desc)
 {
 	ResId errorShaderResId = createShaderSet(desc);
 	errorShader.reset(shaders[errorShaderResId]);
+}
+
+ResId Driver::getErrorShader()
+{
+	return errorShader->getId();
 }
 
 template<typename T>

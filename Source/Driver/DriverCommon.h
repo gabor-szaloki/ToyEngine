@@ -1,6 +1,7 @@
 #pragma once
 
 #include <float.h>
+#include <string>
 #include "TexFmt.h"
 #include "DriverConsts.h"
 #include "DriverSettings.h"
@@ -53,35 +54,35 @@ struct SamplerDesc
 
 struct TextureDesc
 {
-const char* name = "unnamedtex";
-unsigned int width = 0;
-unsigned int height = 0;
-TexFmt format = TexFmt::R8G8B8A8_UNORM;
-TexFmt srvFormatOverride = TexFmt::INVALID;
-TexFmt uavFormatOverride = TexFmt::INVALID;
-TexFmt rtvFormatOverride = TexFmt::INVALID;
-TexFmt dsvFormatOverride = TexFmt::INVALID;
-unsigned int mips = 1;
-ResourceUsage usageFlags = ResourceUsage::DEFAULT;
-unsigned int bindFlags = 0;
-unsigned int cpuAccessFlags = 0;
-unsigned int miscFlags = 0;
-bool hasSampler = true;
-SamplerDesc samplerDesc;
+	std::string name = "unnamedtex";
+	unsigned int width = 0;
+	unsigned int height = 0;
+	TexFmt format = TexFmt::R8G8B8A8_UNORM;
+	TexFmt srvFormatOverride = TexFmt::INVALID;
+	TexFmt uavFormatOverride = TexFmt::INVALID;
+	TexFmt rtvFormatOverride = TexFmt::INVALID;
+	TexFmt dsvFormatOverride = TexFmt::INVALID;
+	unsigned int mips = 1;
+	ResourceUsage usageFlags = ResourceUsage::DEFAULT;
+	unsigned int bindFlags = 0;
+	unsigned int cpuAccessFlags = 0;
+	unsigned int miscFlags = 0;
+	bool hasSampler = true;
+	SamplerDesc samplerDesc;
 
-TextureDesc() {};
-TextureDesc(
-	const char* name_, unsigned int width_, unsigned int height_,
-	TexFmt format_ = TexFmt::R8G8B8A8_UNORM, unsigned int mips_ = 1,
-	ResourceUsage usage_flags = ResourceUsage::DEFAULT,
-	unsigned int bind_flags = 0, unsigned int cpu_access_flags = 0, unsigned int misc_flags = 0, bool has_sampler = true) :
-	name(name_), width(width_), height(height_), format(format_), mips(mips_), usageFlags(usage_flags),
-	bindFlags(bind_flags), cpuAccessFlags(cpu_access_flags), miscFlags(misc_flags), hasSampler(has_sampler) {}
+	TextureDesc() {};
+	TextureDesc(
+		const std::string& name_, unsigned int width_, unsigned int height_,
+		TexFmt format_ = TexFmt::R8G8B8A8_UNORM, unsigned int mips_ = 1,
+		ResourceUsage usage_flags = ResourceUsage::DEFAULT,
+		unsigned int bind_flags = 0, unsigned int cpu_access_flags = 0, unsigned int misc_flags = 0, bool has_sampler = true) :
+		name(name_), width(width_), height(height_), format(format_), mips(mips_), usageFlags(usage_flags),
+		bindFlags(bind_flags), cpuAccessFlags(cpu_access_flags), miscFlags(misc_flags), hasSampler(has_sampler) {}
 };
 
 struct BufferDesc
 {
-	const char* name = "unnamedbuf";
+	std::string name = "unnamedbuf";
 	unsigned int elementByteSize = 0;
 	unsigned int numElements = 0;
 	ResourceUsage usageFlags = ResourceUsage::DEFAULT;
@@ -92,7 +93,7 @@ struct BufferDesc
 
 	BufferDesc() {};
 	BufferDesc(
-		const char* name_, unsigned int element_byte_size, unsigned int num_elements,
+		const std::string& name_, unsigned int element_byte_size, unsigned int num_elements,
 		ResourceUsage usage_flags = ResourceUsage::DEFAULT,
 		unsigned int bind_flags = 0, unsigned int cpu_access_flags = 0, unsigned int misc_flags = 0) :
 		name(name_), elementByteSize(element_byte_size), numElements(num_elements), usageFlags(usage_flags),

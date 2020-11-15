@@ -53,4 +53,5 @@ public:
 	virtual void setSettings(const DriverSettings& new_settings) = 0;
 	virtual void recompileShaders() = 0;
 	virtual void setErrorShaderDesc(const ShaderSetDesc& desc) = 0;
+	virtual ResId getErrorShader() = 0;
 };

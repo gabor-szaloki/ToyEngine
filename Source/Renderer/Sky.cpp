@@ -10,10 +10,10 @@ namespace ImGui
 	bool ColorEdit3Srgb(const char* label, float col[3], ImGuiColorEditFlags flags = 0)
 	{
 		for (int i = 0; i < 3; i++)
-			col[i] = glm::pow(col[i], 1.0f/2.2f);
+			col[i] = powf(col[i], 1.0f/2.2f);
 		bool result = ColorEdit3(label, col, flags);
 		for (int i = 0; i < 3; i++)
-			col[i] = glm::pow(col[i], 2.2f);
+			col[i] = powf(col[i], 2.2f);
 		return result;
 	}
 }

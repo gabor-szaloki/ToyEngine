@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include "RendererCommon.h"
 #include "Transform.h"
@@ -11,7 +12,7 @@ class Material;
 class MeshRenderer
 {
 public:
-	MeshRenderer(const char* name_, Material* material_, ResId input_layout_id = BAD_RESID);
+	MeshRenderer(const std::string& name_, Material* material_, ResId input_layout_id = BAD_RESID);
 	void setInputLayout(ResId res_id);
 	void loadVertices(unsigned int num_vertices, unsigned int vertex_byte_size, void* data);
 	void loadIndices(unsigned int num_indices, void* data);
@@ -28,7 +29,7 @@ public:
 	void setScale(float scale) { transform.scale = scale; transformMatrix = transform.getMatrix(); }
 	const XMMATRIX& getTransformMatrix() const { return transformMatrix; }
 
-	const char* name = nullptr;
+	std::string name;
 
 private:
 	Transform transform;

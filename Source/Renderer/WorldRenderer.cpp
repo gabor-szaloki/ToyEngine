@@ -5,7 +5,6 @@
 #include <3rdParty/glm/glm.hpp>
 #include <3rdParty/LodePNG/lodepng.h>
 #include <3rdParty/tinyobjloader/tiny_obj_loader.h>
-#include <3rdParty/mini/ini.h>
 #include <Driver/ITexture.h>
 #include <Driver/IBuffer.h>
 #include <Util/ThreadPool.h>
@@ -49,13 +48,29 @@ WorldRenderer::WorldRenderer()
 	forwaredRsDesc.rasterizerDesc.wireframe = true;
 	forwardWireframeRenderStateId = drv->createRenderState(forwaredRsDesc);
 
-	initDefaultAssets();
-
 	setShadowResolution(2048);
 	setShadowBias(50000, 1.0f);
 	initResolutionDependentResources();
 
-	initScene();
+	const char* materialsIniPath = "Assets/materials.ini";
+	materialsIniFile = std::make_unique<mINI::INIFile>(materialsIniPath);
+	if (!materialsIniFile->read(materialsIni))
+	{
+		PLOG_ERROR << "Couldn't materials ini file: " << materialsIniPath;
+		return;
+	}
+
+	const char* modelsIniPath = "Assets/models.ini";
+	modelsIniFile = std::make_unique<mINI::INIFile>(modelsIniPath);
+	if (!modelsIniFile->read(modelsIni))
+	{
+		PLOG_ERROR << "Couldn't models ini file: " << modelsIniPath;
+		return;
+	}
+
+	initDefaultAssets();
+	sky = std::make_unique<Sky>();
+	initScene("Assets/Scenes/default.ini");
 }
 
 WorldRenderer::~WorldRenderer()
@@ -114,8 +129,7 @@ void WorldRenderer::update(float delta_time)
 	sphere->setTransform(Transform(XMFLOAT3(1.5f, 1.5f, 0.0f), XMFLOAT3(0.0f, time * 0.05f, 0.0f)));
 }
 
-template<typename T>
-static XMFLOAT4 get_final_light_color(const T& color, float intensity)
+static XMFLOAT4 get_final_light_color(const XMFLOAT4& color, float intensity)
 {
 	return XMFLOAT4(color.x * intensity, color.y * intensity, color.z * intensity, 1.0f);
 }
@@ -255,8 +269,8 @@ void WorldRenderer::closeShaders()
 
 void WorldRenderer::initDefaultAssets()
 {
-	ITexture* stubColor = loadTextureFromPng("Assets/Textures/gray_base.png", true, true);
-	ITexture* stubNormal = loadTextureFromPng("Assets/Textures/flat_nrm.png", false, true);
+	ITexture* stubColor = loadTextureFromPng("Assets/Textures/gray_base.png", true, LoadExecutionMode::SYNC);
+	ITexture* stubNormal = loadTextureFromPng("Assets/Textures/flat_nrm.png", false, LoadExecutionMode::SYNC);
 	managedTextures.push_back(stubColor);
 	managedTextures.push_back(stubNormal);
 	defaultTextures[(int)MaterialTexture::Purpose::COLOR] = stubColor;
@@ -265,7 +279,7 @@ void WorldRenderer::initDefaultAssets()
 
 	std::vector<StandardVertexData> defaultMeshVertexData;
 	std::vector<unsigned short> defaultMeshIndexData;
-	loadMeshFromObj("Assets/Models/box.obj", defaultMeshVertexData, defaultMeshIndexData);
+	loadMesh("Box", defaultMeshVertexData, defaultMeshIndexData);
 	BufferDesc vbDesc("defaultMeshVb", sizeof(defaultMeshVertexData[0]), (unsigned int)defaultMeshVertexData.size(), ResourceUsage::DEFAULT, BIND_VERTEX_BUFFER);
 	vbDesc.initialData = defaultMeshVertexData.data();
 	defaultMeshVb.reset(drv->createBuffer(vbDesc));
@@ -277,7 +291,7 @@ void WorldRenderer::initDefaultAssets()
 	defaultInputLayout = standardInputLayout;
 }
 
-ITexture* WorldRenderer::loadTextureFromPng(const char* path, bool srgb, bool sync)
+ITexture* WorldRenderer::loadTextureFromPng(const std::string& path, bool srgb, LoadExecutionMode lem)
 {
 	ITexture* texture = drv->createTextureStub();
 
@@ -301,17 +315,26 @@ ITexture* WorldRenderer::loadTextureFromPng(const char* path, bool srgb, bool sy
 		texture->generateMips();
 	};
 
-	if (sync)
-		load();
-	else
+	if (lem == LoadExecutionMode::ASYNC)
 		threadPool->enqueue(load);
+	else
+		load();
 
 	return texture;
 }
 
-bool WorldRenderer::loadMeshFromObj(const char* path, std::vector<StandardVertexData>& vertex_data, std::vector<unsigned short>& index_data)
+bool WorldRenderer::loadMesh(const std::string& name, std::vector<StandardVertexData>& vertex_data, std::vector<unsigned short>& index_data)
 {
-	PLOG_INFO << "Loading mesh from file: " << path;
+	if (!modelsIni.has(name))
+	{
+		PLOG_WARNING << "No model found with name: " << name;
+		return false;
+	}
+
+	std::string path = modelsIni[name]["path"];
+	float importScale = modelsIni[name]["scale"].length() > 0 ? std::stof(modelsIni[name]["scale"]) : 1.0f;
+
+	PLOG_INFO << "Loading mesh '" << name << "' from file: " << path;
 
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -320,7 +343,7 @@ bool WorldRenderer::loadMeshFromObj(const char* path, std::vector<StandardVertex
 	std::string warn;
 	std::string err;
 
-	bool success = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path);
+	bool success = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.c_str());
 	if (!warn.empty())
 		PLOG_WARNING << warn;
 	if (!err.empty())
@@ -339,18 +362,6 @@ bool WorldRenderer::loadMeshFromObj(const char* path, std::vector<StandardVertex
 	{
 		PLOG_ERROR << "Error loading mesh. \"attrib.vertices.size() % 3 != 0\"";
 		return false;
-	}
-
-	std::string pathStr(path);
-	std::string iniPath = pathStr.substr(0, pathStr.find_last_of('.')) + ".ini";
-	mINI::INIFile iniFile(iniPath);
-	mINI::INIStructure ini;
-	float importScale = 1.0f;
-	if (iniFile.read(ini))
-	{
-		mINI::INIMap importSettings = ini["import"];
-		if (importSettings.has("scale"))
-			importScale = std::stof(importSettings["scale"]);
 	}
 
 	index_data.resize(numFaces * NUM_VERTICES_PER_FACE);
@@ -372,19 +383,19 @@ bool WorldRenderer::loadMeshFromObj(const char* path, std::vector<StandardVertex
 
 			index_data[f * NUM_VERTICES_PER_FACE + v] = idx.vertex_index;
 			StandardVertexData& vertex = vertex_data[idx.vertex_index];
-			vertex.position.x = attrib.vertices [3 * idx.vertex_index   + 0] * importScale;
-			vertex.position.y = attrib.vertices [3 * idx.vertex_index   + 1] * importScale;
-			vertex.position.z = attrib.vertices [3 * idx.vertex_index   + 2] * importScale;
-			vertex.normal.x   = attrib.normals  [3 * idx.normal_index   + 0];
-			vertex.normal.y   = attrib.normals  [3 * idx.normal_index   + 1];
-			vertex.normal.z   = attrib.normals  [3 * idx.normal_index   + 2];
-			vertex.uv.x       = attrib.texcoords[2 * idx.texcoord_index + 0];
-			vertex.uv.y       = attrib.texcoords[2 * idx.texcoord_index + 1];
+			vertex.position.x = attrib.vertices[3 * idx.vertex_index + 0] * importScale;
+			vertex.position.y = attrib.vertices[3 * idx.vertex_index + 1] * importScale;
+			vertex.position.z = attrib.vertices[3 * idx.vertex_index + 2] * importScale;
+			vertex.normal.x = attrib.normals[3 * idx.normal_index + 0];
+			vertex.normal.y = attrib.normals[3 * idx.normal_index + 1];
+			vertex.normal.z = attrib.normals[3 * idx.normal_index + 2];
+			vertex.uv.x = attrib.texcoords[2 * idx.texcoord_index + 0];
+			vertex.uv.y = attrib.texcoords[2 * idx.texcoord_index + 1];
 
 			XMFLOAT4 colorF4;
-			colorF4.x = attrib.colors   [3 * idx.vertex_index   + 0];
-			colorF4.y = attrib.colors   [3 * idx.vertex_index   + 1];
-			colorF4.z = attrib.colors   [3 * idx.vertex_index   + 2];
+			colorF4.x = attrib.colors[3 * idx.vertex_index + 0];
+			colorF4.y = attrib.colors[3 * idx.vertex_index + 1];
+			colorF4.z = attrib.colors[3 * idx.vertex_index + 2];
 			colorF4.w = attrib.texcoord_ws.size() == 0 ? 1.0f : attrib.texcoord_ws[idx.vertex_index];
 			vertex.color = (((unsigned int)(colorF4.x * 255u)) & 0xFFu) <<  0 |
 						   (((unsigned int)(colorF4.y * 255u)) & 0xFFu) <<  8 |
@@ -392,87 +403,113 @@ bool WorldRenderer::loadMeshFromObj(const char* path, std::vector<StandardVertex
 						   (((unsigned int)(colorF4.w * 255u)) & 0xFFu) << 24;
 		}
 	}
+	
+	return true;
+}
+
+bool WorldRenderer::loadMeshToMeshRenderer(const std::string& name, MeshRenderer& mesh_renderer, LoadExecutionMode lem)
+{
+	auto load = [&, name]
+	{
+		std::vector<StandardVertexData> vertexData;
+		std::vector<unsigned short> indexData;
+
+		if (!loadMesh(name, vertexData, indexData))
+			return false;
+
+		mesh_renderer.loadIndices((unsigned int)indexData.size(), indexData.data());
+		mesh_renderer.loadVertices((unsigned int)vertexData.size(), sizeof(vertexData[0]), vertexData.data());
+	};
+
+	if (lem == LoadExecutionMode::ASYNC)
+		threadPool->enqueue(load);
+	else
+		load();
 
 	return true;
 }
 
-bool WorldRenderer::loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer& mesh_renderer)
+void WorldRenderer::initScene(const char* scene_file)
 {
-	std::vector<StandardVertexData> vertexData;
-	std::vector<unsigned short> indexData;
+	currentSceneIniFile = std::make_unique<mINI::INIFile>(scene_file);
+	if (!currentSceneIniFile->read(currentSceneIni))
+	{
+		PLOG_ERROR << "Couldn't find scene file: " << scene_file;
+		return;
+	}
 
-	if (!loadMeshFromObj(path, vertexData, indexData))
-		return false;
+	std::map<std::string, ITexture*> texturePathMap;
 
-	mesh_renderer.loadIndices((unsigned int)indexData.size(), indexData.data());
-	mesh_renderer.loadVertices((unsigned int)vertexData.size(), sizeof(vertexData[0]), vertexData.data());
+	for (auto& sceneElem : currentSceneIni)
+	{
+		auto& elemProperties = currentSceneIni[sceneElem.first];
 
-	return true;
-}
+		std::string materialName = elemProperties["material"];
+		Material* material = nullptr;
+		auto it = std::find_if(managedMaterials.begin(), managedMaterials.end(), [&materialName](Material* m) { return materialName == m->name; });
+		if (it != managedMaterials.end())
+			material = *it;
+		else
+		{
+			if (!materialsIni.has(materialName))
+			{
+				PLOG_WARNING << "No material found with name: " << materialName;
+				material = new Material(materialName.c_str(), { drv->getErrorShader(), drv->getErrorShader() });
+			}
+			else
+			{
+				material = new Material(materialName.c_str(), standardShaders);
+				std::array<std::string, 2> texturePaths;
+				texturePaths[0] = materialsIni[materialName]["texture0"];
+				texturePaths[1] = materialsIni[materialName]["texture1"];
+				for (int i = 0; i < texturePaths.size(); i++)
+				{
+					ITexture* tex;
+					if (texturePathMap.find(texturePaths[i]) != texturePathMap.end())
+						tex = texturePathMap[texturePaths[i]];
+					else
+					{
+						tex = loadTextureFromPng(texturePaths[i].c_str(), i == 0); // This is ugly :(
+						texturePathMap[texturePaths[i]] = tex;
+						managedTextures.push_back(tex);
+					}
+					material->setTexture(ShaderStage::PS, i, tex, (MaterialTexture::Purpose)i); // This is even uglier :((
+				}
+			}
+			managedMaterials.push_back(material);
+		}
 
-void WorldRenderer::loadMeshFromObjToMeshRendererAsync(const char* path, MeshRenderer& mesh_renderer)
-{
-	threadPool->enqueue([&, path] { loadMeshFromObjToMeshRenderer(path, mesh_renderer); });
-}
+		MeshRenderer* mr = new MeshRenderer(sceneElem.first.c_str(), material, standardInputLayout);
+		managedMeshRenderers.push_back(mr);
 
-void WorldRenderer::initScene()
-{
-	sky = std::make_unique<Sky>();
+		std::string modelName = elemProperties["model"];
+		loadMeshToMeshRenderer(modelName, *mr);
 
-	std::array<ITexture*, 2> testMaterialTextures;
-	testMaterialTextures[0] = loadTextureFromPng("Assets/Textures/test_base.png", true);
-	testMaterialTextures[1] = loadTextureFromPng("Assets/Textures/test_nrm.png", false);
-	managedTextures.insert(managedTextures.end(), testMaterialTextures.begin(), testMaterialTextures.end());
+		auto strToVector = [](std::string s)
+		{
+			if (s.length() == 0)
+				return XMVectorZero();
+			char delimiter = ',';
+			size_t pos = s.find(delimiter);
+			assert(pos != std::string::npos); // No comma
+			float x = std::stof(s.substr(0, pos));
+			s.erase(0, pos + 1);
+			pos = s.find(delimiter);
+			assert(pos != std::string::npos); // Only 1 comma
+			float y = std::stof(s.substr(0, pos));
+			s.erase(0, pos + 1);
+			pos = s.find(delimiter);
+			assert(pos == std::string::npos); // More than 2 comma
+			float z = std::stof(s.substr(0, pos));
+			return XMVectorSet(x, y, z, 0);
+		};
 
-	std::array<ITexture*, 2> blueTilesMaterialTextures;
-	blueTilesMaterialTextures[0] = loadTextureFromPng("Assets/Textures/Tiles20_base.png", true);
-	blueTilesMaterialTextures[1] = loadTextureFromPng("Assets/Textures/Tiles20_nrm.png", false);
-	managedTextures.insert(managedTextures.end(), blueTilesMaterialTextures.begin(), blueTilesMaterialTextures.end());
-
-	Material* flatGray = new Material(standardShaders);
-	flatGray->setTexture(ShaderStage::PS, 0, defaultTextures[(int)MaterialTexture::Purpose::COLOR]);
-	flatGray->setTexture(ShaderStage::PS, 1, defaultTextures[(int)MaterialTexture::Purpose::NORMAL]);
-	managedMaterials.push_back(flatGray);
-
-	Material* test = new Material(standardShaders);
-	test->setTexture(ShaderStage::PS, 0, testMaterialTextures[0]);
-	test->setTexture(ShaderStage::PS, 1, testMaterialTextures[1], MaterialTexture::Purpose::NORMAL);
-	managedMaterials.push_back(test);
-
-	Material* blueTiles = new Material(standardShaders);
-	blueTiles->setTexture(ShaderStage::PS, 0, blueTilesMaterialTextures[0]);
-	blueTiles->setTexture(ShaderStage::PS, 1, blueTilesMaterialTextures[1], MaterialTexture::Purpose::NORMAL);
-	managedMaterials.push_back(blueTiles);
-
-	MeshRenderer* floor = new MeshRenderer("floor", test, standardInputLayout);
-	loadMeshFromObjToMeshRendererAsync("Assets/Models/plane.obj", *floor);
-	floor->setScale(10.0f);
-	managedMeshRenderers.push_back(floor);
-
-	MeshRenderer* box = new MeshRenderer("box", test, standardInputLayout);
-	loadMeshFromObjToMeshRendererAsync("Assets/Models/box.obj", *box);
-	box->setPosition(-1.5f, 1.5f, 0.0f);
-	managedMeshRenderers.push_back(box);
-
-	MeshRenderer* sphere = new MeshRenderer("sphere", blueTiles, standardInputLayout);
-	loadMeshFromObjToMeshRendererAsync("Assets/Models/sphere.obj", *sphere);
-	sphere->setPosition(1.5f, 1.5f, 0.0f);
-	managedMeshRenderers.push_back(sphere);
-
-	MeshRenderer* teapot = new MeshRenderer("teapot", flatGray, standardInputLayout);
-	teapot->setPosition(-4.5f, 0.5f, -3.0f);
-	loadMeshFromObjToMeshRendererAsync("Assets/Models/UtahTeapot/utah-teapot.obj", *teapot);
-	managedMeshRenderers.push_back(teapot);
-
-	MeshRenderer* bunny = new MeshRenderer("bunny", flatGray, standardInputLayout);
-	bunny->setPosition(-1.5f, 0.0f, -3.0f);
-	loadMeshFromObjToMeshRendererAsync("Assets/Models/StanfordBunny/stanford-bunny.obj", *bunny);
-	managedMeshRenderers.push_back(bunny);
-
-	MeshRenderer* dragon = new MeshRenderer("dragon", flatGray, standardInputLayout);
-	dragon->setPosition(1.5f, 0.0f, -3.0f);
-	loadMeshFromObjToMeshRendererAsync("Assets/Models/StanfordDragon/stanford-dragon.obj", *dragon);
-	managedMeshRenderers.push_back(dragon);
+		Transform tr;
+		tr.position = strToVector(elemProperties["position"]);
+		tr.rotation = strToVector(elemProperties["rotation"]);
+		tr.scale = elemProperties["scale"].length() > 0 ? std::stof(elemProperties["scale"]) : 1.0f;
+		mr->setTransform(tr);
+	}
 }
 
 void WorldRenderer::performShadowPass(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix)

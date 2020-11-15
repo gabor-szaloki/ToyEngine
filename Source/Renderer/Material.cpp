@@ -5,7 +5,7 @@
 
 #include "WorldRenderer.h"
 
-Material::Material(const std::array<ResId, (int)RenderPass::_COUNT>& shaders_)
+Material::Material(const std::string& name_, const std::array<ResId, (int)RenderPass::_COUNT>& shaders_) : name(name_)
 {
 	for (int i = 0; i < (int)RenderPass::_COUNT; i++)
 		shaders[i] = shaders_[i];

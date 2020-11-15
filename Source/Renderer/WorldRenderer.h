@@ -5,8 +5,13 @@
 #include <memory>
 #include <vector>
 #include <array>
-#include <3rdParty/glm/glm.hpp>
+#include <string>
+
+#define MINI_CASE_SENSITIVE
+#include <3rdParty/mini/ini.h>
+
 #include <Driver/IDriver.h>
+
 #include "Camera.h"
 #include "Material.h"
 #include "PostFx.h"
@@ -61,7 +66,7 @@ public:
 	bool showWireframe = false;
 
 	float ambientLightIntensity = 0.5f;
-	glm::vec4 ambientLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+	XMFLOAT4 ambientLightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	std::unique_ptr<Light> mainLight;
 	int shadowDepthBias = 0;
 	float shadowSlopeScaledDepthBias = 0.0f;
@@ -79,11 +84,12 @@ private:
 	void initShaders();
 	void closeShaders();
 	void initDefaultAssets();
-	ITexture* loadTextureFromPng(const char* path, bool srgb, bool sync = false);
-	bool loadMeshFromObj(const char* path, std::vector<StandardVertexData>& vertex_data, std::vector<unsigned short>& index_data);
-	bool loadMeshFromObjToMeshRenderer(const char* path, MeshRenderer& mesh_renderer);
-	void loadMeshFromObjToMeshRendererAsync(const char* path, MeshRenderer& mesh_renderer);
-	void initScene();
+	// TODO: Separate loader code from WorldRenderer
+	enum class LoadExecutionMode { ASYNC, SYNC };
+	ITexture* loadTextureFromPng(const std::string& path, bool srgb, LoadExecutionMode lem = LoadExecutionMode::ASYNC);
+	bool loadMesh(const std::string& name, std::vector<StandardVertexData>& vertex_data, std::vector<unsigned short>& index_data);
+	bool loadMeshToMeshRenderer(const std::string& name, MeshRenderer& mesh_renderer, LoadExecutionMode lem = LoadExecutionMode::ASYNC);
+	void initScene(const char* scene_file);
 	void performShadowPass(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix);
 	void performForwardPass();
 
@@ -106,6 +112,13 @@ private:
 
 	std::array<ResId, (int)RenderPass::_COUNT> standardShaders;
 	ResIdHolder standardInputLayout = BAD_RESID;
+
+	std::unique_ptr<mINI::INIFile> materialsIniFile;
+	mINI::INIStructure materialsIni;
+	std::unique_ptr<mINI::INIFile> modelsIniFile;
+	mINI::INIStructure modelsIni;
+	std::unique_ptr<mINI::INIFile> currentSceneIniFile;
+	mINI::INIStructure currentSceneIni;
 
 	std::vector<ITexture*> managedTextures;
 	std::vector<Material*> managedMaterials;

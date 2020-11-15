@@ -93,17 +93,17 @@ void WorldRenderer::meshRendererGui()
 {
 	for (MeshRenderer* mr : managedMeshRenderers)
 	{
-		if (ImGui::CollapsingHeader(mr->name))
+		if (ImGui::CollapsingHeader(mr->name.c_str()))
 		{
 			Transform tr = mr->getTransform();
 
 			static std::string buf;
 			bool changed = false;
-			buf = "Position##"; buf += mr->name;
+			buf = "Position##" + mr->name;
 			changed |= ImGui::DragFloat3(buf.c_str(), tr.position.m128_f32, 0.1f);
-			buf = "Rotation##"; buf += mr->name;
+			buf = "Rotation##" + mr->name;
 			changed |= ImGui::DragAngle3(buf.c_str(), tr.rotation.m128_f32);
-			buf = "Scale##"; buf += mr->name;
+			buf = "Scale##" + mr->name;
 			changed |= ImGui::DragFloat(buf.c_str(), &tr.scale, 0.1f);
 			if (changed)
 				mr->setTransform(tr);

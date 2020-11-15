@@ -1,8 +1,10 @@
 #pragma once
 
+#include "RendererCommon.h"
+
 #include <array>
 #include <vector>
-#include "RendererCommon.h"
+#include <string>
 
 class ITexture;
 
@@ -18,9 +20,11 @@ struct MaterialTexture
 class Material
 {
 public:
-	Material(const std::array<ResId, (int)RenderPass::_COUNT>& shaders_);
+	Material(const std::string& name_, const std::array<ResId, (int)RenderPass::_COUNT>& shaders_);
 	void setTexture(ShaderStage stage, unsigned int slot, ITexture* tex, MaterialTexture::Purpose purpose = MaterialTexture::Purpose::COLOR);
 	void set(RenderPass render_pass);
+
+	std::string name;
 
 private:
 	std::array<ResId, (int)RenderPass::_COUNT> shaders;

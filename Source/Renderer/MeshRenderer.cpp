@@ -6,7 +6,7 @@
 #include "ConstantBuffers.h"
 #include "WorldRenderer.h"
 
-MeshRenderer::MeshRenderer(const char* name_, Material* material_, ResId input_layout_id)
+MeshRenderer::MeshRenderer(const std::string& name_, Material* material_, ResId input_layout_id)
 	: name(name_), material(material_), inputLayoutId(input_layout_id)
 {
 	BufferDesc cbDesc;

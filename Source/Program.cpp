@@ -311,8 +311,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		PLOG_INFO << "WM_SIZE, clientrect: x:" << clientRect.left << ", y:" << clientRect.top << ", w:" << w << ", h:" << h;
 
 		// Minimize sends WM_SIZE requests with 0 size, which is invalid.
-		w = glm::max(8, w);
-		h = glm::max(8, h);
+		w = std::max(8, w);
+		h = std::max(8, h);
 		wr->onResize(w, h);
 		break;
 	}
