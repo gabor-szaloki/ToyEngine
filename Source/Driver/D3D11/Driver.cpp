@@ -52,6 +52,29 @@ bool Driver::init(void* hwnd, int display_width, int display_height)
 		&scd, &swapchain, &device, nullptr, &context);
 	assert(SUCCEEDED(hr));
 
+	if (creationFlags | D3D11_CREATE_DEVICE_DEBUG)
+	{
+		// Device debug
+		hr = device->QueryInterface(IID_PPV_ARGS(&deviceDebug));
+		assert(SUCCEEDED(hr));
+
+		// DXGI debug
+		HMODULE dxgidebug = LoadLibraryEx("dxgidebug.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+		if (dxgidebug)
+		{
+			typedef HRESULT(WINAPI* LPDXGIGETDEBUGINTERFACE)(REFIID, void**);
+			auto dxgiGetDebugInterface = reinterpret_cast<LPDXGIGETDEBUGINTERFACE>(
+				reinterpret_cast<void*>(GetProcAddress(dxgidebug, "DXGIGetDebugInterface")));
+			if (FAILED(dxgiGetDebugInterface(IID_PPV_ARGS(&dxgiDebug))))
+			{
+				PLOG_ERROR << "Failed to get DXGI debug interface.";
+				dxgiDebug = nullptr;
+			}
+		}
+		else
+			PLOG_ERROR << "Failed to load dxgidebug.dll";
+	}
+
 	initResolutionDependentResources(display_width, display_height);
 
 	// Create default render state
@@ -61,7 +84,7 @@ bool Driver::init(void* hwnd, int display_width, int display_height)
 
 	CONTEXT_LOCK_GUARD
 #if PROFILE_MARKERS_ENABLED
-	hr = context->QueryInterface(__uuidof(perf), reinterpret_cast<void**>(&perf));
+	hr = context->QueryInterface(IID_PPV_ARGS(&perf));
 	assert(SUCCEEDED(hr));
 #endif
 
@@ -75,6 +98,9 @@ bool Driver::init(void* hwnd, int display_width, int display_height)
 
 void Driver::shutdown()
 {
+	context->ClearState();
+	context->Flush();
+
 	ImGui_ImplDX11_Shutdown();
 
 	errorShader.reset();
@@ -83,9 +109,17 @@ void Driver::shutdown()
 	closeResolutionDependentResources();
 	releaseAllResources();
 
+	SAFE_RELEASE(perf);
 	SAFE_RELEASE(swapchain);
 	SAFE_RELEASE(context);
 	SAFE_RELEASE(device);
+	SAFE_RELEASE(deviceDebug);
+
+	if (dxgiDebug != nullptr)
+	{
+		dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_DETAIL);
+		SAFE_RELEASE(dxgiDebug);
+	}
 }
 
 void Driver::resize(int display_width, int display_height)
@@ -627,6 +661,8 @@ bool Driver::initResolutionDependentResources(int display_width, int display_hei
 		desc.miscFlags = td.MiscFlags;
 		desc.hasSampler = false;
 		backbuffer = std::make_unique<Texture>(&desc, backBufferTexture);
+
+		set_debug_name(backBufferTexture, desc.name);
 	}
 
 	return true;

@@ -34,6 +34,7 @@ Texture::Texture(const TextureDesc* desc_, ID3D11Texture2D* tex) : resource(tex)
 			D3D11_TEXTURE2D_DESC td = convert_desc(desc);
 			HRESULT hr = Driver::get().getDevice().CreateTexture2D(&td, nullptr, &resource);
 			assert(SUCCEEDED(hr));
+			set_debug_name(resource, desc.name);
 		}
 		else
 		{
@@ -96,6 +97,7 @@ void Texture::recreate(const TextureDesc& desc_)
 	D3D11_TEXTURE2D_DESC td = convert_desc(desc);
 	HRESULT hr = Driver::get().getDevice().CreateTexture2D(&td, nullptr, &resource);
 	assert(SUCCEEDED(hr));
+	set_debug_name(resource, desc.name);
 
 	createViews();
 	createSampler();

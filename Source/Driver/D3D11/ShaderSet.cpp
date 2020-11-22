@@ -1,5 +1,8 @@
 #include "ShaderSet.h"
 
+#include <d3dcompiler.h>
+#pragma comment(lib,"d3dcompiler.lib")
+
 #include <Common.h>
 
 #include <assert.h>

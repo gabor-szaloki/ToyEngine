@@ -3,8 +3,8 @@
 #include <d3d11.h>
 #include <d3d11_1.h>
 #pragma comment (lib, "d3d11.lib")
-#include <d3dcompiler.h>
-#pragma comment(lib,"d3dcompiler.lib")
+#pragma comment( lib, "dxguid.lib")
+#include <dxgidebug.h>
 
 #include <memory>
 #include <map>
@@ -105,6 +105,9 @@ namespace drv_d3d11
 		ID3D11DeviceContext* context;
 		IDXGISwapChain* swapchain;
 		ID3DUserDefinedAnnotation* perf;
+		ID3D11Debug* deviceDebug = nullptr;
+		IDXGIInfoQueue* dxgiInfoQueue = nullptr;
+		IDXGIDebug* dxgiDebug = nullptr;
 		std::unique_ptr<Texture> backbuffer;
 
 		std::mutex contextMutex;
@@ -121,4 +124,10 @@ namespace drv_d3d11
 		std::array<Texture*, D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT> currentRenderTargets;
 		Texture* currentDepthTarget = nullptr;
 	};
+
+	inline void set_debug_name(ID3D11DeviceChild* child, const std::string& name)
+	{
+		if (child != nullptr)
+			child->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)name.size(), name.c_str());
+	}
 }

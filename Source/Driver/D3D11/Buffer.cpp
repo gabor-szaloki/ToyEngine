@@ -32,6 +32,8 @@ Buffer::Buffer(const BufferDesc& desc_) : desc(desc_)
 		assert(SUCCEEDED(hr));
 	}
 
+	set_debug_name(resource, desc.name);
+
 	createViews();
 	
 	id = Driver::get().registerBuffer(this);
