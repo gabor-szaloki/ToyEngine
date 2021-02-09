@@ -34,6 +34,8 @@ static void driver_settings_window()
 
 	changed |= ImGui::SliderInt("Texture filtering anisotropy", (int*)&drvSettings.textureFilteringAnisotropy, 0, 16);
 	changed |= ImGui::Checkbox("V-sync", &drvSettings.vsync);
+	changed |= ImGui::SliderInt("FPS limit", &drvSettings.fpsLimit, 0, 360); // fpsLimit is handled outside of driver
+
 	if (ImGui::Button("Recompile shaders"))
 		drv->recompileShaders();
 

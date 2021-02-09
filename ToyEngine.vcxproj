@@ -391,7 +391,9 @@
     <ClInclude Include="Source\Renderer\Transform.h" />
     <ClInclude Include="Source\Renderer\WorldRenderer.h" />
     <ClInclude Include="Source\Util\AutoImGui.h" />
+    <ClInclude Include="Source\Util\FpsLimiter.h" />
     <ClInclude Include="Source\Util\ImGuiLogWindow.h" />
+    <ClInclude Include="Source\Util\PreciseSleep.h" />
     <ClInclude Include="Source\Util\ThreadPool.h" />
   </ItemGroup>
   <ItemGroup>

@@ -13,6 +13,7 @@
 #include <Renderer/WorldRenderer.h>
 #include <Util/AutoImGui.h>
 #include <Util/ImGuiLogWindow.h>
+#include <Util/FpsLimiter.h>
 
 #include "Common.h"
 
@@ -151,6 +152,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	MSG msg;
 	while (true)
 	{
+		FpsLimiter limiter(drv->getSettings().fpsLimit);
+
 		while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&msg);
