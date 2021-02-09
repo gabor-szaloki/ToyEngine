@@ -14,6 +14,8 @@
 #include "Light.h"
 #include "Sky.h"
 
+static constexpr bool ASYNC_LOADING_ENABLED = true;
+
 WorldRenderer::WorldRenderer()
 {
 	camera.SetEye(XMVectorSet(-4.5f, 3.0f, -6.0f, 1.0f));
@@ -311,7 +313,7 @@ ITexture* WorldRenderer::loadTextureFromPng(const std::string& path, bool srgb, 
 		texture->generateMips();
 	};
 
-	if (lem == LoadExecutionMode::ASYNC)
+	if (lem == LoadExecutionMode::ASYNC && ASYNC_LOADING_ENABLED)
 		threadPool->enqueue(load);
 	else
 		load();
@@ -416,7 +418,7 @@ bool WorldRenderer::loadMeshToMeshRenderer(const std::string& name, MeshRenderer
 		return true;
 	};
 
-	if (lem == LoadExecutionMode::ASYNC)
+	if (lem == LoadExecutionMode::ASYNC && ASYNC_LOADING_ENABLED)
 	{
 		threadPool->enqueue(load);
 		return true;
