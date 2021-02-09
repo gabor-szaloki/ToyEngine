@@ -12,8 +12,6 @@
 #include "ShaderSet.h"
 #include "InputLayout.h"
 
-#define PROFILE_MARKERS_ENABLED _DEBUG
-
 using namespace drv_d3d11;
 
 static ResId nextAvailableResId = 0;
@@ -52,7 +50,7 @@ bool Driver::init(void* hwnd, int display_width, int display_height)
 		&scd, &swapchain, &device, nullptr, &context);
 	assert(SUCCEEDED(hr));
 
-	if (creationFlags | D3D11_CREATE_DEVICE_DEBUG)
+	if (creationFlags & D3D11_CREATE_DEVICE_DEBUG)
 	{
 		// Device debug
 		hr = device->QueryInterface(IID_PPV_ARGS(&deviceDebug));
