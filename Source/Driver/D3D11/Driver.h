@@ -15,6 +15,7 @@
 
 #define SAFE_RELEASE(resource) { if (resource != nullptr) { resource->Release(); resource = nullptr; } }
 #define CONTEXT_LOCK_GUARD const std::scoped_lock<std::mutex> contextLock(Driver::get().getContextMutex());
+#define RESOURCE_LOCK_GUARD const std::scoped_lock<std::mutex> resourceLock(Driver::get().getResourceMutex());
 
 namespace drv_d3d11
 {
@@ -79,6 +80,7 @@ namespace drv_d3d11
 		ID3D11Device& getDevice() { return *device; }
 		ID3D11DeviceContext& getContext() { return *context; }
 		std::mutex& getContextMutex() { return contextMutex; }
+		std::mutex& getResourceMutex() { return resourceMutex; }
 
 		ResId registerTexture(Texture* tex);
 		void unregisterTexture(ResId id);
@@ -111,6 +113,7 @@ namespace drv_d3d11
 		std::unique_ptr<Texture> backbuffer;
 
 		std::mutex contextMutex;
+		std::mutex resourceMutex;
 
 		std::map<ResId, Texture*> textures;
 		std::map<ResId, Buffer*> buffers;

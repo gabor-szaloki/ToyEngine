@@ -39,8 +39,8 @@ bool Driver::init(void* hwnd, int display_width, int display_height)
 	scd.OutputWindow = (HWND)hwnd;
 	scd.SampleDesc.Count = 1;
 	scd.Windowed = true;
-	//scd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // RenderDoc fails to capture with FLIP_DISCARD :(
-	scd.Flags = 0;
+	scd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
 	unsigned int creationFlags = 0;
 #if defined(_DEBUG)
@@ -131,8 +131,12 @@ void Driver::resize(int display_width, int display_height)
 		context->OMSetRenderTargets(0, nullptr, nullptr);
 	}
 	closeResolutionDependentResources();
-	HRESULT hr = swapchain->ResizeBuffers(0, display_width, display_height, DXGI_FORMAT_UNKNOWN, 0);
+
+	DXGI_SWAP_CHAIN_DESC scd{};
+	swapchain->GetDesc(&scd);
+	HRESULT hr = swapchain->ResizeBuffers(0, display_width, display_height, DXGI_FORMAT_UNKNOWN, scd.Flags);
 	assert(SUCCEEDED(hr));
+
 	initResolutionDependentResources(display_width, display_height);
 }
 
@@ -182,10 +186,15 @@ ResId Driver::createInputLayout(const InputLayoutElementDesc* descs, unsigned in
 template<typename T>
 bool erase_if_found(ResId id, std::map<ResId, T*>& from)
 {
-	auto it = from.find(id);
-	if (it == from.end())
-		return false;
-	delete it->second;
+	T* res;
+	{
+		RESOURCE_LOCK_GUARD
+		auto it = from.find(id);
+		if (it == from.end())
+			return false;
+		res = it->second;
+	}
+	delete res;
 	// resource will remove itself from the pool from dtor
 	return true;
 }
@@ -207,6 +216,7 @@ void Driver::destroyResource(ResId res_id)
 
 void Driver::setInputLayout(ResId res_id)
 {
+	RESOURCE_LOCK_GUARD
 	assert(res_id != BAD_RESID);
 	assert(inputLayouts.find(res_id) != inputLayouts.end());
 	CONTEXT_LOCK_GUARD
@@ -215,6 +225,7 @@ void Driver::setInputLayout(ResId res_id)
 
 void Driver::setIndexBuffer(ResId res_id)
 {
+	RESOURCE_LOCK_GUARD
 	assert(res_id != BAD_RESID);
 	assert(buffers.find(res_id) != buffers.end());
 	assert(buffers[res_id]->getDesc().bindFlags & BIND_INDEX_BUFFER);
@@ -225,6 +236,7 @@ void Driver::setIndexBuffer(ResId res_id)
 
 void Driver::setVertexBuffer(ResId res_id)
 {
+	RESOURCE_LOCK_GUARD
 	assert(res_id != BAD_RESID);
 	assert(buffers.find(res_id) != buffers.end());
 	assert(buffers[res_id]->getDesc().bindFlags & BIND_VERTEX_BUFFER);
@@ -238,6 +250,7 @@ void Driver::setVertexBuffer(ResId res_id)
 
 void Driver::setConstantBuffer(ShaderStage stage, unsigned int slot, ResId res_id)
 {
+	RESOURCE_LOCK_GUARD
 	assert(res_id == BAD_RESID || buffers.find(res_id) != buffers.end());
 	assert(res_id == BAD_RESID || buffers[res_id]->getDesc().bindFlags & BIND_CONSTANT_BUFFER);
 
@@ -271,6 +284,7 @@ void Driver::setConstantBuffer(ShaderStage stage, unsigned int slot, ResId res_i
 
 void Driver::setBuffer(ShaderStage stage, unsigned int slot, ResId res_id)
 {
+	RESOURCE_LOCK_GUARD
 	assert(res_id == BAD_RESID || buffers.find(res_id) != buffers.end());
 	assert(res_id == BAD_RESID || buffers[res_id]->getDesc().bindFlags & BIND_SHADER_RESOURCE);
 
@@ -304,6 +318,7 @@ void Driver::setBuffer(ShaderStage stage, unsigned int slot, ResId res_id)
 
 void Driver::setRwBuffer(unsigned int slot, ResId res_id)
 {
+	RESOURCE_LOCK_GUARD
 	assert(res_id == BAD_RESID || buffers.find(res_id) != buffers.end());
 	assert(res_id == BAD_RESID || buffers[res_id]->getDesc().bindFlags & BIND_UNORDERED_ACCESS);
 
@@ -314,6 +329,7 @@ void Driver::setRwBuffer(unsigned int slot, ResId res_id)
 
 void Driver::setTexture(ShaderStage stage, unsigned int slot, ResId res_id, bool set_sampler_too)
 {
+	RESOURCE_LOCK_GUARD
 	assert(res_id == BAD_RESID || textures.find(res_id) != textures.end());
 	assert(res_id == BAD_RESID || textures[res_id]->getDesc().bindFlags & BIND_SHADER_RESOURCE);
 
@@ -376,6 +392,7 @@ void Driver::setTexture(ShaderStage stage, unsigned int slot, ResId res_id, bool
 
 void Driver::setRwTexture(unsigned int slot, ResId res_id)
 {
+	RESOURCE_LOCK_GUARD
 	assert(res_id == BAD_RESID || textures.find(res_id) != textures.end());
 	assert(res_id == BAD_RESID || textures[res_id]->getDesc().bindFlags & BIND_UNORDERED_ACCESS);
 
@@ -386,6 +403,7 @@ void Driver::setRwTexture(unsigned int slot, ResId res_id)
 
 void Driver::setRenderTarget(ResId target_id, ResId depth_id)
 {
+	RESOURCE_LOCK_GUARD
 	assert(target_id == BAD_RESID || textures.find(target_id) != textures.end());
 	assert(target_id == BAD_RESID || textures[target_id]->getDesc().bindFlags & BIND_RENDER_TARGET);
 	assert(depth_id == BAD_RESID || textures.find(depth_id) != textures.end());
@@ -403,6 +421,7 @@ void Driver::setRenderTarget(ResId target_id, ResId depth_id)
 
 void Driver::setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id)
 {
+	RESOURCE_LOCK_GUARD
 	assert(num_targets <= D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT);
 	assert(depth_id == BAD_RESID || textures.find(depth_id) != textures.end());
 	assert(depth_id == BAD_RESID || textures[depth_id]->getDesc().bindFlags & BIND_DEPTH_STENCIL);
@@ -426,6 +445,7 @@ void Driver::setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId
 
 void Driver::setRenderState(ResId res_id)
 {
+	RESOURCE_LOCK_GUARD
 	assert(res_id == BAD_RESID || renderStates.find(res_id) != renderStates.end());
 	
 	RenderState *rs = res_id != BAD_RESID ? renderStates[res_id] : defaultRenderState.get();
@@ -436,6 +456,7 @@ void Driver::setRenderState(ResId res_id)
 
 void Driver::setShaderSet(ResId res_id)
 {
+	RESOURCE_LOCK_GUARD
 	assert(shaders.find(res_id) != shaders.end());
 	ShaderSet* shaderToSet = shaders[res_id];
 	if (!shaderToSet->isCompiledSuccessfully())
@@ -505,7 +526,7 @@ void Driver::endFrame()
 
 void Driver::present()
 {
-	swapchain->Present(settings.vsync ? 1 : 0, 0);
+	swapchain->Present(settings.vsync ? 1 : 0, settings.vsync ? 0 : DXGI_PRESENT_ALLOW_TEARING);
 }
 
 void Driver::beginEvent(const char* label)
@@ -582,51 +603,61 @@ static void erase_resource(ResId id, std::map<ResId, T*>& from)
 
 ResId Driver::registerTexture(Texture* tex)
 {
+	RESOURCE_LOCK_GUARD
 	return emplace_resource(tex, textures);
 }
 
 void Driver::unregisterTexture(ResId id)
 {
+	RESOURCE_LOCK_GUARD
 	erase_resource(id, textures);
 }
 
 ResId Driver::registerBuffer(Buffer* buf)
 {
+	RESOURCE_LOCK_GUARD
 	return emplace_resource(buf, buffers);
 }
 
 void Driver::unregisterBuffer(ResId id)
 {
+	RESOURCE_LOCK_GUARD
 	erase_resource(id, buffers);
 }
 
 ResId Driver::registerRenderState(RenderState* rs)
 {
+	RESOURCE_LOCK_GUARD
 	return emplace_resource(rs, renderStates);
 }
 
 void Driver::unregisterRenderState(ResId id)
 {
+	RESOURCE_LOCK_GUARD
 	erase_resource(id, renderStates);
 }
 
 ResId Driver::registerShaderSet(ShaderSet* shader_set)
 {
+	RESOURCE_LOCK_GUARD
 	return emplace_resource(shader_set, shaders);
 }
 
 void Driver::unregisterShaderSet(ResId id)
 {
+	RESOURCE_LOCK_GUARD
 	erase_resource(id, shaders);
 }
 
 ResId Driver::registerInputLayout(InputLayout* input_layout)
 {
+	RESOURCE_LOCK_GUARD
 	return emplace_resource(input_layout, inputLayouts);
 }
 
 void Driver::unregisterInputLayout(ResId id)
 {
+	RESOURCE_LOCK_GUARD
 	erase_resource(id, inputLayouts);
 }
 
