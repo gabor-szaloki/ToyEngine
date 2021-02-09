@@ -3,6 +3,7 @@
 #define NOMINMAX
 #include <Windows.h>
 #include <3rdParty/imgui/imgui.h>
+#include <3rdParty/imgui/implot.h>
 #include <Driver/IDriver.h>
 #include <Util/AutoImGui.h>
 
@@ -46,9 +47,30 @@ REGISTER_IMGUI_WINDOW("Driver settings", driver_settings_window);
 
 static void stats_window()
 {
-	float fps = ImGui::GetIO().Framerate;
-	ImGui::Text("FPS:           %.0f", fps);
-	ImGui::Text("Frame time:    %.1f ms", 1000.0f / fps);
+	ImGuiIO io = ImGui::GetIO();
+	ImGui::Text("Average FPS:           %.1f", io.Framerate);
+	ImGui::Text("Average frame time:    %.3f ms", 1000.0f / io.Framerate);
+
+	static constexpr int NUM_FRAMES = 1001;
+	static float frameTimes[NUM_FRAMES] = {};
+	static bool paused = false;
+	if (!paused)
+	{
+		memcpy(&frameTimes[1], &frameTimes[0], sizeof(frameTimes[0]) * (NUM_FRAMES - 1));
+		frameTimes[0] = io.DeltaTime * 1000.0f;
+	}
+
+	ImPlot::SetNextPlotLimits(0, 1000, 0, 1000.0/60.0);
+	if (ImPlot::BeginPlot("Frame times", "frames", "frame time (ms)", ImVec2(-1, 0), 0, ImPlotAxisFlags_Invert, ImPlotAxisFlags_LockMin)) {
+		ImPlot::PlotLine("Frame times", frameTimes, NUM_FRAMES);
+		ImPlot::EndPlot();
+	}
+
+	if (ImGui::Button("Clear"))
+		memset(frameTimes, 0, sizeof(frameTimes[0]) * NUM_FRAMES);
+	ImGui::SameLine();
+	if (ImGui::Button(paused ? "Resume" : "Pause"))
+		paused = !paused;
 }
 REGISTER_IMGUI_WINDOW("Stats", stats_window);
 
