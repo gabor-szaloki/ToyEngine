@@ -25,9 +25,14 @@ struct ProfileScopeHelper
 	~ProfileScopeHelper();
 };
 
-#define TOY_PS_CC0(a, b) a##b
-#define TOY_PS_CC1(a, b) TOY_PS_CC0(a, b)
-#define PROFILE_SCOPE(label) ProfileScopeHelper TOY_PS_CC1(profileScope, __LINE__)(label)
+#define PROFILE_MARKERS_ENABLED _DEBUG
+#if PROFILE_MARKERS_ENABLED
+	#define TOY_PS_CC0(a, b) a##b
+	#define TOY_PS_CC1(a, b) TOY_PS_CC0(a, b)
+	#define PROFILE_SCOPE(label) ProfileScopeHelper TOY_PS_CC1(profileScope, __LINE__)(label)
+#else
+	#define PROFILE_SCOPE(label) (void)0;
+#endif
 
 // For DirectXMath
 using namespace DirectX;
