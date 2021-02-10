@@ -70,7 +70,7 @@ namespace drv_d3d11
 		void beginEvent(const char* label) override;
 		void endEvent() override;
 
-		TexFmt getIndexFormat() override { return TexFmt::R16_UINT; }
+		TexFmt getIndexFormat() override { return TexFmt::R32_UINT; }
 		const DriverSettings& getSettings() override { return settings; };
 		void setSettings(const DriverSettings& new_settings) override;
 		void recompileShaders() override;

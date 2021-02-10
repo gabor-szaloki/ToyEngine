@@ -6,16 +6,31 @@
 #include "RendererCommon.h"
 #include "Transform.h"
 
+struct StandardVertexData;
 class IBuffer;
 class Material;
+
+struct SubmeshData
+{
+	unsigned int startVertex;
+	unsigned int numVertices;
+	unsigned int startIndex;
+	unsigned int numIndices;
+};
+
+struct MeshData
+{
+	std::vector<StandardVertexData> vertexData;
+	std::vector<unsigned int> indexData;
+	std::vector<SubmeshData> submeshes;
+};
 
 class MeshRenderer
 {
 public:
 	MeshRenderer(const std::string& name_, Material* material_, ResId input_layout_id = BAD_RESID);
 	void setInputLayout(ResId res_id);
-	void loadVertices(unsigned int num_vertices, unsigned int vertex_byte_size, void* data);
-	void loadIndices(unsigned int num_indices, void* data);
+	void load(const MeshData& mesh_data);
 	void render(RenderPass render_pass);
 
 	const Transform& getTransform() const { return transform; }
@@ -40,4 +55,5 @@ private:
 	std::unique_ptr<IBuffer> cb;
 	std::unique_ptr<IBuffer> vb;
 	std::unique_ptr<IBuffer> ib;
+	std::vector<SubmeshData> submeshes;
 };

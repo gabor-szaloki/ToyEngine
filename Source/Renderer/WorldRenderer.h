@@ -24,7 +24,7 @@ class Light;
 class MeshRenderer;
 class Sky;
 
-struct StandardVertexData;
+struct MeshData;
 
 class WorldRenderer
 {
@@ -87,7 +87,7 @@ private:
 	// TODO: Separate loader code from WorldRenderer
 	enum class LoadExecutionMode { ASYNC, SYNC };
 	ITexture* loadTextureFromPng(const std::string& path, bool srgb, LoadExecutionMode lem = LoadExecutionMode::ASYNC);
-	bool loadMesh(const std::string& name, std::vector<StandardVertexData>& vertex_data, std::vector<unsigned short>& index_data);
+	bool loadMesh(const std::string& name, MeshData& mesh_data);
 	bool loadMeshToMeshRenderer(const std::string& name, MeshRenderer& mesh_renderer, LoadExecutionMode lem = LoadExecutionMode::ASYNC);
 	void loadScene(const std::string& scene_file);
 	void unloadCurrentScene();

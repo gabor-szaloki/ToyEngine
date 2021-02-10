@@ -72,7 +72,10 @@ WorldRenderer::WorldRenderer()
 
 	initDefaultAssets();
 	sky = std::make_unique<Sky>();
-	loadScene("Assets/Scenes/default.ini");
+
+	// TODO: scene selector
+	//loadScene("Assets/Scenes/default.ini");
+	loadScene("Assets/Scenes/sponza.ini");
 }
 
 WorldRenderer::~WorldRenderer()
@@ -121,10 +124,10 @@ void WorldRenderer::update(float delta_time)
 	cameraInputState.deltaPitch = cameraInputState.deltaYaw = 0;
 
 	// Update scene
-	MeshRenderer* box = sceneMeshRenderers[1];
-	box->setTransform(Transform(XMFLOAT3(-1.5f, 1.5f, 0.0f), XMFLOAT3(0.0f, time * 0.05f, 0.0f)));
-	MeshRenderer* sphere = sceneMeshRenderers[2];
-	sphere->setTransform(Transform(XMFLOAT3(1.5f, 1.5f, 0.0f), XMFLOAT3(0.0f, time * 0.05f, 0.0f)));
+	//MeshRenderer* box = sceneMeshRenderers[1];
+	//box->setTransform(Transform(XMFLOAT3(-1.5f, 1.5f, 0.0f), XMFLOAT3(0.0f, time * 0.05f, 0.0f)));
+	//MeshRenderer* sphere = sceneMeshRenderers[2];
+	//sphere->setTransform(Transform(XMFLOAT3(1.5f, 1.5f, 0.0f), XMFLOAT3(0.0f, time * 0.05f, 0.0f)));
 }
 
 static XMFLOAT4 get_final_light_color(const XMFLOAT4& color, float intensity)
@@ -275,15 +278,14 @@ void WorldRenderer::initDefaultAssets()
 	defaultTextures[(int)MaterialTexture::Purpose::NORMAL] = stubNormal;
 	defaultTextures[(int)MaterialTexture::Purpose::OTHER] = stubColor;
 
-	std::vector<StandardVertexData> defaultMeshVertexData;
-	std::vector<unsigned short> defaultMeshIndexData;
-	loadMesh("Box", defaultMeshVertexData, defaultMeshIndexData);
-	BufferDesc vbDesc("defaultMeshVb", sizeof(defaultMeshVertexData[0]), (unsigned int)defaultMeshVertexData.size(), ResourceUsage::DEFAULT, BIND_VERTEX_BUFFER);
-	vbDesc.initialData = defaultMeshVertexData.data();
+	MeshData defaultMesh;
+	loadMesh("Box", defaultMesh);
+	BufferDesc vbDesc("defaultMeshVb", sizeof(defaultMesh.vertexData[0]), (unsigned int)defaultMesh.vertexData.size(), ResourceUsage::DEFAULT, BIND_VERTEX_BUFFER);
+	vbDesc.initialData = defaultMesh.vertexData.data();
 	defaultMeshVb.reset(drv->createBuffer(vbDesc));
 	unsigned int indexByteSize = ::get_byte_size_for_texfmt(drv->getIndexFormat());
-	BufferDesc ibDesc("defaultMeshIb", indexByteSize, (unsigned int)defaultMeshIndexData.size(), ResourceUsage::DEFAULT, BIND_INDEX_BUFFER);
-	ibDesc.initialData = defaultMeshIndexData.data();
+	BufferDesc ibDesc("defaultMeshIb", indexByteSize, (unsigned int)defaultMesh.indexData.size(), ResourceUsage::DEFAULT, BIND_INDEX_BUFFER);
+	ibDesc.initialData = defaultMesh.indexData.data();
 	defaultMeshIb.reset(drv->createBuffer(ibDesc));
 
 	defaultInputLayout = standardInputLayout;
@@ -321,7 +323,7 @@ ITexture* WorldRenderer::loadTextureFromPng(const std::string& path, bool srgb, 
 	return texture;
 }
 
-bool WorldRenderer::loadMesh(const std::string& name, std::vector<StandardVertexData>& vertex_data, std::vector<unsigned short>& index_data)
+bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 {
 	if (!modelsIni.has(name))
 	{
@@ -349,59 +351,73 @@ bool WorldRenderer::loadMesh(const std::string& name, std::vector<StandardVertex
 	if (!success)
 		return false;
 
-	if (shapes.size() != 1)
-		PLOG_WARNING << "Warning loading mesh. Only 1 shape per .obj file is supported now. This file contains " << shapes.size() << ". Using only the first one.";
+	mesh_data.submeshes.clear();
 
-	tinyobj::shape_t shape = shapes[0];
-	const size_t numFaces = shape.mesh.num_face_vertices.size();
-	constexpr size_t NUM_VERTICES_PER_FACE = 3; // Only triangles are supported now.
+	unsigned int startIndex = 0;
+	unsigned int startVertex = 0;
 
-	if (attrib.vertices.size() % 3 != 0)
+	for (const tinyobj::shape_t& shape : shapes)
 	{
-		PLOG_ERROR << "Error loading mesh. \"attrib.vertices.size() % 3 != 0\"";
-		return false;
-	}
+		const size_t numFaces = shape.mesh.num_face_vertices.size();
+		constexpr size_t NUM_VERTICES_PER_FACE = 3; // Only triangles are supported now.
 
-	index_data.resize(numFaces * NUM_VERTICES_PER_FACE);
-	vertex_data.resize(attrib.vertices.size() / 3);
-
-	// Loop over faces
-	for (size_t f = 0; f < numFaces; f++)
-	{
-		if (shape.mesh.num_face_vertices[f] != NUM_VERTICES_PER_FACE)
+		if (attrib.vertices.size() % 3 != 0)
 		{
-			PLOG_ERROR << "Error loading mesh. Only 3 vertices per face (triangles) are supported now.";
+			PLOG_ERROR << "Error loading mesh. \"attrib.vertices.size() % 3 != 0\"";
 			return false;
 		}
 
-		// Loop over vertices in the face.
-		for (size_t v = 0; v < NUM_VERTICES_PER_FACE; v++)
+		SubmeshData submesh;
+		submesh.startIndex = startIndex;
+		submesh.numIndices = (unsigned int)(numFaces * NUM_VERTICES_PER_FACE);
+		submesh.startVertex = startVertex;
+		submesh.numVertices = (unsigned int)attrib.vertices.size() / 3;
+		mesh_data.submeshes.push_back(submesh);
+
+		mesh_data.indexData.resize(startIndex + submesh.numIndices);
+		mesh_data.vertexData.resize(startVertex + submesh.numVertices);
+
+		// Loop over faces
+		for (size_t f = 0; f < numFaces; f++)
 		{
-			tinyobj::index_t idx = shape.mesh.indices[f * NUM_VERTICES_PER_FACE + v];
+			if (shape.mesh.num_face_vertices[f] != NUM_VERTICES_PER_FACE)
+			{
+				PLOG_ERROR << "Error loading mesh. Only 3 vertices per face (triangles) are supported now.";
+				return false;
+			}
 
-			index_data[f * NUM_VERTICES_PER_FACE + v] = idx.vertex_index;
-			StandardVertexData& vertex = vertex_data[idx.vertex_index];
-			vertex.position.x = attrib.vertices[3 * idx.vertex_index + 0] * importScale;
-			vertex.position.y = attrib.vertices[3 * idx.vertex_index + 1] * importScale;
-			vertex.position.z = attrib.vertices[3 * idx.vertex_index + 2] * importScale;
-			vertex.normal.x = attrib.normals[3 * idx.normal_index + 0];
-			vertex.normal.y = attrib.normals[3 * idx.normal_index + 1];
-			vertex.normal.z = attrib.normals[3 * idx.normal_index + 2];
-			vertex.uv.x = attrib.texcoords[2 * idx.texcoord_index + 0];
-			vertex.uv.y = attrib.texcoords[2 * idx.texcoord_index + 1];
+			// Loop over vertices in the face.
+			for (size_t v = 0; v < NUM_VERTICES_PER_FACE; v++)
+			{
+				tinyobj::index_t idx = shape.mesh.indices[f * NUM_VERTICES_PER_FACE + v];
 
-			XMFLOAT4 colorF4;
-			colorF4.x = attrib.colors[3 * idx.vertex_index + 0];
-			colorF4.y = attrib.colors[3 * idx.vertex_index + 1];
-			colorF4.z = attrib.colors[3 * idx.vertex_index + 2];
-			colorF4.w = attrib.texcoord_ws.size() == 0 ? 1.0f : attrib.texcoord_ws[idx.vertex_index];
-			vertex.color = (((unsigned int)(colorF4.x * 255u)) & 0xFFu) <<  0 |
-						   (((unsigned int)(colorF4.y * 255u)) & 0xFFu) <<  8 |
-						   (((unsigned int)(colorF4.z * 255u)) & 0xFFu) << 16 |
-						   (((unsigned int)(colorF4.w * 255u)) & 0xFFu) << 24;
+				mesh_data.indexData[startIndex + f * NUM_VERTICES_PER_FACE + v] = idx.vertex_index;
+				StandardVertexData& vertex = mesh_data.vertexData[startVertex + idx.vertex_index];
+				vertex.position.x = attrib.vertices[3 * idx.vertex_index + 0] * importScale;
+				vertex.position.y = attrib.vertices[3 * idx.vertex_index + 1] * importScale;
+				vertex.position.z = attrib.vertices[3 * idx.vertex_index + 2] * importScale;
+				vertex.normal.x = attrib.normals[3 * idx.normal_index + 0];
+				vertex.normal.y = attrib.normals[3 * idx.normal_index + 1];
+				vertex.normal.z = attrib.normals[3 * idx.normal_index + 2];
+				vertex.uv.x = attrib.texcoords[2 * idx.texcoord_index + 0];
+				vertex.uv.y = attrib.texcoords[2 * idx.texcoord_index + 1];
+
+				XMFLOAT4 colorF4;
+				colorF4.x = attrib.colors[3 * idx.vertex_index + 0];
+				colorF4.y = attrib.colors[3 * idx.vertex_index + 1];
+				colorF4.z = attrib.colors[3 * idx.vertex_index + 2];
+				colorF4.w = attrib.texcoord_ws.size() == 0 ? 1.0f : attrib.texcoord_ws[idx.vertex_index];
+				vertex.color = (((unsigned int)(colorF4.x * 255u)) & 0xFFu) << 0 |
+					(((unsigned int)(colorF4.y * 255u)) & 0xFFu) << 8 |
+					(((unsigned int)(colorF4.z * 255u)) & 0xFFu) << 16 |
+					(((unsigned int)(colorF4.w * 255u)) & 0xFFu) << 24;
+			}
 		}
+
+		startIndex += submesh.numIndices;
+		startVertex += submesh.numVertices;
 	}
-	
+
 	return true;
 }
 
@@ -409,12 +425,10 @@ bool WorldRenderer::loadMeshToMeshRenderer(const std::string& name, MeshRenderer
 {
 	auto load = [&, name]
 	{
-		std::vector<StandardVertexData> vertexData;
-		std::vector<unsigned short> indexData;
-		if (!loadMesh(name, vertexData, indexData))
+		MeshData meshData;
+		if (!loadMesh(name, meshData))
 			return false;
-		mesh_renderer.loadIndices((unsigned int)indexData.size(), indexData.data());
-		mesh_renderer.loadVertices((unsigned int)vertexData.size(), sizeof(vertexData[0]), vertexData.data());
+		mesh_renderer.load(meshData);
 		return true;
 	};
 

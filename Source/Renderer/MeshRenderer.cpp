@@ -22,19 +22,22 @@ void MeshRenderer::setInputLayout(ResId res_id)
 	inputLayoutId = res_id;
 }
 
-void MeshRenderer::loadVertices(unsigned int num_vertices, unsigned int vertex_byte_size, void* data)
+void MeshRenderer::load(const MeshData& mesh_data)
 {
-	BufferDesc vbDesc(name, vertex_byte_size, num_vertices, ResourceUsage::DEFAULT, BIND_VERTEX_BUFFER);
-	vbDesc.initialData = data;
-	vb.reset(drv->createBuffer(vbDesc));
-}
+	assert(mesh_data.vertexData.size() > 0);
+	assert(mesh_data.indexData.size() > 0);
 
-void MeshRenderer::loadIndices(unsigned int num_indices, void* data)
-{
+	BufferDesc vbDesc(name, sizeof(mesh_data.vertexData[0]), (unsigned int)mesh_data.vertexData.size(), ResourceUsage::DEFAULT, BIND_VERTEX_BUFFER);
+	vbDesc.initialData = (void*)mesh_data.vertexData.data();
+	vb.reset(drv->createBuffer(vbDesc));
+
 	unsigned int indexByteSize = ::get_byte_size_for_texfmt(drv->getIndexFormat());
-	BufferDesc ibDesc(name, indexByteSize, num_indices, ResourceUsage::DEFAULT, BIND_INDEX_BUFFER);
-	ibDesc.initialData = data;
+	assert(sizeof(mesh_data.indexData[0]) == indexByteSize);
+	BufferDesc ibDesc(name, indexByteSize, (unsigned int)mesh_data.indexData.size(), ResourceUsage::DEFAULT, BIND_INDEX_BUFFER);
+	ibDesc.initialData = (void*)mesh_data.indexData.data();
 	ib.reset(drv->createBuffer(ibDesc));
+
+	submeshes.assign(mesh_data.submeshes.begin(), mesh_data.submeshes.end());
 }
 
 void MeshRenderer::render(RenderPass render_pass)
@@ -43,19 +46,20 @@ void MeshRenderer::render(RenderPass render_pass)
 	IBuffer* vbToUse;
 	ResId ilToUse;
 	XMMATRIX tmToUse;
-	if (vb != nullptr && ib != nullptr)
-	{
-		ibToUse = ib.get();
-		vbToUse = vb.get();
-		ilToUse = inputLayoutId;
-		tmToUse = transformMatrix;
-	}
-	else
+	bool useDefaultMesh = vb == nullptr || ib == nullptr;
+	if (useDefaultMesh)
 	{
 		ibToUse = wr->defaultMeshIb.get();
 		vbToUse = wr->defaultMeshVb.get();
 		ilToUse = wr->defaultInputLayout;
 		tmToUse = XMMatrixScaling(.1f, .1f, .1f) * XMMatrixRotationY(wr->getTime() * 10.f) * XMMatrixTranslationFromVector(transformMatrix.r[3]);
+	}
+	else
+	{
+		ibToUse = ib.get();
+		vbToUse = vb.get();
+		ilToUse = inputLayoutId;
+		tmToUse = transformMatrix;
 	}
 
 	PerObjectConstantBufferData perObjectCbData;
@@ -68,5 +72,12 @@ void MeshRenderer::render(RenderPass render_pass)
 	drv->setInputLayout(ilToUse);
 	drv->setIndexBuffer(ibToUse->getId());
 	drv->setVertexBuffer(vbToUse->getId());
-	drv->drawIndexed(ibToUse->getDesc().numElements, 0, 0);
+
+	if (useDefaultMesh)
+		drv->drawIndexed(ibToUse->getDesc().numElements, 0, 0);
+	else
+	{
+		for (SubmeshData& submesh : submeshes)
+			drv->drawIndexed(submesh.numIndices, submesh.startIndex, submesh.startVertex);
+	}
 }
