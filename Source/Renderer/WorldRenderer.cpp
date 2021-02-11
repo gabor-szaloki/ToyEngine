@@ -374,7 +374,7 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 		Material* material = new Material(materialName.c_str(), standardShaders);
 		std::array<std::string, 2> texturePaths;
 		texturePaths[0] = mtl.diffuse_texname;
-		//texturePaths[1] = mtl.bump_texname; need to get actual normal maps instead of bumpmaps
+		//texturePaths[1] = mtl.bump_texname; // need to get actual normal maps instead of bumpmaps
 		for (int i = 0; i < texturePaths.size(); i++)
 		{
 			MaterialTexture::Purpose purpose = (MaterialTexture::Purpose)i; // :(
@@ -386,9 +386,21 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 			else
 			{
 				bool srgb = purpose == MaterialTexture::Purpose::COLOR;
-				tex = loadTextureFromPng(dir + "/" + texturePaths[i], srgb);
+				std::string fullpath = dir + "/" + texturePaths[i];
+				if (std::filesystem::exists(fullpath))
+				{
+					tex = loadTextureFromPng(dir + "/" + texturePaths[i], srgb);
+					sceneTextures.push_back(tex);
+				}
+				else
+				{
+					PLOG_WARNING << "Texture not found at path: " << fullpath << std::endl
+						<< "\tModel: " << name << std::endl
+						<< "\tMaterial: " << mtl.name << std::endl
+						<< "\tTexture: " << texturePaths[i];
+					tex = defaultTextures[(int)purpose];
+				}
 				texturePathMap[texturePaths[i]] = tex;
-				sceneTextures.push_back(tex);
 			}
 			material->setTexture(ShaderStage::PS, i, tex, (MaterialTexture::Purpose)i);
 		}
@@ -450,6 +462,7 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 			if (shape.mesh.material_ids[f] != materialId && !materialIdMismatchLogged)
 			{
 				PLOG_WARNING << "Shape '" << shape.name << "' in mesh '" << name << "' has different materials on different faces.";
+				submesh.materialIndex = -1;
 				materialIdMismatchLogged = true;
 			}
 
