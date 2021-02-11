@@ -4,7 +4,6 @@
 #include <Windows.h>
 #include <vector>
 #include <string>
-#include <mutex>
 #include <3rdParty/plog/Util.h>
 #include <Common.h>
 #include <Util/AutoImGui.h>
@@ -36,8 +35,7 @@ void ImGuiLogWindow::write(const Record& record)
 	l.text = plog::util::toNarrow(ToyTxtFormatter::format(record).c_str(), CP_UTF8);
 	l.severity = record.getSeverity();
 
-	static std::mutex m;
-	std::scoped_lock<std::mutex> lock(m);	
+	std::scoped_lock<std::mutex> lock(linesMutex);
 	lines.push_back(l);
 }
 
@@ -45,7 +43,11 @@ void ImGuiLogWindow::perform()
 {
 	ImGui::BeginMenuBar();
 	if (ImGui::Button("Clear"))
+	{
+		std::scoped_lock<std::mutex> lock(linesMutex);
 		lines.clear();
+	}
+
 	if (ImGui::Button("Show log file"))
 	{
 		std::string params;
@@ -92,18 +94,21 @@ void ImGuiLogWindow::perform()
 		filter.Clear();
 	ImGui::EndMenuBar();
 
-	for (LogLine& l : lines)
 	{
-		if (!severityFilters[l.severity] || !filter.PassFilter(l.text.c_str()))
-			continue;
-		ImGui::TextColored(get_severity_color(l.severity), l.text.c_str());
-		if (ImGui::IsItemHovered())
-			ImGui::SetTooltip(l.text.c_str());
-		if (ImGui::BeginPopupContextItem(l.text.c_str()))
+		std::scoped_lock<std::mutex> lock(linesMutex);
+		for (LogLine& l : lines)
 		{
-			if (ImGui::MenuItem("Copy to clipboard"))
-				ImGui::SetClipboardText(l.text.c_str());
-			ImGui::EndPopup();
+			if (!severityFilters[l.severity] || !filter.PassFilter(l.text.c_str()))
+				continue;
+			ImGui::TextColored(get_severity_color(l.severity), l.text.c_str());
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip(l.text.c_str());
+			if (ImGui::BeginPopupContextItem(l.text.c_str()))
+			{
+				if (ImGui::MenuItem("Copy to clipboard"))
+					ImGui::SetClipboardText(l.text.c_str());
+				ImGui::EndPopup();
+			}
 		}
 	}
 

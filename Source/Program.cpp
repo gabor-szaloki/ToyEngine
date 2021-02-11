@@ -75,7 +75,7 @@ static void init_logging()
 	const plog::Severity logSeverity = plog::debug;
 	log_file_path = ".log/" + timeStamp + "_dbg.log";
 #else
-	const plog::Severity logSeverity = plog::error;
+	const plog::Severity logSeverity = plog::info;
 	log_file_path = ".log/" + timeStamp + "_rel.log";
 #endif
 	_mkdir(".log");

@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <mutex>
 
 namespace plog
 {
@@ -20,6 +21,7 @@ namespace plog
 			Severity severity;
 		};
 		std::vector<LogLine> lines;
+		std::mutex linesMutex;
 	};
 
 	class ToyTxtFormatter
