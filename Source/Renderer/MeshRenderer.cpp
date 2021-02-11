@@ -77,7 +77,20 @@ void MeshRenderer::render(RenderPass render_pass)
 		drv->drawIndexed(ibToUse->getDesc().numElements, 0, 0);
 	else
 	{
+		bool materialOverridden = false;
 		for (SubmeshData& submesh : submeshes)
+		{
+			if (submesh.materialIndex >= 0)
+			{
+				wr->getMaterial(submesh.materialIndex)->set(render_pass);
+				materialOverridden = true;
+			}
+			else if (materialOverridden)
+			{
+				material->set(render_pass);
+				materialOverridden = false;
+			}
 			drv->drawIndexed(submesh.numIndices, submesh.startIndex, submesh.startVertex);
+		}
 	}
 }

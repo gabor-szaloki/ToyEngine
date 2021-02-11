@@ -43,6 +43,7 @@ public:
 	Camera& getCamera() { return camera; };
 	float getTime() { return time; }
 	Sky& getSky() { return *sky; }
+	Material* getMaterial(int id);
 
 	void rendererSettingsGui();
 	void lightingGui();

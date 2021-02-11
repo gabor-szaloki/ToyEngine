@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 #include <array>
+#include <filesystem>
+#include <chrono>
 #include <3rdParty/glm/glm.hpp>
 #include <3rdParty/LodePNG/lodepng.h>
 #include <3rdParty/tinyobjloader/tiny_obj_loader.h>
@@ -211,6 +213,12 @@ void WorldRenderer::setShadowBias(int depth_bias, float slope_scaled_depth_bias)
 	shadowRenderStateId = drv->createRenderState(desc);
 }
 
+Material* WorldRenderer::getMaterial(int id)
+{
+	assert(id >= 0 && id < sceneMaterials.size());
+	return sceneMaterials[id];
+}
+
 void WorldRenderer::initResolutionDependentResources()
 {
 	XMINT2 displayResolution;
@@ -332,9 +340,10 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 	}
 
 	std::string path = modelsIni[name]["path"];
+	std::string dir = std::filesystem::path(path).parent_path().u8string();
 	float importScale = modelsIni[name]["scale"].length() > 0 ? std::stof(modelsIni[name]["scale"]) : 1.0f;
 
-	PLOG_INFO << "Loading mesh '" << name << "' from file: " << path;
+	PLOG_INFO << "Loading mesh '" << name << "' from file: " << path.c_str();
 
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -343,36 +352,88 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 	std::string warn;
 	std::string err;
 
-	bool success = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.c_str());
+	auto startLoadTime = std::chrono::high_resolution_clock::now();
+	bool success = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.c_str(), dir.c_str());
+	auto finishLoadTime = std::chrono::high_resolution_clock::now();
 	if (!warn.empty())
 		PLOG_WARNING << warn;
 	if (!err.empty())
 		PLOG_ERROR << err;
 	if (!success)
 		return false;
+	PLOG_INFO << "Loading mesh '" << name << "' successful. It took "<< (finishLoadTime - startLoadTime).count() / 1e9 << " seconds. Processing...";
 
-	mesh_data.submeshes.clear();
+	// Loop over materials
+	std::map<std::string, ITexture*> texturePathMap;
+	int baseMaterialIndex = (int)sceneMaterials.size();
+	for (size_t m = 0; m < materials.size(); m++)
+	{
+		const tinyobj::material_t& mtl = materials[m];
+		std::string materialName = name + "__" + mtl.name;
+
+		Material* material = new Material(materialName.c_str(), standardShaders);
+		std::array<std::string, 2> texturePaths;
+		texturePaths[0] = mtl.diffuse_texname;
+		//texturePaths[1] = mtl.bump_texname; need to get actual normal maps instead of bumpmaps
+		for (int i = 0; i < texturePaths.size(); i++)
+		{
+			MaterialTexture::Purpose purpose = (MaterialTexture::Purpose)i; // :(
+			ITexture* tex;
+			if (texturePaths[i].empty())
+				tex = defaultTextures[(int)purpose];
+			else if (texturePathMap.find(texturePaths[i]) != texturePathMap.end())
+				tex = texturePathMap[texturePaths[i]];
+			else
+			{
+				bool srgb = purpose == MaterialTexture::Purpose::COLOR;
+				tex = loadTextureFromPng(dir + "/" + texturePaths[i], srgb);
+				texturePathMap[texturePaths[i]] = tex;
+				sceneTextures.push_back(tex);
+			}
+			material->setTexture(ShaderStage::PS, i, tex, (MaterialTexture::Purpose)i);
+		}
+		sceneMaterials.push_back(material);
+	}
 
 	unsigned int startIndex = 0;
 	unsigned int startVertex = 0;
+	mesh_data.submeshes.resize(shapes.size());
 
-	for (const tinyobj::shape_t& shape : shapes)
+	// Loop over shapes
+	for (size_t s = 0; s < shapes.size(); s++)
 	{
+		const tinyobj::shape_t& shape = shapes[s];
 		const size_t numFaces = shape.mesh.num_face_vertices.size();
+
 		constexpr size_t NUM_VERTICES_PER_FACE = 3; // Only triangles are supported now.
 
 		if (attrib.vertices.size() % 3 != 0)
 		{
-			PLOG_ERROR << "Error loading mesh. \"attrib.vertices.size() % 3 != 0\"";
+			PLOG_ERROR << "Error loading mesh '" << name << "'. \"attrib.vertices.size() % 3 != 0\"";
 			return false;
 		}
 
-		SubmeshData submesh;
+		SubmeshData& submesh = mesh_data.submeshes[s];
 		submesh.startIndex = startIndex;
 		submesh.numIndices = (unsigned int)(numFaces * NUM_VERTICES_PER_FACE);
 		submesh.startVertex = startVertex;
 		submesh.numVertices = (unsigned int)attrib.vertices.size() / 3;
-		mesh_data.submeshes.push_back(submesh);
+		submesh.materialIndex = -1;
+
+		if (numFaces == 0)
+		{
+			PLOG_WARNING << "Shape '" << shape.name << "' in mesh '" << name << "' has no faces.";
+			continue;
+		}
+
+		int materialId = shape.mesh.material_ids[0];
+		bool materialIdMismatchLogged = false;
+		if (materialId >= 0)
+		{
+			if (materialId >= materials.size())
+				PLOG_WARNING << "Shape '" << shape.name << "' in mesh '" << name << "' has material id outside of materials array bounds. materialId: " << materialId << ", materials.size(): " << materials.size();
+			submesh.materialIndex = baseMaterialIndex + materialId;
+		}
 
 		mesh_data.indexData.resize(startIndex + submesh.numIndices);
 		mesh_data.vertexData.resize(startVertex + submesh.numVertices);
@@ -382,8 +443,14 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 		{
 			if (shape.mesh.num_face_vertices[f] != NUM_VERTICES_PER_FACE)
 			{
-				PLOG_ERROR << "Error loading mesh. Only 3 vertices per face (triangles) are supported now.";
+				PLOG_ERROR << "Error loading mesh '" << name << "'. Only 3 vertices per face (triangles) are supported now.";
 				return false;
+			}
+
+			if (shape.mesh.material_ids[f] != materialId && !materialIdMismatchLogged)
+			{
+				PLOG_WARNING << "Shape '" << shape.name << "' in mesh '" << name << "' has different materials on different faces.";
+				materialIdMismatchLogged = true;
 			}
 
 			// Loop over vertices in the face.
@@ -417,6 +484,10 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 		startIndex += submesh.numIndices;
 		startVertex += submesh.numVertices;
 	}
+
+	auto finishProcessing = std::chrono::high_resolution_clock::now();
+
+	PLOG_INFO << "Processing mesh '" << name << "' successful. It took " << (finishProcessing - finishLoadTime).count() / 1e9 << " seconds.";
 
 	return true;
 }
