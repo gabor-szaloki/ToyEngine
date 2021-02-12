@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <filesystem>
 #include <3rdParty/imgui/imgui.h>
 #include <Util/AutoImGui.h>
 #include <Driver/ITexture.h>
@@ -37,12 +38,39 @@ static XMVECTOR euler_to_quaternion(XMVECTOR e)
 
 void WorldRenderer::rendererSettingsGui()
 {
-	ImGui::Checkbox("Show wireframe", &showWireframe);
-	if (ImGui::Button("Reload scene"))
+	static std::vector<std::string> scenePaths;
+	static std::string scenes;
+	static int currentScene = -1;
+
+	if (scenePaths.size() == 0)
+	{
+		for (const std::filesystem::directory_entry& file : std::filesystem::directory_iterator("Assets/Scenes"))
+		{
+			std::string scenePath = file.path().string();
+			std::replace(scenePath.begin(), scenePath.end(), '\\', '/');
+			scenePaths.push_back(scenePath);
+			std::string sceneName = file.path().filename().string();
+			sceneName = sceneName.substr(0, sceneName.length() - 4); // remove ".ini"
+			scenes += sceneName;
+			scenes += '\0';
+		}
+	}
+	if (currentScene < 0)
+	{
+		std::string lastLoadedScenePath = autoimgui::load_custom_param("lastLoadedScenePath");
+		auto it = std::find(scenePaths.begin(), scenePaths.end(), lastLoadedScenePath);
+		currentScene = it != scenePaths.end() ? int(it - scenePaths.begin()) : 0;
+	}
+	ImGui::Combo("Scene", &currentScene, scenes.c_str());
+	ImGui::SameLine();
+	if (ImGui::Button("Load"))
 	{
 		unloadCurrentScene();
-		loadScene(currentSceneIniFilePath);
+		loadScene(scenePaths[currentScene]);
+		autoimgui::save_custom_param("lastLoadedScenePath", scenePaths[currentScene]);
 	}
+
+	ImGui::Checkbox("Show wireframe", &showWireframe);
 }
 
 void WorldRenderer::lightingGui()

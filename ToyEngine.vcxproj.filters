@@ -64,6 +64,9 @@
     <Filter Include="Source\Util">
       <UniqueIdentifier>{2fac9e52-08f3-484a-a93e-49e4a7b59eb3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\3rdParty\OBJ_Loader">
+      <UniqueIdentifier>{4658c576-7ccd-4e7f-b492-6a5dc51e31d7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Common.cpp">
@@ -1189,6 +1192,9 @@
     </ClInclude>
     <ClInclude Include="Source\Util\PreciseSleep.h">
       <Filter>Source\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\OBJ_Loader\OBJ_Loader.h">
+      <Filter>Source\3rdParty\OBJ_Loader</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

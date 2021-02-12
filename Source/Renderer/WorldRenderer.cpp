@@ -7,9 +7,11 @@
 #include <3rdParty/glm/glm.hpp>
 #include <3rdParty/LodePNG/lodepng.h>
 #include <3rdParty/tinyobjloader/tiny_obj_loader.h>
+#include <3rdParty/OBJ_Loader/OBJ_Loader.h>
 #include <Driver/ITexture.h>
 #include <Driver/IBuffer.h>
 #include <Util/ThreadPool.h>
+#include <Util/AutoImGui.h>
 
 #include "ConstantBuffers.h"
 #include "MeshRenderer.h"
@@ -75,9 +77,8 @@ WorldRenderer::WorldRenderer()
 	initDefaultAssets();
 	sky = std::make_unique<Sky>();
 
-	// TODO: scene selector
-	//loadScene("Assets/Scenes/default.ini");
-	loadScene("Assets/Scenes/sponza.ini");
+	std::string scenePath = autoimgui::load_custom_param("lastLoadedScenePath", "Assets/Scenes/default.ini");
+	loadScene(scenePath);
 }
 
 WorldRenderer::~WorldRenderer()
@@ -342,6 +343,8 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 	std::string path = modelsIni[name]["path"];
 	std::string dir = std::filesystem::path(path).parent_path().u8string();
 	float importScale = modelsIni[name]["scale"].length() > 0 ? std::stof(modelsIni[name]["scale"]) : 1.0f;
+	bool flipUvX = modelsIni[name]["flipUvX"] == "yes";
+	bool flipUvY = modelsIni[name]["flipUvY"] == "yes";
 
 	PLOG_INFO << "Loading mesh '" << name << "' from file: " << path.c_str();
 
@@ -414,6 +417,8 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 	// Loop over shapes
 	for (size_t s = 0; s < shapes.size(); s++)
 	{
+		// TODO: split shape meshes by material ids
+
 		const tinyobj::shape_t& shape = shapes[s];
 		const size_t numFaces = shape.mesh.num_face_vertices.size();
 
@@ -426,6 +431,7 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 		}
 
 		SubmeshData& submesh = mesh_data.submeshes[s];
+		submesh.name = shape.name;
 		submesh.startIndex = startIndex;
 		submesh.numIndices = (unsigned int)(numFaces * NUM_VERTICES_PER_FACE);
 		submesh.startVertex = startVertex;
@@ -446,6 +452,10 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 				PLOG_WARNING << "Shape '" << shape.name << "' in mesh '" << name << "' has material id outside of materials array bounds. materialId: " << materialId << ", materials.size(): " << materials.size();
 			submesh.materialIndex = baseMaterialIndex + materialId;
 		}
+		else if (materials.size() > 0)
+		{
+			PLOG_WARNING << "Shape material id <0 despite model having loaded materials. Model: '" << name << "', Shape: '" << shape.name << "'";
+		}
 
 		mesh_data.indexData.resize(startIndex + submesh.numIndices);
 		mesh_data.vertexData.resize(startVertex + submesh.numVertices);
@@ -462,7 +472,6 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 			if (shape.mesh.material_ids[f] != materialId && !materialIdMismatchLogged)
 			{
 				PLOG_WARNING << "Shape '" << shape.name << "' in mesh '" << name << "' has different materials on different faces.";
-				submesh.materialIndex = -1;
 				materialIdMismatchLogged = true;
 			}
 
@@ -473,25 +482,162 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 
 				mesh_data.indexData[startIndex + f * NUM_VERTICES_PER_FACE + v] = idx.vertex_index;
 				StandardVertexData& vertex = mesh_data.vertexData[startVertex + idx.vertex_index];
+
 				vertex.position.x = attrib.vertices[3 * idx.vertex_index + 0] * importScale;
 				vertex.position.y = attrib.vertices[3 * idx.vertex_index + 1] * importScale;
 				vertex.position.z = attrib.vertices[3 * idx.vertex_index + 2] * importScale;
+
 				vertex.normal.x = attrib.normals[3 * idx.normal_index + 0];
 				vertex.normal.y = attrib.normals[3 * idx.normal_index + 1];
 				vertex.normal.z = attrib.normals[3 * idx.normal_index + 2];
-				vertex.uv.x = attrib.texcoords[2 * idx.texcoord_index + 0];
-				vertex.uv.y = attrib.texcoords[2 * idx.texcoord_index + 1];
+
+				float uvX = attrib.texcoords[2 * idx.texcoord_index + 0];
+				float uvY = attrib.texcoords[2 * idx.texcoord_index + 1];
+				vertex.uv.x = flipUvX ? 1.0f - uvX : uvX;
+				vertex.uv.y = flipUvY ? 1.0f - uvY : uvY;
 
 				XMFLOAT4 colorF4;
 				colorF4.x = attrib.colors[3 * idx.vertex_index + 0];
 				colorF4.y = attrib.colors[3 * idx.vertex_index + 1];
 				colorF4.z = attrib.colors[3 * idx.vertex_index + 2];
 				colorF4.w = attrib.texcoord_ws.size() == 0 ? 1.0f : attrib.texcoord_ws[idx.vertex_index];
-				vertex.color = (((unsigned int)(colorF4.x * 255u)) & 0xFFu) << 0 |
+				vertex.color =
+					(((unsigned int)(colorF4.x * 255u)) & 0xFFu) << 0 |
 					(((unsigned int)(colorF4.y * 255u)) & 0xFFu) << 8 |
 					(((unsigned int)(colorF4.z * 255u)) & 0xFFu) << 16 |
 					(((unsigned int)(colorF4.w * 255u)) & 0xFFu) << 24;
 			}
+		}
+
+		startIndex += submesh.numIndices;
+		startVertex += submesh.numVertices;
+	}
+
+	auto finishProcessing = std::chrono::high_resolution_clock::now();
+
+	PLOG_INFO << "Processing mesh '" << name << "' successful. It took " << (finishProcessing - finishLoadTime).count() / 1e9 << " seconds.";
+
+	return true;
+}
+
+bool WorldRenderer::loadMesh2(const std::string& name, MeshData& out_mesh_data)
+{
+	if (!modelsIni.has(name))
+	{
+		PLOG_ERROR << "No model found with name: " << name;
+		return false;
+	}
+
+	std::string path = modelsIni[name]["path"];
+	std::string dir = std::filesystem::path(path).parent_path().u8string();
+	float importScale = modelsIni[name]["scale"].length() > 0 ? std::stof(modelsIni[name]["scale"]) : 1.0f;
+	bool flipUvX = modelsIni[name]["flipUvX"] == "yes";
+	bool flipUvY = modelsIni[name]["flipUvY"] == "yes";
+
+	PLOG_INFO << "Loading mesh '" << name << "' from file: " << path.c_str();
+
+	objl::Loader loader;
+	auto startLoadTime = std::chrono::high_resolution_clock::now();
+	if (!loader.LoadFile(path))
+	{
+		PLOG_ERROR << "Couldn't load model file at path: " << path;
+		return false;
+	}
+	auto finishLoadTime = std::chrono::high_resolution_clock::now();
+	PLOG_INFO << "Loading mesh '" << name << "' successful. It took " << (finishLoadTime - startLoadTime).count() / 1e9 << " seconds. Processing...";
+	
+	unsigned int startIndex = 0;
+	unsigned int startVertex = 0;
+	out_mesh_data.submeshes.resize(loader.LoadedMeshes.size());
+
+	std::map<std::string, ITexture*> texturePathMap;
+	std::map<std::string, int> materialIndexMap;
+	int nextMaterialIndex = (int)sceneMaterials.size();
+
+	// Loop over meshes
+	for (size_t m = 0; m < loader.LoadedMeshes.size(); m++)
+	{
+		const objl::Mesh& mesh = loader.LoadedMeshes[m];
+		
+		SubmeshData& submesh = out_mesh_data.submeshes[m];
+		submesh.name = mesh.MeshName;
+		submesh.startIndex = startIndex;
+		submesh.numIndices = (unsigned int)mesh.Indices.size();
+		submesh.startVertex = startVertex;
+		submesh.numVertices = (unsigned int)mesh.Vertices.size();
+		submesh.materialIndex = -1;
+
+		// Handle material
+		const objl::Material& mtl = mesh.MeshMaterial;
+		if (!mtl.name.empty() && mtl.name != "none")
+		{
+			if (materialIndexMap.find(mtl.name) != materialIndexMap.end())
+			{
+				submesh.materialIndex = materialIndexMap[mtl.name];
+			}
+			else
+			{
+				Material* material = new Material(name + "__" + mtl.name, standardShaders);
+				std::array<std::string, 2> texturePaths;
+				texturePaths[0] = mtl.map_Kd;
+				texturePaths[1] = mtl.map_bump; // need to get actual normal maps instead of bumpmaps
+				for (int i = 0; i < texturePaths.size(); i++)
+				{
+					MaterialTexture::Purpose purpose = (MaterialTexture::Purpose)i; // :(
+					ITexture* tex;
+					if (texturePaths[i].empty())
+						tex = defaultTextures[(int)purpose];
+					else if (texturePathMap.find(texturePaths[i]) != texturePathMap.end())
+						tex = texturePathMap[texturePaths[i]];
+					else
+					{
+						bool srgb = purpose == MaterialTexture::Purpose::COLOR;
+						std::string fullpath = dir + "/" + texturePaths[i];
+						if (std::filesystem::exists(fullpath))
+						{
+							tex = loadTextureFromPng(dir + "/" + texturePaths[i], srgb);
+							sceneTextures.push_back(tex);
+						}
+						else
+						{
+							PLOG_WARNING << "Texture not found at path: " << fullpath << std::endl
+								<< "\tModel: " << name << std::endl
+								<< "\tMaterial: " << mtl.name << std::endl
+								<< "\tTexture: " << texturePaths[i];
+							tex = defaultTextures[(int)purpose];
+						}
+						texturePathMap[texturePaths[i]] = tex;
+					}
+					material->setTexture(ShaderStage::PS, i, tex, (MaterialTexture::Purpose)i);
+				}
+				sceneMaterials.push_back(material);
+				submesh.materialIndex = nextMaterialIndex++;
+				materialIndexMap[mtl.name] = submesh.materialIndex;
+			}
+		}
+		else if (loader.LoadedMaterials.size() > 0)
+		{
+			PLOG_WARNING << "Submesh doesn't have material despite model has loaded materials. Model: '" << name << "', Mesh: '" << mesh.MeshName << "'";
+		}
+
+		// Handle indices
+		if (mesh.Indices.size() % 3 != 0)
+			PLOG_WARNING << "Number of indices is not divisible by 3. Only triangles are supported now! Model: '" << name << "', Mesh: '" << mesh.MeshName << "'";
+		out_mesh_data.indexData.resize(startIndex + submesh.numIndices);
+		std::copy(mesh.Indices.begin(), mesh.Indices.end(), out_mesh_data.indexData.begin() + startIndex);
+
+		// Handle vertices
+		out_mesh_data.vertexData.resize(startVertex + mesh.Vertices.size());
+		for (size_t v = 0; v < mesh.Vertices.size(); v++)
+		{
+			const objl::Vertex& vert = mesh.Vertices[v];
+			StandardVertexData& outVert = out_mesh_data.vertexData[startVertex + v];
+			outVert.position = XMFLOAT3(vert.Position.X * importScale, vert.Position.Y * importScale, vert.Position.Z * importScale);
+			outVert.normal = XMFLOAT3(vert.Normal.X, vert.Normal.Y, vert.Normal.Z);
+			outVert.uv = XMFLOAT2(
+				flipUvX ? 1.0f - vert.TextureCoordinate.X : vert.TextureCoordinate.X,
+				flipUvY ? 1.0f - vert.TextureCoordinate.Y : vert.TextureCoordinate.Y);
+			outVert.color = 0xFFFFFFFFu;
 		}
 
 		startIndex += submesh.numIndices;

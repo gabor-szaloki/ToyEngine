@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -345,6 +345,7 @@
     <ClInclude Include="Source\3rdParty\ImGui\imstb_truetype.h" />
     <ClInclude Include="Source\3rdParty\LodePNG\lodepng.h" />
     <ClInclude Include="Source\3rdParty\mini\ini.h" />
+    <ClInclude Include="Source\3rdParty\OBJ_Loader\OBJ_Loader.h" />
     <ClInclude Include="Source\3rdParty\plog\Appenders\AndroidAppender.h" />
     <ClInclude Include="Source\3rdParty\plog\Appenders\ColorConsoleAppender.h" />
     <ClInclude Include="Source\3rdParty\plog\Appenders\ConsoleAppender.h" />
