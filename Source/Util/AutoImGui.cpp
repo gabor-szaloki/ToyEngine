@@ -27,15 +27,26 @@ void autoimgui::shutdown()
 {
 }
 
-bool autoimgui::is_window_opened(const char* window_name)
+bool autoimgui::is_window_opened(const std::string& window_name)
 {
 	return ini["windows"][window_name] == "open";
 }
 
-void autoimgui::set_window_opened(const char* window_name, bool opened)
+void autoimgui::set_window_opened(const std::string& window_name, bool opened)
 {
 	ini["windows"][window_name] = opened ? "open" : "closed";
 	ini_file.write(ini, true);
+}
+
+void autoimgui::save_custom_param(const std::string& key, const std::string& value)
+{
+	ini["custom"][key] = value;
+	ini_file.write(ini, true);
+}
+
+std::string autoimgui::load_custom_param(const std::string& key, const std::string& default_value)
+{
+	return ini["custom"].has(key) ? ini["custom"][key] : default_value;
 }
 
 void autoimgui::perform()

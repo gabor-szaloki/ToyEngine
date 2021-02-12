@@ -1,13 +1,17 @@
 #pragma once
 
+#include <string>
+
 namespace autoimgui
 {
     extern bool is_active;
 
     void init();
     void shutdown();
-    bool is_window_opened(const char *window_name);
-    void set_window_opened(const char *window_name, bool opened);
+    bool is_window_opened(const std::string& window_name);
+    void set_window_opened(const std::string& window_name, bool opened);
+    void save_custom_param(const std::string& key, const std::string& value);
+    std::string load_custom_param(const std::string& key, const std::string& default_value = "");
     void perform();
 
     typedef void (*ImGuiFuncPtr)();
