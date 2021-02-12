@@ -37,7 +37,7 @@ static void driver_settings_window()
 	changed |= ImGui::Checkbox("V-sync", &drvSettings.vsync);
 	changed |= ImGui::SliderInt("FPS limit", &drvSettings.fpsLimit, 0, 360); // fpsLimit is handled outside of driver
 
-	if (ImGui::Button("Recompile shaders"))
+	if (ImGui::Button("Recompile shaders [F5]"))
 		drv->recompileShaders();
 
 	if (changed)

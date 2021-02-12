@@ -273,6 +273,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		case VK_F2:
 			autoimgui::is_active = !autoimgui::is_active;
 			break;
+		case VK_F5:
+			drv->recompileShaders();
 		case VK_CONTROL:
 			ctrl = true;
 			break;
