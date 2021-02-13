@@ -207,6 +207,18 @@ newmtl column_b
 	bump textures_pbr\Sponza_Column_b_normal.png
 	map_Ns textures_pbr\Sponza_Column_b_roughness.png
 
+newmtl Material__47
+	Ns 10.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 1 1 1
+	Kd 1 1 1
+	Ks 0.0000 0.0000 0.0000
+	Ke 0.0000 0.0000 0.0000
+
 newmtl flagpole
 	Ns 10.0000
 	Ni 1.5000
