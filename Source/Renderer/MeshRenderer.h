@@ -13,6 +13,7 @@ class Material;
 struct SubmeshData
 {
 	std::string name;
+	bool enabled;
 	unsigned int startIndex;
 	unsigned int numIndices;
 	unsigned int startVertex;
@@ -33,6 +34,7 @@ public:
 	void setInputLayout(ResId res_id);
 	void load(const MeshData& mesh_data);
 	void render(RenderPass render_pass);
+	void gui();
 
 	const Transform& getTransform() const { return transform; }
 	void setTransform(const Transform& t) { transform = t; transformMatrix = t.getMatrix(); }
@@ -48,6 +50,8 @@ public:
 	std::string name;
 
 private:
+	bool enabled = true;
+	int numSubmeshesEnabled = 0;
 	Transform transform;
 	XMMATRIX transformMatrix = XMMatrixIdentity();
 

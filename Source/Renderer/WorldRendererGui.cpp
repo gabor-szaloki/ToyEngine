@@ -8,21 +8,6 @@
 #include "Light.h"
 #include "MeshRenderer.h"
 
-namespace ImGui
-{
-	bool DragAngle3(const char* label, float v[3], float v_speed = 1.0f, float v_min = 0.0f, float v_max = 0.0f, const char* format = "%.0f deg", ImGuiSliderFlags flags = 0)
-	{
-		float vDeg[3];
-		for (int i = 0; i < 3; i++)
-			vDeg[i] = to_deg(v[i]);
-		bool changed = DragFloat3(label, vDeg, v_speed, v_min, v_max, format, flags);
-		if (changed)
-			for (int i = 0; i < 3; i++)
-				v[i] = to_rad(vDeg[i]);
-		return changed;
-	}
-}
-
 static XMVECTOR euler_to_quaternion(XMVECTOR e)
 {
 	float roll = e.m128_f32[0], pitch = e.m128_f32[1], yaw = e.m128_f32[2];
@@ -125,23 +110,8 @@ void WorldRenderer::shadowMapGui()
 void WorldRenderer::meshRendererGui()
 {
 	for (MeshRenderer* mr : sceneMeshRenderers)
-	{
 		if (ImGui::CollapsingHeader(mr->name.c_str()))
-		{
-			Transform tr = mr->getTransform();
-
-			static std::string buf;
-			bool changed = false;
-			buf = "Position##" + mr->name;
-			changed |= ImGui::DragFloat3(buf.c_str(), tr.position.m128_f32, 0.1f);
-			buf = "Rotation##" + mr->name;
-			changed |= ImGui::DragAngle3(buf.c_str(), tr.rotation.m128_f32);
-			buf = "Scale##" + mr->name;
-			changed |= ImGui::DragFloat(buf.c_str(), &tr.scale, 0.1f);
-			if (changed)
-				mr->setTransform(tr);
-		}
-	}
+			mr->gui();
 }
 
 REGISTER_IMGUI_WINDOW("Renderer settings", []() { wr->rendererSettingsGui(); });

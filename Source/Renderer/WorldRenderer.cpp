@@ -374,12 +374,11 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 	for (size_t m = 0; m < mtls.size(); m++)
 	{
 		const tinyobj::material_t& mtl = mtls[m];
-		std::string materialName = name + "__" + mtl.name;
 
-		Material* material = new Material(materialName.c_str(), standardShaders);
+		Material* material = new Material(name + "__" + mtl.name, standardShaders);
 		std::array<std::string, 2> texturePaths;
 		texturePaths[0] = mtl.diffuse_texname;
-		//texturePaths[1] = mtl.bump_texname; // need to get actual normal maps instead of bumpmaps
+		texturePaths[1] = mtl.bump_texname;
 		for (int i = 0; i < texturePaths.size(); i++)
 		{
 			MaterialTexture::Purpose purpose = (MaterialTexture::Purpose)i; // :(
@@ -452,6 +451,7 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 			if (shape.mesh.material_ids[f] != materialId || currentSubmesh == nullptr)
 			{
 				SubmeshData submesh;
+				submesh.enabled = true;
 				submesh.material = nullptr;
 				materialId = shape.mesh.material_ids[f];
 				if (materialId >= 0)
@@ -463,7 +463,7 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 				}
 				else if (materials.size() > 0)
 					PLOG_WARNING << "Shape material id <0 despite model having loaded materials. Model: '" << name << "', Shape: '" << shape.name << "'";
-				std::string materialNameSuffix = materialId < 0 ? "" : ("__" + materials[materialId]->name);
+				std::string materialNameSuffix = materialId < 0 ? "" : ("__" + mtls[materialId].name);
 				submesh.name = shape.name + materialNameSuffix;
 				submesh.startIndex = startIndex;
 				submesh.numIndices = 0;
@@ -561,6 +561,7 @@ bool WorldRenderer::loadMesh2(const std::string& name, MeshData& out_mesh_data)
 		
 		SubmeshData& submesh = out_mesh_data.submeshes[m];
 		submesh.name = mesh.MeshName;
+		submesh.enabled = true;
 		submesh.startIndex = startIndex;
 		submesh.numIndices = (unsigned int)mesh.Indices.size();
 		submesh.startVertex = startVertex;

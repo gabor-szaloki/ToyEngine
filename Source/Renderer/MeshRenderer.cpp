@@ -1,5 +1,6 @@
 #include "MeshRenderer.h"
 
+#include <3rdParty/imgui/imgui.h>
 #include <Driver/IBuffer.h>
 
 #include "Material.h"
@@ -38,10 +39,14 @@ void MeshRenderer::load(const MeshData& mesh_data)
 	ib.reset(drv->createBuffer(ibDesc));
 
 	submeshes.assign(mesh_data.submeshes.begin(), mesh_data.submeshes.end());
+	numSubmeshesEnabled = (int)submeshes.size();
 }
 
 void MeshRenderer::render(RenderPass render_pass)
 {
+	if (!enabled)
+		return;
+
 	IBuffer* ibToUse;
 	IBuffer* vbToUse;
 	ResId ilToUse;
@@ -78,8 +83,12 @@ void MeshRenderer::render(RenderPass render_pass)
 	else
 	{
 		bool materialOverridden = false;
-		for (SubmeshData& submesh : submeshes)
+		for (int i = 0; i < numSubmeshesEnabled; i++)
 		{
+			const SubmeshData& submesh = submeshes[i];
+			if (!submesh.enabled)
+				continue;
+
 			if (submesh.material != nullptr)
 			{
 				submesh.material->set(render_pass);
@@ -91,6 +100,61 @@ void MeshRenderer::render(RenderPass render_pass)
 				materialOverridden = false;
 			}
 			drv->drawIndexed(submesh.numIndices, submesh.startIndex, submesh.startVertex);
+		}
+	}
+}
+
+namespace ImGui
+{
+	bool DragAngle3(const char* label, float v[3], float v_speed = 1.0f, float v_min = 0.0f, float v_max = 0.0f, const char* format = "%.0f deg", ImGuiSliderFlags flags = 0)
+	{
+		float vDeg[3];
+		for (int i = 0; i < 3; i++)
+			vDeg[i] = to_deg(v[i]);
+		bool changed = DragFloat3(label, vDeg, v_speed, v_min, v_max, format, flags);
+		if (changed)
+			for (int i = 0; i < 3; i++)
+				v[i] = to_rad(vDeg[i]);
+		return changed;
+	}
+}
+
+void MeshRenderer::gui()
+{
+	static std::string buf;
+	buf = "Enabled##" + name;
+	ImGui::Checkbox(buf.c_str(), &enabled);
+	buf = "Render submeshes##" + name;
+	ImGui::SliderInt(buf.c_str(), &numSubmeshesEnabled, 0, (int)submeshes.size());
+	ImGui::Text("Last submesh rendered: %s", numSubmeshesEnabled > 0 ? submeshes[numSubmeshesEnabled - 1].name.c_str() : "-");
+
+	Transform tr = getTransform();
+	bool changed = false;
+	buf = "Position##" + name;
+	changed |= ImGui::DragFloat3(buf.c_str(), tr.position.m128_f32, 0.1f);
+	buf = "Rotation##" + name;
+	changed |= ImGui::DragAngle3(buf.c_str(), tr.rotation.m128_f32);
+	buf = "Scale##" + name;
+	changed |= ImGui::DragFloat(buf.c_str(), &tr.scale, 0.1f);
+	if (changed)
+		setTransform(tr);
+
+	buf = "Submeshes##" + name;
+	if (ImGui::CollapsingHeader(buf.c_str()))
+	{
+		for (int i = 0; i < submeshes.size(); i++)
+		{
+			SubmeshData& submesh = submeshes[i];
+			buf = submesh.name + "##" + name;
+			if (ImGui::CollapsingHeader(buf.c_str()))
+			{
+				buf = "Enabled##" + name + submesh.name;
+				ImGui::Checkbox(buf.c_str(), &submesh.enabled);
+				ImGui::Text("material:    %s", submesh.material != nullptr ? submesh.material->name.c_str() : "-");
+				ImGui::Text("startIndex:  %d", submesh.startIndex);
+				ImGui::Text("numIndices:  %d", submesh.numIndices);
+				ImGui::Text("startVertex: %d", submesh.startVertex);
+			}
 		}
 	}
 }
