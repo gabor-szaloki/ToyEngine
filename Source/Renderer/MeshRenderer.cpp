@@ -80,9 +80,9 @@ void MeshRenderer::render(RenderPass render_pass)
 		bool materialOverridden = false;
 		for (SubmeshData& submesh : submeshes)
 		{
-			if (submesh.materialIndex >= 0)
+			if (submesh.material != nullptr)
 			{
-				wr->getMaterial(submesh.materialIndex)->set(render_pass);
+				submesh.material->set(render_pass);
 				materialOverridden = true;
 			}
 			else if (materialOverridden)

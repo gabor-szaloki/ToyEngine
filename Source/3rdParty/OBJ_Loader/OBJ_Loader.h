@@ -541,7 +541,6 @@ namespace objl
 					std::vector<std::string> spos;
 					Vector3 vpos;
 					algorithm::split(algorithm::tail(curline), spos, " ");
-					spos.erase(std::remove_if(spos.begin(), spos.end(), [](const std::string& s) { return s.empty(); }), spos.end());
 
 					vpos.X = std::stof(spos[0]);
 					vpos.Y = std::stof(spos[1]);
@@ -555,7 +554,6 @@ namespace objl
 					std::vector<std::string> stex;
 					Vector2 vtex;
 					algorithm::split(algorithm::tail(curline), stex, " ");
-					stex.erase(std::remove_if(stex.begin(), stex.end(), [](const std::string& s) { return s.empty(); }), stex.end());
 
 					vtex.X = std::stof(stex[0]);
 					vtex.Y = std::stof(stex[1]);
@@ -568,7 +566,6 @@ namespace objl
 					std::vector<std::string> snor;
 					Vector3 vnor;
 					algorithm::split(algorithm::tail(curline), snor, " ");
-					snor.erase(std::remove_if(snor.begin(), snor.end(), [](const std::string& s) { return s.empty(); }), snor.end());
 
 					vnor.X = std::stof(snor[0]);
 					vnor.Y = std::stof(snor[1]);
@@ -949,7 +946,7 @@ namespace objl
 					}
 
 					// If Vertex is not an interior vertex
-					float angle = math::AngleBetweenV3(pPrev.Position - pCur.Position, pNext.Position - pCur.Position) * float(180 / 3.14159265359);
+					float angle = math::AngleBetweenV3(pPrev.Position - pCur.Position, pNext.Position - pCur.Position) * (180 / 3.14159265359);
 					if (angle <= 0 && angle >= 180)
 						continue;
 

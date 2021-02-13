@@ -7,7 +7,9 @@
 #include <3rdParty/glm/glm.hpp>
 #include <3rdParty/LodePNG/lodepng.h>
 #include <3rdParty/tinyobjloader/tiny_obj_loader.h>
+#pragma warning(disable:4244) // warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 #include <3rdParty/OBJ_Loader/OBJ_Loader.h>
+#pragma warning(default:4244)
 #include <Driver/ITexture.h>
 #include <Driver/IBuffer.h>
 #include <Util/ThreadPool.h>
@@ -288,7 +290,7 @@ void WorldRenderer::initDefaultAssets()
 	defaultTextures[(int)MaterialTexture::Purpose::OTHER] = stubColor;
 
 	MeshData defaultMesh;
-	loadMesh2("Box", defaultMesh);
+	loadMesh("Box", defaultMesh);
 	BufferDesc vbDesc("defaultMeshVb", sizeof(defaultMesh.vertexData[0]), (unsigned int)defaultMesh.vertexData.size(), ResourceUsage::DEFAULT, BIND_VERTEX_BUFFER);
 	vbDesc.initialData = defaultMesh.vertexData.data();
 	defaultMeshVb.reset(drv->createBuffer(vbDesc));
@@ -350,13 +352,13 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
-	std::vector<tinyobj::material_t> materials;
+	std::vector<tinyobj::material_t> mtls;
 
 	std::string warn;
 	std::string err;
 
 	auto startLoadTime = std::chrono::high_resolution_clock::now();
-	bool success = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.c_str(), dir.c_str());
+	bool success = tinyobj::LoadObj(&attrib, &shapes, &mtls, &warn, &err, path.c_str(), dir.c_str());
 	auto finishLoadTime = std::chrono::high_resolution_clock::now();
 	if (!warn.empty())
 		PLOG_WARNING << warn;
@@ -368,10 +370,10 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 
 	// Loop over materials
 	std::map<std::string, ITexture*> texturePathMap;
-	int baseMaterialIndex = (int)sceneMaterials.size();
-	for (size_t m = 0; m < materials.size(); m++)
+	std::vector<Material*> materials;
+	for (size_t m = 0; m < mtls.size(); m++)
 	{
-		const tinyobj::material_t& mtl = materials[m];
+		const tinyobj::material_t& mtl = mtls[m];
 		std::string materialName = name + "__" + mtl.name;
 
 		Material* material = new Material(materialName.c_str(), standardShaders);
@@ -407,8 +409,10 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 			}
 			material->setTexture(ShaderStage::PS, i, tex, (MaterialTexture::Purpose)i);
 		}
-		sceneMaterials.push_back(material);
+		materials.push_back(material);
 	}
+
+	sceneMaterials.insert(sceneMaterials.end(), materials.begin(), materials.end());
 
 	if (attrib.vertices.size() % 3 != 0)
 	{
@@ -448,23 +452,18 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 			if (shape.mesh.material_ids[f] != materialId || currentSubmesh == nullptr)
 			{
 				SubmeshData submesh;
+				submesh.material = nullptr;
 				materialId = shape.mesh.material_ids[f];
 				if (materialId >= 0)
 				{
 					if (materialId < materials.size())
-						submesh.materialIndex = baseMaterialIndex + materialId;
+						submesh.material = materials[materialId];
 					else
-					{
 						PLOG_WARNING << "Shape '" << shape.name << "' in mesh '" << name << "' has material id outside of materials array bounds. materialId: " << materialId << ", materials.size(): " << materials.size();
-						submesh.materialIndex = -1;
-					}
 				}
 				else if (materials.size() > 0)
-				{
 					PLOG_WARNING << "Shape material id <0 despite model having loaded materials. Model: '" << name << "', Shape: '" << shape.name << "'";
-					submesh.materialIndex = -1;
-				}
-				std::string materialNameSuffix = materialId < 0 ? "" : ("__" + materials[materialId].name);
+				std::string materialNameSuffix = materialId < 0 ? "" : ("__" + materials[materialId]->name);
 				submesh.name = shape.name + materialNameSuffix;
 				submesh.startIndex = startIndex;
 				submesh.numIndices = 0;
@@ -552,7 +551,7 @@ bool WorldRenderer::loadMesh2(const std::string& name, MeshData& out_mesh_data)
 	out_mesh_data.submeshes.resize(loader.LoadedMeshes.size());
 
 	std::map<std::string, ITexture*> texturePathMap;
-	std::map<std::string, int> materialIndexMap;
+	std::map<std::string, Material*> materialMap;
 	int nextMaterialIndex = (int)sceneMaterials.size();
 
 	// Loop over meshes
@@ -565,15 +564,15 @@ bool WorldRenderer::loadMesh2(const std::string& name, MeshData& out_mesh_data)
 		submesh.startIndex = startIndex;
 		submesh.numIndices = (unsigned int)mesh.Indices.size();
 		submesh.startVertex = startVertex;
-		submesh.materialIndex = -1;
+		submesh.material = nullptr;
 
 		// Handle material
 		const objl::Material& mtl = mesh.MeshMaterial;
 		if (!mtl.name.empty() && mtl.name != "none")
 		{
-			if (materialIndexMap.find(mtl.name) != materialIndexMap.end())
+			if (materialMap.find(mtl.name) != materialMap.end())
 			{
-				submesh.materialIndex = materialIndexMap[mtl.name];
+				submesh.material = materialMap[mtl.name];
 			}
 			else
 			{
@@ -611,8 +610,8 @@ bool WorldRenderer::loadMesh2(const std::string& name, MeshData& out_mesh_data)
 					material->setTexture(ShaderStage::PS, i, tex, (MaterialTexture::Purpose)i);
 				}
 				sceneMaterials.push_back(material);
-				submesh.materialIndex = nextMaterialIndex++;
-				materialIndexMap[mtl.name] = submesh.materialIndex;
+				submesh.material = material;
+				materialMap[mtl.name] = material;
 			}
 		}
 		else if (loader.LoadedMaterials.size() > 0)
@@ -656,7 +655,7 @@ bool WorldRenderer::loadMeshToMeshRenderer(const std::string& name, MeshRenderer
 	auto load = [&, name]
 	{
 		MeshData meshData;
-		if (!loadMesh2(name, meshData))
+		if (!loadMesh(name, meshData))
 			return false;
 		mesh_renderer.load(meshData);
 		return true;

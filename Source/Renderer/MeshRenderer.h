@@ -16,7 +16,7 @@ struct SubmeshData
 	unsigned int startIndex;
 	unsigned int numIndices;
 	unsigned int startVertex;
-	int materialIndex;
+	Material *material;
 };
 
 struct MeshData
