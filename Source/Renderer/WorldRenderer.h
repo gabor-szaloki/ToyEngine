@@ -69,6 +69,7 @@ public:
 	float ambientLightIntensity = 0.5f;
 	XMFLOAT4 ambientLightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	std::unique_ptr<Light> mainLight;
+	bool shadowEnabled = true;
 	int shadowDepthBias = 0;
 	float shadowSlopeScaledDepthBias = 0.0f;
 	float shadowDistance = 20.0f;

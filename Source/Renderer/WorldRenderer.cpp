@@ -24,9 +24,6 @@ static constexpr bool ASYNC_LOADING_ENABLED = true;
 
 WorldRenderer::WorldRenderer()
 {
-	camera.SetEye(XMVectorSet(-4.5f, 3.0f, -6.0f, 1.0f));
-	camera.SetRotation(XM_PI / 6, XM_PI / 6);
-
 	mainLight = std::make_unique<Light>();
 	mainLight->SetRotation(-XM_PI / 3, XM_PI / 3);
 
@@ -656,7 +653,7 @@ bool WorldRenderer::loadMeshToMeshRenderer(const std::string& name, MeshRenderer
 	auto load = [&, name]
 	{
 		MeshData meshData;
-		if (!loadMesh(name, meshData))
+		if (!loadMesh2(name, meshData))
 			return false;
 		mesh_renderer.load(meshData);
 		return true;
@@ -685,61 +682,20 @@ void WorldRenderer::loadScene(const std::string& scene_file)
 
 	for (auto& sceneElem : currentSceneIni)
 	{
-		auto& elemProperties = currentSceneIni[sceneElem.first];
-
-		std::string materialName = elemProperties["material"];
-		Material* material = nullptr;
-		auto it = std::find_if(sceneMaterials.begin(), sceneMaterials.end(), [&materialName](Material* m) { return materialName == m->name; });
-		if (it != sceneMaterials.end())
-			material = *it;
-		else
-		{
-			if (!materialsIni.has(materialName))
-			{
-				PLOG_ERROR << "No material found with name: " << materialName;
-				material = new Material(materialName.c_str(), { drv->getErrorShader(), drv->getErrorShader() });
-			}
-			else
-			{
-				material = new Material(materialName.c_str(), standardShaders);
-				std::array<std::string, 2> texturePaths;
-				texturePaths[0] = materialsIni[materialName]["texture0"];
-				texturePaths[1] = materialsIni[materialName]["texture1"];
-				for (int i = 0; i < texturePaths.size(); i++)
-				{
-					ITexture* tex;
-					if (texturePathMap.find(texturePaths[i]) != texturePathMap.end())
-						tex = texturePathMap[texturePaths[i]];
-					else
-					{
-						tex = loadTextureFromPng(texturePaths[i].c_str(), i == 0); // This is ugly :(
-						texturePathMap[texturePaths[i]] = tex;
-						sceneTextures.push_back(tex);
-					}
-					material->setTexture(ShaderStage::PS, i, tex, (MaterialTexture::Purpose)i); // This is even uglier :((
-				}
-			}
-			sceneMaterials.push_back(material);
-		}
-
-		MeshRenderer* mr = new MeshRenderer(sceneElem.first.c_str(), material, standardInputLayout);
-		sceneMeshRenderers.push_back(mr);
-
-		std::string modelName = elemProperties["model"];
-		loadMeshToMeshRenderer(modelName, *mr);
-
 		auto strToVector = [](std::string s)
 		{
 			if (s.length() == 0)
 				return XMVectorZero();
 			char delimiter = ',';
 			size_t pos = s.find(delimiter);
-			assert(pos != std::string::npos); // No comma
 			float x = std::stof(s.substr(0, pos));
+			if (pos == std::string::npos) // No comma
+				return XMVectorSet(x, 0, 0, 0);
 			s.erase(0, pos + 1);
 			pos = s.find(delimiter);
-			assert(pos != std::string::npos); // Only 1 comma
 			float y = std::stof(s.substr(0, pos));
+			if (pos == std::string::npos) // Only 1 comma
+				return XMVectorSet(x, y, 0, 0);
 			s.erase(0, pos + 1);
 			pos = s.find(delimiter);
 			assert(pos == std::string::npos); // More than 2 comma
@@ -747,11 +703,67 @@ void WorldRenderer::loadScene(const std::string& scene_file)
 			return XMVectorSet(x, y, z, 0);
 		};
 
-		Transform tr;
-		tr.position = strToVector(elemProperties["position"]);
-		tr.rotation = strToVector(elemProperties["rotation"]);
-		tr.scale = elemProperties["scale"].length() > 0 ? std::stof(elemProperties["scale"]) : 1.0f;
-		mr->setTransform(tr);
+		auto& elemProperties = currentSceneIni[sceneElem.first];
+
+		if (elemProperties["type"] == "model")
+		{
+			std::string materialName = elemProperties["material"];
+			Material* material = nullptr;
+			auto it = std::find_if(sceneMaterials.begin(), sceneMaterials.end(), [&materialName](Material* m) { return materialName == m->name; });
+			if (it != sceneMaterials.end())
+				material = *it;
+			else
+			{
+				if (!materialsIni.has(materialName))
+				{
+					PLOG_ERROR << "No material found with name: " << materialName;
+					material = new Material(materialName.c_str(), { drv->getErrorShader(), drv->getErrorShader() });
+				}
+				else
+				{
+					material = new Material(materialName.c_str(), standardShaders);
+					std::array<std::string, 2> texturePaths;
+					texturePaths[0] = materialsIni[materialName]["texture0"];
+					texturePaths[1] = materialsIni[materialName]["texture1"];
+					for (int i = 0; i < texturePaths.size(); i++)
+					{
+						ITexture* tex;
+						if (texturePathMap.find(texturePaths[i]) != texturePathMap.end())
+							tex = texturePathMap[texturePaths[i]];
+						else
+						{
+							tex = loadTextureFromPng(texturePaths[i].c_str(), i == 0); // This is ugly :(
+							texturePathMap[texturePaths[i]] = tex;
+							sceneTextures.push_back(tex);
+						}
+						material->setTexture(ShaderStage::PS, i, tex, (MaterialTexture::Purpose)i); // This is even uglier :((
+					}
+				}
+				sceneMaterials.push_back(material);
+			}
+
+			MeshRenderer* mr = new MeshRenderer(sceneElem.first.c_str(), material, standardInputLayout);
+			sceneMeshRenderers.push_back(mr);
+
+			std::string modelName = elemProperties["model"];
+			loadMeshToMeshRenderer(modelName, *mr);
+
+			Transform tr;
+			tr.position = strToVector(elemProperties["position"]);
+			tr.rotation = strToVector(elemProperties["rotation"]) * DEG_TO_RAD;
+			tr.scale = elemProperties["scale"].length() > 0 ? std::stof(elemProperties["scale"]) : 1.0f;
+			mr->setTransform(tr);
+		}
+		else if (elemProperties["type"] == "camera")
+		{
+			if (elemProperties.has("position"))
+				camera.SetEye(strToVector(elemProperties["position"]));
+			if (elemProperties.has("rotation"))
+			{
+				XMVECTOR rotVec = strToVector(elemProperties["rotation"]) * DEG_TO_RAD;
+				camera.SetRotation(rotVec.m128_f32[0], rotVec.m128_f32[1]);
+			}
+		}
 	}
 }
 
@@ -778,6 +790,9 @@ void WorldRenderer::performShadowPass(const XMMATRIX& lightViewMatrix, const XMM
 
 	RenderTargetClearParams clearParams(CLEAR_FLAG_DEPTH, 0, 1.0f);
 	drv->clearRenderTargets(clearParams);
+
+	if (!shadowEnabled)
+		return;
 
 	PerCameraConstantBufferData perCameraCbData{};
 	perCameraCbData.view = lightViewMatrix;

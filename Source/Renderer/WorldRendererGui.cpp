@@ -84,6 +84,7 @@ void WorldRenderer::lightingGui()
 
 	if (ImGui::CollapsingHeader("Main light shadows", ImGuiTreeNodeFlags_DefaultOpen))
 	{
+		ImGui::Checkbox("Enabled", &shadowEnabled);
 		ImGui::SliderFloat("Shadow distance", &shadowDistance, 1.0f, 100.0f);
 		ImGui::SliderFloat("Directional distance", &directionalShadowDistance, 1.0f, 100.0f);
 		int shadowResolution = getShadowResolution();
