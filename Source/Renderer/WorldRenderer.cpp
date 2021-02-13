@@ -288,7 +288,7 @@ void WorldRenderer::initDefaultAssets()
 	defaultTextures[(int)MaterialTexture::Purpose::OTHER] = stubColor;
 
 	MeshData defaultMesh;
-	loadMesh("Box", defaultMesh);
+	loadMesh2("Box", defaultMesh);
 	BufferDesc vbDesc("defaultMeshVb", sizeof(defaultMesh.vertexData[0]), (unsigned int)defaultMesh.vertexData.size(), ResourceUsage::DEFAULT, BIND_VERTEX_BUFFER);
 	vbDesc.initialData = defaultMesh.vertexData.data();
 	defaultMeshVb.reset(drv->createBuffer(vbDesc));
@@ -410,57 +410,32 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 		sceneMaterials.push_back(material);
 	}
 
+	if (attrib.vertices.size() % 3 != 0)
+	{
+		PLOG_ERROR << "Error loading mesh '" << name << "'. \"attrib.vertices.size() % 3 != 0\"";
+		return false;
+	}
+
 	unsigned int startIndex = 0;
-	unsigned int startVertex = 0;
-	mesh_data.submeshes.resize(shapes.size());
+	unsigned int shapeStartIndex = 0;
+	mesh_data.vertexData.resize(attrib.vertices.size() / 3);
+	mesh_data.submeshes.clear();
 
 	// Loop over shapes
 	for (size_t s = 0; s < shapes.size(); s++)
 	{
-		// TODO: split shape meshes by material ids
-
 		const tinyobj::shape_t& shape = shapes[s];
-		const size_t numFaces = shape.mesh.num_face_vertices.size();
+		const size_t numIndices = shape.mesh.indices.size();
 
 		constexpr size_t NUM_VERTICES_PER_FACE = 3; // Only triangles are supported now.
 
-		if (attrib.vertices.size() % 3 != 0)
-		{
-			PLOG_ERROR << "Error loading mesh '" << name << "'. \"attrib.vertices.size() % 3 != 0\"";
-			return false;
-		}
+		mesh_data.indexData.resize(shapeStartIndex + numIndices);
 
-		SubmeshData& submesh = mesh_data.submeshes[s];
-		submesh.name = shape.name;
-		submesh.startIndex = startIndex;
-		submesh.numIndices = (unsigned int)(numFaces * NUM_VERTICES_PER_FACE);
-		submesh.startVertex = startVertex;
-		submesh.numVertices = (unsigned int)attrib.vertices.size() / 3;
-		submesh.materialIndex = -1;
-
-		if (numFaces == 0)
-		{
-			PLOG_WARNING << "Shape '" << shape.name << "' in mesh '" << name << "' has no faces.";
-			continue;
-		}
-
-		int materialId = shape.mesh.material_ids[0];
-		bool materialIdMismatchLogged = false;
-		if (materialId >= 0)
-		{
-			if (materialId >= materials.size())
-				PLOG_WARNING << "Shape '" << shape.name << "' in mesh '" << name << "' has material id outside of materials array bounds. materialId: " << materialId << ", materials.size(): " << materials.size();
-			submesh.materialIndex = baseMaterialIndex + materialId;
-		}
-		else if (materials.size() > 0)
-		{
-			PLOG_WARNING << "Shape material id <0 despite model having loaded materials. Model: '" << name << "', Shape: '" << shape.name << "'";
-		}
-
-		mesh_data.indexData.resize(startIndex + submesh.numIndices);
-		mesh_data.vertexData.resize(startVertex + submesh.numVertices);
+		int materialId = -1;
+		SubmeshData* currentSubmesh = nullptr;
 
 		// Loop over faces
+		const size_t numFaces = numIndices / NUM_VERTICES_PER_FACE;
 		for (size_t f = 0; f < numFaces; f++)
 		{
 			if (shape.mesh.num_face_vertices[f] != NUM_VERTICES_PER_FACE)
@@ -469,19 +444,43 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 				return false;
 			}
 
-			if (shape.mesh.material_ids[f] != materialId && !materialIdMismatchLogged)
+			// Create a new submesh for each new material used in shape
+			if (shape.mesh.material_ids[f] != materialId || currentSubmesh == nullptr)
 			{
-				PLOG_WARNING << "Shape '" << shape.name << "' in mesh '" << name << "' has different materials on different faces.";
-				materialIdMismatchLogged = true;
+				SubmeshData submesh;
+				materialId = shape.mesh.material_ids[f];
+				if (materialId >= 0)
+				{
+					if (materialId < materials.size())
+						submesh.materialIndex = baseMaterialIndex + materialId;
+					else
+					{
+						PLOG_WARNING << "Shape '" << shape.name << "' in mesh '" << name << "' has material id outside of materials array bounds. materialId: " << materialId << ", materials.size(): " << materials.size();
+						submesh.materialIndex = -1;
+					}
+				}
+				else if (materials.size() > 0)
+				{
+					PLOG_WARNING << "Shape material id <0 despite model having loaded materials. Model: '" << name << "', Shape: '" << shape.name << "'";
+					submesh.materialIndex = -1;
+				}
+				std::string materialNameSuffix = materialId < 0 ? "" : ("__" + materials[materialId].name);
+				submesh.name = shape.name + materialNameSuffix;
+				submesh.startIndex = startIndex;
+				submesh.numIndices = 0;
+				submesh.startVertex = 0;
+				mesh_data.submeshes.push_back(submesh);
+				currentSubmesh = &mesh_data.submeshes[mesh_data.submeshes.size() - 1];
 			}
 
 			// Loop over vertices in the face.
 			for (size_t v = 0; v < NUM_VERTICES_PER_FACE; v++)
 			{
-				tinyobj::index_t idx = shape.mesh.indices[f * NUM_VERTICES_PER_FACE + v];
+				size_t i = f * NUM_VERTICES_PER_FACE + v;
+				tinyobj::index_t idx = shape.mesh.indices[i];
 
-				mesh_data.indexData[startIndex + f * NUM_VERTICES_PER_FACE + v] = idx.vertex_index;
-				StandardVertexData& vertex = mesh_data.vertexData[startVertex + idx.vertex_index];
+				mesh_data.indexData[shapeStartIndex + i] = idx.vertex_index;
+				StandardVertexData& vertex = mesh_data.vertexData[idx.vertex_index];
 
 				vertex.position.x = attrib.vertices[3 * idx.vertex_index + 0] * importScale;
 				vertex.position.y = attrib.vertices[3 * idx.vertex_index + 1] * importScale;
@@ -507,10 +506,12 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 					(((unsigned int)(colorF4.z * 255u)) & 0xFFu) << 16 |
 					(((unsigned int)(colorF4.w * 255u)) & 0xFFu) << 24;
 			}
+
+			startIndex += NUM_VERTICES_PER_FACE;
+			currentSubmesh->numIndices += NUM_VERTICES_PER_FACE;
 		}
 
-		startIndex += submesh.numIndices;
-		startVertex += submesh.numVertices;
+		shapeStartIndex = startIndex;
 	}
 
 	auto finishProcessing = std::chrono::high_resolution_clock::now();
@@ -564,7 +565,6 @@ bool WorldRenderer::loadMesh2(const std::string& name, MeshData& out_mesh_data)
 		submesh.startIndex = startIndex;
 		submesh.numIndices = (unsigned int)mesh.Indices.size();
 		submesh.startVertex = startVertex;
-		submesh.numVertices = (unsigned int)mesh.Vertices.size();
 		submesh.materialIndex = -1;
 
 		// Handle material
@@ -641,7 +641,7 @@ bool WorldRenderer::loadMesh2(const std::string& name, MeshData& out_mesh_data)
 		}
 
 		startIndex += submesh.numIndices;
-		startVertex += submesh.numVertices;
+		startVertex += (unsigned int)mesh.Vertices.size();
 	}
 
 	auto finishProcessing = std::chrono::high_resolution_clock::now();
@@ -656,7 +656,7 @@ bool WorldRenderer::loadMeshToMeshRenderer(const std::string& name, MeshRenderer
 	auto load = [&, name]
 	{
 		MeshData meshData;
-		if (!loadMesh(name, meshData))
+		if (!loadMesh2(name, meshData))
 			return false;
 		mesh_renderer.load(meshData);
 		return true;

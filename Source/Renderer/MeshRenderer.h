@@ -13,10 +13,9 @@ class Material;
 struct SubmeshData
 {
 	std::string name;
-	unsigned int startVertex;
-	unsigned int numVertices;
 	unsigned int startIndex;
 	unsigned int numIndices;
+	unsigned int startVertex;
 	int materialIndex;
 };
 
