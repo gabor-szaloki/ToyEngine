@@ -72,7 +72,7 @@ public:
 	bool shadowEnabled = true;
 	int shadowDepthBias = 0;
 	float shadowSlopeScaledDepthBias = 0.0f;
-	float shadowDistance = 20.0f;
+	float shadowDistance = 30.0f;
 	float directionalShadowDistance = 20.0f;
 
 	std::array<ITexture*, (int)MaterialTexture::Purpose::_COUNT> defaultTextures;
