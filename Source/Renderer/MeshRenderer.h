@@ -51,7 +51,8 @@ public:
 
 private:
 	bool enabled = true;
-	int numSubmeshesEnabled = 0;
+	int firstSubmeshToRender = 0;
+	int lastSubmeshToRender = 0;
 	Transform transform;
 	XMMATRIX transformMatrix = XMMatrixIdentity();
 

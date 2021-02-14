@@ -39,7 +39,9 @@ void MeshRenderer::load(const MeshData& mesh_data)
 	ib.reset(drv->createBuffer(ibDesc));
 
 	submeshes.assign(mesh_data.submeshes.begin(), mesh_data.submeshes.end());
-	numSubmeshesEnabled = (int)submeshes.size();
+
+	firstSubmeshToRender = 0;
+	lastSubmeshToRender = (int)submeshes.size() - 1;
 }
 
 void MeshRenderer::render(RenderPass render_pass)
@@ -83,7 +85,7 @@ void MeshRenderer::render(RenderPass render_pass)
 	else
 	{
 		bool materialOverridden = false;
-		for (int i = 0; i < numSubmeshesEnabled; i++)
+		for (int i = firstSubmeshToRender; i <= lastSubmeshToRender; i++)
 		{
 			const SubmeshData& submesh = submeshes[i];
 			if (!submesh.enabled)
@@ -124,9 +126,14 @@ void MeshRenderer::gui()
 	static std::string buf;
 	buf = "Enabled##" + name;
 	ImGui::Checkbox(buf.c_str(), &enabled);
-	buf = "Render submeshes##" + name;
-	ImGui::SliderInt(buf.c_str(), &numSubmeshesEnabled, 0, (int)submeshes.size());
-	ImGui::Text("Last submesh rendered: %s", numSubmeshesEnabled > 0 ? submeshes[numSubmeshesEnabled - 1].name.c_str() : "-");
+
+	if (submeshes.size() > 0)
+	{
+		buf = "Submesh range to render##" + name;
+		ImGui::DragIntRange2(buf.c_str(), &firstSubmeshToRender, &lastSubmeshToRender, 1.0f, 0, submeshes.size() - 1);
+		ImGui::Text("First submesh rendered: %s", submeshes[firstSubmeshToRender].name.c_str());
+		ImGui::Text("Last submesh rendered: %s", submeshes[lastSubmeshToRender].name.c_str());
+	}
 
 	Transform tr = getTransform();
 	bool changed = false;
