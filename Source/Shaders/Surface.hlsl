@@ -5,7 +5,7 @@
 #include "NormalMapping.hlsl"
 
 Texture2D _BaseTexture   : register(t0);
-Texture2D _NormalTexture : register(t1);
+Texture2D _NormalRoughMetalTexture : register(t1);
 SamplerState _Sampler    : register(s0);
 
 struct SurfaceOutput
@@ -25,14 +25,14 @@ SurfaceOutput Surface(float3 pointToEye, float3 normal, float2 uv, float4 vertCo
 	s.albedo = baseTextureSample.rgb * vertColor.rgb;
 
 	// Normal
-	float3 normalTextureSample = _NormalTexture.Sample(_Sampler, uv).rgb;
-	s.normal = perturb_normal(normal, normalTextureSample, pointToEye, uv);
-
-	// Roughness
-	s.roughness = baseTextureSample.a;
+	float4 normalRoughMetal = _NormalRoughMetalTexture.Sample(_Sampler, uv);
+	s.normal = perturb_normal(normal, float3(normalRoughMetal.xy, 0), pointToEye, uv);
 
 	// Metalness
-	s.metalness = 0.0f;
+	s.metalness = normalRoughMetal.z;
+
+	// Roughness
+	s.roughness = normalRoughMetal.w;
 
 	return s;
 }

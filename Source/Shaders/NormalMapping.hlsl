@@ -5,6 +5,7 @@
 
 #define WITH_NORMALMAP_UNSIGNED 1
 #define WITH_NORMALMAP_GREEN_UP 1
+#define WITH_NORMALMAP_2CHANNEL 1
 
 float3x3 cotangent_frame(float3 N, float3 p, float2 uv)
 {

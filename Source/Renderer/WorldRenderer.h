@@ -89,6 +89,7 @@ private:
 	// TODO: Separate loader code from WorldRenderer
 	enum class LoadExecutionMode { ASYNC, SYNC };
 	ITexture* loadTextureFromPng(const std::string& path, bool srgb, LoadExecutionMode lem = LoadExecutionMode::ASYNC);
+	bool loadTexturesToStandardMaterial(const MaterialTexturePaths& paths, Material* material, LoadExecutionMode lem = LoadExecutionMode::ASYNC);
 	bool loadMesh(const std::string& name, MeshData& mesh_data);
 	bool loadMesh2(const std::string& name, MeshData& mesh_data);
 	bool loadMeshToMeshRenderer(const std::string& name, MeshRenderer& mesh_renderer, LoadExecutionMode lem = LoadExecutionMode::ASYNC);

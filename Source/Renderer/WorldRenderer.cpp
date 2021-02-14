@@ -279,7 +279,7 @@ void WorldRenderer::closeShaders()
 void WorldRenderer::initDefaultAssets()
 {
 	ITexture* stubColor = loadTextureFromPng("Assets/Textures/gray_base.png", true, LoadExecutionMode::SYNC);
-	ITexture* stubNormal = loadTextureFromPng("Assets/Textures/flat_nrm.png", false, LoadExecutionMode::SYNC);
+	ITexture* stubNormal = loadTextureFromPng("Assets/Textures/flatnorm_dielectric_halfrough_nrm.png", false, LoadExecutionMode::SYNC);
 	managedTextures.push_back(stubColor);
 	managedTextures.push_back(stubNormal);
 	defaultTextures[(int)MaterialTexture::Purpose::COLOR] = stubColor;
@@ -287,7 +287,7 @@ void WorldRenderer::initDefaultAssets()
 	defaultTextures[(int)MaterialTexture::Purpose::OTHER] = stubColor;
 
 	MeshData defaultMesh;
-	loadMesh("Box", defaultMesh);
+	loadMesh2("Box", defaultMesh);
 	BufferDesc vbDesc("defaultMeshVb", sizeof(defaultMesh.vertexData[0]), (unsigned int)defaultMesh.vertexData.size(), ResourceUsage::DEFAULT, BIND_VERTEX_BUFFER);
 	vbDesc.initialData = defaultMesh.vertexData.data();
 	defaultMeshVb.reset(drv->createBuffer(vbDesc));
@@ -311,9 +311,12 @@ ITexture* WorldRenderer::loadTextureFromPng(const std::string& path, bool srgb, 
 		unsigned int width, height;
 		unsigned int error = lodepng::decode(pngData, width, height, path);
 		if (error != 0)
+		{
 			PLOG_ERROR << "Error loading texture." << std::endl
-			<< "\tFile: " << path << std::endl
-			<< "\tError: " << lodepng_error_text(error);
+				<< "\tFile: " << path << std::endl
+				<< "\tError: " << lodepng_error_text(error);
+			return;
+		}
 
 		TextureDesc tDesc(path, width, height, srgb ? TexFmt::R8G8B8A8_UNORM_SRGB : TexFmt::R8G8B8A8_UNORM, 0);
 		tDesc.bindFlags = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET;
@@ -329,6 +332,150 @@ ITexture* WorldRenderer::loadTextureFromPng(const std::string& path, bool srgb, 
 		load();
 
 	return texture;
+}
+
+bool WorldRenderer::loadTexturesToStandardMaterial(const MaterialTexturePaths& paths, Material* material, LoadExecutionMode lem)
+{
+	ITexture* baseTexture = drv->createTextureStub();
+	ITexture* normalRoughMetalTexture = drv->createTextureStub();
+
+	auto load = [paths, material, baseTexture, normalRoughMetalTexture]
+	{
+		auto logLoadError = [](unsigned int error, const std::string& path)
+		{
+			if (error != 0)
+			{
+				PLOG_ERROR << "Error loading texture." << std::endl
+					<< "\tFile: " << path << std::endl
+					<< "\tError: " << lodepng_error_text(error);
+				return true;
+			}
+			return false;
+		};
+
+		unsigned int error = 0;
+
+		if (!paths.albedo.empty())
+		{
+			PLOG_INFO << "Loading texture from file: " << paths.albedo;
+			std::vector<unsigned char> albedoData;
+			unsigned int albedoWidth, albedoHeight;
+			error = lodepng::decode(albedoData, albedoWidth, albedoHeight, paths.albedo);
+			if (logLoadError(error, paths.albedo))
+				return;
+
+			TextureDesc baseTexDesc(material->name + "_base", albedoWidth, albedoHeight, TexFmt::R8G8B8A8_UNORM_SRGB, 0);
+			baseTexDesc.bindFlags = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET;
+			baseTexDesc.miscFlags = RESOURCE_MISC_GENERATE_MIPS;
+			baseTexture->recreate(baseTexDesc);
+			baseTexture->updateData(0, nullptr, (void*)albedoData.data());
+			baseTexture->generateMips();
+		}
+
+		bool hasNormal = !paths.normal.empty();
+		bool hasRoughness = !paths.roughness.empty();
+		bool hasMetalness = !paths.metalness.empty();
+
+		if (!hasNormal && !hasRoughness && !hasMetalness)
+			return;
+
+		unsigned int normalRoughMetalWidth = 0, normalRoughMetalHeight = 0;
+
+		std::vector<unsigned char> normalData;
+		unsigned int normalWidth = 0, normalHeight = 0;
+		if (hasNormal)
+		{
+			PLOG_INFO << "Loading texture from file: " << paths.normal;
+			error = lodepng::decode(normalData, normalWidth, normalHeight, paths.normal);
+			if (logLoadError(error, paths.normal))
+				return;
+			normalRoughMetalWidth = normalWidth;
+			normalRoughMetalHeight = normalHeight;
+		}
+		
+		std::vector<unsigned char> roughnessData;
+		unsigned int roughnessWidth = 0, roughnessHeight = 0;
+		if (hasRoughness)
+		{
+			PLOG_INFO << "Loading texture from file: " << paths.roughness;
+			error = lodepng::decode(roughnessData, roughnessWidth, roughnessHeight, paths.roughness);
+			if (logLoadError(error, paths.roughness))
+				return;
+			if (hasNormal && (roughnessWidth != normalRoughMetalWidth || roughnessHeight != normalRoughMetalHeight))
+			{
+				PLOG_ERROR << "Mismatching dimensions of normal and roughness texture." << std::endl
+					<< "\tNormal: " << paths.normal << " (" << normalRoughMetalWidth << "x" << normalRoughMetalWidth << ")" << std::endl
+					<< "\tRougness: " << paths.roughness << " (" << roughnessWidth << "x" << normalRoughMetalWidth << ")";
+				return;
+			}
+			normalRoughMetalWidth = roughnessWidth;
+			normalRoughMetalHeight = roughnessHeight;
+		}
+
+		std::vector<unsigned char> metalnessData;
+		unsigned int metalnessWidth = 0, metalnessHeight = 0;
+		if (hasMetalness)
+		{
+			PLOG_INFO << "Loading texture from file: " << paths.metalness;
+			error = lodepng::decode(metalnessData, metalnessWidth, metalnessHeight, paths.metalness);
+			if (logLoadError(error, paths.metalness))
+				return;
+			if ((hasNormal || hasRoughness) && (metalnessWidth != normalRoughMetalWidth || metalnessHeight != normalRoughMetalHeight))
+			{
+				PLOG_ERROR << "Mismatching dimensions of metalness and normal or roughness texture." << std::endl
+					<< "\tNormal or roughness: " << paths.normal << " (" << normalRoughMetalWidth << "x" << normalRoughMetalHeight << ")" << std::endl
+					<< "\tMetalness: " << paths.metalness << " (" << metalnessWidth << "x" << metalnessHeight << ")";
+				return;
+			}
+			normalRoughMetalWidth = metalnessWidth;
+			normalRoughMetalHeight = metalnessHeight;
+		}
+
+		assert(!hasNormal || !hasRoughness || normalData.size() == roughnessData.size());
+		assert(!hasNormal || !hasMetalness || normalData.size() == metalnessData.size());
+		assert(!hasRoughness || !hasMetalness || roughnessData.size() == metalnessData.size());
+
+		static constexpr int NUM_CHANNELS = 4;
+		const int numTexels = normalRoughMetalWidth * normalRoughMetalHeight;
+		const int numBytes = numTexels * NUM_CHANNELS;
+
+		if (!hasNormal)
+			normalData.assign(numBytes, 127u);
+		if (!hasRoughness)
+			roughnessData.assign(numBytes, 127u);
+		if (!hasMetalness)
+			metalnessData.assign(numBytes, 0);
+
+		std::vector<unsigned char> normalRoughMetalData;
+		normalRoughMetalData.resize(numBytes);
+		for (int i = 0; i < numTexels; i++)
+		{
+			int r = i * NUM_CHANNELS + 0;
+			int g = i * NUM_CHANNELS + 1;
+			int b = i * NUM_CHANNELS + 2;
+			int a = i * NUM_CHANNELS + 3;
+			normalRoughMetalData[r] = normalData[r];
+			normalRoughMetalData[g] = normalData[g];
+			normalRoughMetalData[b] = metalnessData[r];
+			normalRoughMetalData[a] = roughnessData[r];
+		}
+
+		TextureDesc normalRoughMetalTexDesc(material->name + "_normRoughMetal", normalWidth, normalHeight, TexFmt::R8G8B8A8_UNORM, 0);
+		normalRoughMetalTexDesc.bindFlags = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET;
+		normalRoughMetalTexDesc.miscFlags = RESOURCE_MISC_GENERATE_MIPS;
+		normalRoughMetalTexture->recreate(normalRoughMetalTexDesc);
+		normalRoughMetalTexture->updateData(0, nullptr, (void*)normalRoughMetalData.data());
+		normalRoughMetalTexture->generateMips();
+	};
+
+	if (lem == LoadExecutionMode::ASYNC && ASYNC_LOADING_ENABLED)
+		threadPool->enqueue(load);
+	else
+		load();
+
+	material->setTexture(ShaderStage::PS, 0, baseTexture, MaterialTexture::Purpose::COLOR);
+	material->setTexture(ShaderStage::PS, 1, normalRoughMetalTexture, MaterialTexture::Purpose::NORMAL);
+	return true;
 }
 
 bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
@@ -366,45 +513,29 @@ bool WorldRenderer::loadMesh(const std::string& name, MeshData& mesh_data)
 	PLOG_INFO << "Loading mesh '" << name << "' successful. It took "<< (finishLoadTime - startLoadTime).count() / 1e9 << " seconds. Processing...";
 
 	// Loop over materials
-	std::map<std::string, ITexture*> texturePathMap;
 	std::vector<Material*> materials;
 	for (size_t m = 0; m < mtls.size(); m++)
 	{
 		const tinyobj::material_t& mtl = mtls[m];
 
 		Material* material = new Material(name + "__" + mtl.name, standardShaders);
-		std::array<std::string, 2> texturePaths;
-		texturePaths[0] = mtl.diffuse_texname;
-		texturePaths[1] = mtl.bump_texname;
-		for (int i = 0; i < texturePaths.size(); i++)
-		{
-			MaterialTexture::Purpose purpose = (MaterialTexture::Purpose)i; // :(
-			ITexture* tex;
-			if (texturePaths[i].empty())
-				tex = defaultTextures[(int)purpose];
-			else if (texturePathMap.find(texturePaths[i]) != texturePathMap.end())
-				tex = texturePathMap[texturePaths[i]];
-			else
-			{
-				bool srgb = purpose == MaterialTexture::Purpose::COLOR;
-				std::string fullpath = dir + "/" + texturePaths[i];
-				if (std::filesystem::exists(fullpath))
-				{
-					tex = loadTextureFromPng(dir + "/" + texturePaths[i], srgb);
-					sceneTextures.push_back(tex);
-				}
-				else
-				{
-					PLOG_WARNING << "Texture not found at path: " << fullpath << std::endl
-						<< "\tModel: " << name << std::endl
-						<< "\tMaterial: " << mtl.name << std::endl
-						<< "\tTexture: " << texturePaths[i];
-					tex = defaultTextures[(int)purpose];
-				}
-				texturePathMap[texturePaths[i]] = tex;
-			}
-			material->setTexture(ShaderStage::PS, i, tex, (MaterialTexture::Purpose)i);
-		}
+
+		MaterialTexturePaths paths;
+		if (!mtl.diffuse_texname.empty())
+			paths.albedo = dir + "/" + mtl.diffuse_texname;
+		if (!mtl.bump_texname.empty())
+			paths.normal = dir + "/" + mtl.bump_texname;
+		if (!mtl.specular_highlight_texname.empty())
+			paths.roughness = dir + "/" + mtl.specular_highlight_texname;
+		if (!mtl.ambient_texname.empty())
+			paths.metalness = dir + "/" + mtl.ambient_texname;
+
+		loadTexturesToStandardMaterial(paths, material);
+
+		for (const std::vector<MaterialTexture>& stageTextures : material->getTextures())
+			for (const MaterialTexture& matTex : stageTextures)
+				sceneTextures.push_back(matTex.tex);
+
 		materials.push_back(material);
 	}
 
@@ -547,7 +678,6 @@ bool WorldRenderer::loadMesh2(const std::string& name, MeshData& out_mesh_data)
 	unsigned int startVertex = 0;
 	out_mesh_data.submeshes.resize(loader.LoadedMeshes.size());
 
-	std::map<std::string, ITexture*> texturePathMap;
 	std::map<std::string, Material*> materialMap;
 	int nextMaterialIndex = (int)sceneMaterials.size();
 
@@ -575,38 +705,23 @@ bool WorldRenderer::loadMesh2(const std::string& name, MeshData& out_mesh_data)
 			else
 			{
 				Material* material = new Material(name + "__" + mtl.name, standardShaders);
-				std::array<std::string, 2> texturePaths;
-				texturePaths[0] = mtl.map_Kd;
-				texturePaths[1] = mtl.map_bump; // need to get actual normal maps instead of bumpmaps
-				for (int i = 0; i < texturePaths.size(); i++)
-				{
-					MaterialTexture::Purpose purpose = (MaterialTexture::Purpose)i; // :(
-					ITexture* tex;
-					if (texturePaths[i].empty())
-						tex = defaultTextures[(int)purpose];
-					else if (texturePathMap.find(texturePaths[i]) != texturePathMap.end())
-						tex = texturePathMap[texturePaths[i]];
-					else
-					{
-						bool srgb = purpose == MaterialTexture::Purpose::COLOR;
-						std::string fullpath = dir + "/" + texturePaths[i];
-						if (std::filesystem::exists(fullpath))
-						{
-							tex = loadTextureFromPng(dir + "/" + texturePaths[i], srgb);
-							sceneTextures.push_back(tex);
-						}
-						else
-						{
-							PLOG_WARNING << "Texture not found at path: " << fullpath << std::endl
-								<< "\tModel: " << name << std::endl
-								<< "\tMaterial: " << mtl.name << std::endl
-								<< "\tTexture: " << texturePaths[i];
-							tex = defaultTextures[(int)purpose];
-						}
-						texturePathMap[texturePaths[i]] = tex;
-					}
-					material->setTexture(ShaderStage::PS, i, tex, (MaterialTexture::Purpose)i);
-				}
+
+				MaterialTexturePaths paths;
+				if (!mtl.map_Kd.empty())
+					paths.albedo = dir + "/" + mtl.map_Kd;
+				if (!mtl.map_bump.empty())
+					paths.normal = dir + "/" + mtl.map_bump;
+				if (!mtl.map_Ns.empty())
+					paths.roughness = dir + "/" + mtl.map_Ns;
+				if (!mtl.map_Ka.empty())
+					paths.metalness = dir + "/" + mtl.map_Ka;
+
+				loadTexturesToStandardMaterial(paths, material);
+
+				for (const std::vector<MaterialTexture>& stageTextures : material->getTextures())
+					for (const MaterialTexture& matTex : stageTextures)
+						sceneTextures.push_back(matTex.tex);
+
 				sceneMaterials.push_back(material);
 				submesh.material = material;
 				materialMap[mtl.name] = material;
@@ -722,22 +837,18 @@ void WorldRenderer::loadScene(const std::string& scene_file)
 				else
 				{
 					material = new Material(materialName.c_str(), standardShaders);
-					std::array<std::string, 2> texturePaths;
-					texturePaths[0] = materialsIni[materialName]["texture0"];
-					texturePaths[1] = materialsIni[materialName]["texture1"];
-					for (int i = 0; i < texturePaths.size(); i++)
-					{
-						ITexture* tex;
-						if (texturePathMap.find(texturePaths[i]) != texturePathMap.end())
-							tex = texturePathMap[texturePaths[i]];
-						else
-						{
-							tex = loadTextureFromPng(texturePaths[i].c_str(), i == 0); // This is ugly :(
-							texturePathMap[texturePaths[i]] = tex;
-							sceneTextures.push_back(tex);
-						}
-						material->setTexture(ShaderStage::PS, i, tex, (MaterialTexture::Purpose)i); // This is even uglier :((
-					}
+
+					MaterialTexturePaths texturePaths;
+					texturePaths.albedo = materialsIni[materialName]["albedo_tex"];
+					texturePaths.normal = materialsIni[materialName]["normal_tex"];
+					texturePaths.roughness = materialsIni[materialName]["roughness_tex"];
+					texturePaths.metalness = materialsIni[materialName]["metalness_tex"];
+
+					loadTexturesToStandardMaterial(texturePaths, material);
+
+					for (const std::vector<MaterialTexture>& stageTextures : material->getTextures())
+						for (const MaterialTexture& matTex : stageTextures)
+							sceneTextures.push_back(matTex.tex);
 				}
 				sceneMaterials.push_back(material);
 			}
