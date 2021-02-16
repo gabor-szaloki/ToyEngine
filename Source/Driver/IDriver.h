@@ -19,6 +19,7 @@ public:
 	virtual IBuffer* createBuffer(const BufferDesc& desc) = 0;
 	virtual ResId createRenderState(const RenderStateDesc& desc) = 0;
 	virtual ResId createShaderSet(const ShaderSetDesc& desc) = 0;
+	virtual ResId createComputeShader(const ComputeShaderDesc& desc) = 0;
 	virtual ResId createInputLayout(const InputLayoutElementDesc* descs, unsigned int num_descs, ResId shader_set) = 0;
 	virtual void destroyResource(ResId res_id) = 0;
 
@@ -33,11 +34,12 @@ public:
 	virtual void setRenderTarget(ResId target_id, ResId depth_id) = 0;
 	virtual void setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id) = 0;
 	virtual void setRenderState(ResId res_id) = 0;
-	virtual void setShaderSet(ResId res_id) = 0;
+	virtual void setShader(ResId res_id) = 0;
 	virtual void setView(float x, float y, float w, float h, float z_min, float z_max) = 0;
 
 	virtual void draw(unsigned int vertex_count, unsigned int start_vertex) = 0;
 	virtual void drawIndexed(unsigned int index_count, unsigned int start_index, int base_vertex) = 0;
+	virtual void dispatch(unsigned int num_threadgroups_x, unsigned int num_threadgroups_y, unsigned int num_threadgroups_z) = 0;
 
 	virtual void clearRenderTargets(const RenderTargetClearParams clear_params) = 0;
 

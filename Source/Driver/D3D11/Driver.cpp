@@ -171,6 +171,12 @@ ResId Driver::createShaderSet(const ShaderSetDesc& desc)
 	return shaderSet->getId();
 }
 
+ResId Driver::createComputeShader(const ComputeShaderDesc& desc)
+{
+	ShaderSet* shaderSet = new ShaderSet(desc);
+	return shaderSet->getId();
+}
+
 ResId Driver::createInputLayout(const InputLayoutElementDesc* descs, unsigned int num_descs, ResId shader_set)
 {
 	assert(descs != nullptr);
@@ -452,7 +458,7 @@ void Driver::setRenderState(ResId res_id)
 	context->OMSetDepthStencilState(rs->getDepthStencilState(), 0);
 }
 
-void Driver::setShaderSet(ResId res_id)
+void Driver::setShader(ResId res_id)
 {
 	RESOURCE_LOCK_GUARD
 	assert(shaders.find(res_id) != shaders.end());
@@ -479,6 +485,12 @@ void Driver::drawIndexed(unsigned int index_count, unsigned int start_index, int
 {
 	CONTEXT_LOCK_GUARD
 	context->DrawIndexed(index_count, start_index, base_vertex);
+}
+
+void Driver::dispatch(unsigned int num_threadgroups_x, unsigned int num_threadgroups_y, unsigned int num_threadgroups_z)
+{
+	CONTEXT_LOCK_GUARD
+	context->Dispatch(num_threadgroups_x, num_threadgroups_y, num_threadgroups_z);
 }
 
 void Driver::clearRenderTargets(const RenderTargetClearParams clear_params)

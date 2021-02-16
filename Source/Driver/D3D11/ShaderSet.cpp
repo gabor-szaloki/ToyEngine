@@ -5,12 +5,19 @@
 
 #include <Common.h>
 
+#include <system_error>
 #include <assert.h>
 #include <functional>
 
 using namespace drv_d3d11;
 
-ShaderSet::ShaderSet(const ShaderSetDesc& desc_) : desc(desc_)
+ShaderSet::ShaderSet(const ShaderSetDesc& desc_) : desc(desc_), isCompute_(false)
+{
+	compileAll();
+	id = Driver::get().registerShaderSet(this);
+}
+
+ShaderSet::ShaderSet(const ComputeShaderDesc& desc_) : computeDesc(desc_), isCompute_(true)
 {
 	compileAll();
 	id = Driver::get().registerShaderSet(this);
@@ -31,11 +38,19 @@ bool ShaderSet::recompile()
 void ShaderSet::set()
 {
 	CONTEXT_LOCK_GUARD
-	Driver::get().getContext().VSSetShader(vs, nullptr, 0);
-	Driver::get().getContext().PSSetShader(ps, nullptr, 0);
-	Driver::get().getContext().GSSetShader(gs, nullptr, 0);
-	Driver::get().getContext().HSSetShader(hs, nullptr, 0);
-	Driver::get().getContext().DSSetShader(ds, nullptr, 0);
+	ID3D11DeviceContext& ctx = Driver::get().getContext();
+	if (isCompute_)
+	{
+		ctx.CSSetShader(cs, nullptr, 0);
+	}
+	else
+	{
+		ctx.VSSetShader(vs, nullptr, 0);
+		ctx.PSSetShader(ps, nullptr, 0);
+		ctx.GSSetShader(gs, nullptr, 0);
+		ctx.HSSetShader(hs, nullptr, 0);
+		ctx.DSSetShader(ds, nullptr, 0);
+	}
 }
 
 template<typename T>
@@ -58,9 +73,16 @@ static T* compile_and_create_shader(
 		fileName, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE,
 		entry_point, target_string, flags1, flags2, &blob, &errorBlob);
 
-	if (FAILED(hr))
+	if (FAILED(hr) && errorBlob == nullptr)
 	{
-		PLOG_ERROR << "Failed to compile shader " << entry_point << std::endl
+		std::string hrStr = std::system_category().message(hr);
+		PLOG_ERROR << "Failed to compile shader '" << entry_point << "' at path: " << file_name << std::endl
+			<< "HRESULT: 0x"<< std::hex << hr << " " << hrStr;
+		return nullptr;
+	}
+	else if (FAILED(hr) && errorBlob != nullptr)
+	{
+		PLOG_ERROR << "Failed to compile shader '" << entry_point << "' at path: " << file_name << std::endl
 			<< reinterpret_cast<const char*>(errorBlob->GetBufferPointer());
 		return nullptr;
 	}
@@ -91,70 +113,86 @@ void ShaderSet::releaseAll()
 	SAFE_RELEASE(gs);
 	SAFE_RELEASE(hs);
 	SAFE_RELEASE(ds);
+	SAFE_RELEASE(cs);
 }
 
 bool ShaderSet::compileAll()
 {
 	compiledSuccessfully = true;
-	if (desc.shaderFuncNames[(int)ShaderStage::VS] != nullptr)
+	if (isCompute_)
 	{
-		vs = compile_and_create_shader<ID3D11VertexShader>(
-			desc.sourceFilePath, desc.shaderFuncNames[(int)ShaderStage::VS], "vs_5_0", &vsBlob,
-			[&](const void* byte_code, SIZE_T byte_code_length, ID3D11VertexShader** out_shader)
+		cs = compile_and_create_shader<ID3D11ComputeShader>(
+			computeDesc.sourceFilePath.c_str(), computeDesc.shaderFuncName.c_str(), "cs_5_0", nullptr,
+			[&](const void* byte_code, SIZE_T byte_code_length, ID3D11ComputeShader** out_shader)
 			{
-				return Driver::get().getDevice().CreateVertexShader(
+				return Driver::get().getDevice().CreateComputeShader(
 					byte_code, byte_code_length, nullptr, out_shader);
 			});
-		if (vs == nullptr)
+		if (cs == nullptr)
 			compiledSuccessfully = false;
 	}
-	if (desc.shaderFuncNames[(int)ShaderStage::PS] != nullptr)
+	else
 	{
-		ps = compile_and_create_shader<ID3D11PixelShader>(
-			desc.sourceFilePath, desc.shaderFuncNames[(int)ShaderStage::PS], "ps_5_0", nullptr,
-			[&](const void* byte_code, SIZE_T byte_code_length, ID3D11PixelShader** out_shader)
-			{
-				return Driver::get().getDevice().CreatePixelShader(
-					byte_code, byte_code_length, nullptr, out_shader);
-			});
-		if (ps == nullptr)
-			compiledSuccessfully = false;
-	}
-	if (desc.shaderFuncNames[(int)ShaderStage::GS] != nullptr)
-	{
-		gs = compile_and_create_shader<ID3D11GeometryShader>(
-			desc.sourceFilePath, desc.shaderFuncNames[(int)ShaderStage::GS], "gs_5_0", nullptr,
-			[&](const void* byte_code, SIZE_T byte_code_length, ID3D11GeometryShader** out_shader)
-			{
-				return Driver::get().getDevice().CreateGeometryShader(
-					byte_code, byte_code_length, nullptr, out_shader);
-			});
-		if (gs == nullptr)
-			compiledSuccessfully = false;
-	}
-	if (desc.shaderFuncNames[(int)ShaderStage::HS] != nullptr)
-	{
-		hs = compile_and_create_shader<ID3D11HullShader>(
-			desc.sourceFilePath, desc.shaderFuncNames[(int)ShaderStage::HS], "hs_5_0", nullptr,
-			[&](const void* byte_code, SIZE_T byte_code_length, ID3D11HullShader** out_shader)
-			{
-				return Driver::get().getDevice().CreateHullShader(
-					byte_code, byte_code_length, nullptr, out_shader);
-			});
-		if (hs == nullptr)
-			compiledSuccessfully = false;
-	}
-	if (desc.shaderFuncNames[(int)ShaderStage::DS] != nullptr)
-	{
-		ds = compile_and_create_shader<ID3D11DomainShader>(
-			desc.sourceFilePath, desc.shaderFuncNames[(int)ShaderStage::DS], "ds_5_0", nullptr,
-			[&](const void* byte_code, SIZE_T byte_code_length, ID3D11DomainShader** out_shader)
-			{
-				return Driver::get().getDevice().CreateDomainShader(
-					byte_code, byte_code_length, nullptr, out_shader);
-			});
-		if (ds == nullptr)
-			compiledSuccessfully = false;
+		if (!desc.shaderFuncNames[(int)ShaderStage::VS].empty())
+		{
+			vs = compile_and_create_shader<ID3D11VertexShader>(
+				desc.sourceFilePath.c_str(), desc.shaderFuncNames[(int)ShaderStage::VS].c_str(), "vs_5_0", &vsBlob,
+				[&](const void* byte_code, SIZE_T byte_code_length, ID3D11VertexShader** out_shader)
+				{
+					return Driver::get().getDevice().CreateVertexShader(
+						byte_code, byte_code_length, nullptr, out_shader);
+				});
+			if (vs == nullptr)
+				compiledSuccessfully = false;
+		}
+		if (!desc.shaderFuncNames[(int)ShaderStage::PS].empty())
+		{
+			ps = compile_and_create_shader<ID3D11PixelShader>(
+				desc.sourceFilePath.c_str(), desc.shaderFuncNames[(int)ShaderStage::PS].c_str(), "ps_5_0", nullptr,
+				[&](const void* byte_code, SIZE_T byte_code_length, ID3D11PixelShader** out_shader)
+				{
+					return Driver::get().getDevice().CreatePixelShader(
+						byte_code, byte_code_length, nullptr, out_shader);
+				});
+			if (ps == nullptr)
+				compiledSuccessfully = false;
+		}
+		if (!desc.shaderFuncNames[(int)ShaderStage::GS].empty())
+		{
+			gs = compile_and_create_shader<ID3D11GeometryShader>(
+				desc.sourceFilePath.c_str(), desc.shaderFuncNames[(int)ShaderStage::GS].c_str(), "gs_5_0", nullptr,
+				[&](const void* byte_code, SIZE_T byte_code_length, ID3D11GeometryShader** out_shader)
+				{
+					return Driver::get().getDevice().CreateGeometryShader(
+						byte_code, byte_code_length, nullptr, out_shader);
+				});
+			if (gs == nullptr)
+				compiledSuccessfully = false;
+		}
+		if (!desc.shaderFuncNames[(int)ShaderStage::HS].empty())
+		{
+			hs = compile_and_create_shader<ID3D11HullShader>(
+				desc.sourceFilePath.c_str(), desc.shaderFuncNames[(int)ShaderStage::HS].c_str(), "hs_5_0", nullptr,
+				[&](const void* byte_code, SIZE_T byte_code_length, ID3D11HullShader** out_shader)
+				{
+					return Driver::get().getDevice().CreateHullShader(
+						byte_code, byte_code_length, nullptr, out_shader);
+				});
+			if (hs == nullptr)
+				compiledSuccessfully = false;
+		}
+		if (!desc.shaderFuncNames[(int)ShaderStage::DS].empty())
+		{
+			ds = compile_and_create_shader<ID3D11DomainShader>(
+				desc.sourceFilePath.c_str(), desc.shaderFuncNames[(int)ShaderStage::DS].c_str(), "ds_5_0", nullptr,
+				[&](const void* byte_code, SIZE_T byte_code_length, ID3D11DomainShader** out_shader)
+				{
+					return Driver::get().getDevice().CreateDomainShader(
+						byte_code, byte_code_length, nullptr, out_shader);
+				});
+			if (ds == nullptr)
+				compiledSuccessfully = false;
+		}
 	}
 	return compiledSuccessfully;
 }

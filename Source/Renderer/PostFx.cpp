@@ -16,7 +16,7 @@ PostFx::PostFx()
 void PostFx::perform()
 {
 	PROFILE_SCOPE("PostFx");
-	drv->setShaderSet(shader);
+	drv->setShader(shader);
 	drv->setRenderState(renderState);
 	drv->draw(3, 0);
 }

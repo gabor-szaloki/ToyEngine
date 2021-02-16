@@ -124,16 +124,21 @@ struct RenderStateDesc
 
 struct ShaderSetDesc
 {
-	const char* sourceFilePath = nullptr;
-	const char* shaderFuncNames[(int)ShaderStage::GRAPHICS_STAGE_COUNT] = {};
+	std::string sourceFilePath = "";
+	std::string shaderFuncNames[(int)ShaderStage::GRAPHICS_STAGE_COUNT] = {};
 
-	ShaderSetDesc(const char* source_file_path = nullptr) : sourceFilePath(source_file_path) {}
+	ShaderSetDesc() {}
+	ShaderSetDesc(const std::string& source_file_path) : sourceFilePath(source_file_path) {}
 };
 
 struct ComputeShaderDesc
 {
-	const char* sourceFilePath = nullptr;
-	const char* shaderFuncName = nullptr;
+	std::string sourceFilePath = "";
+	std::string shaderFuncName = "";
+
+	ComputeShaderDesc() {}
+	ComputeShaderDesc(const std::string& source_file_path, const std::string& shader_func_name) :
+		sourceFilePath(source_file_path), shaderFuncName(shader_func_name) {}
 };
 
 struct InputLayoutElementDesc

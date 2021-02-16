@@ -22,7 +22,7 @@ void Material::setTexture(ShaderStage stage, unsigned int slot, ITexture* tex, M
 
 void Material::set(RenderPass render_pass)
 {
-	drv->setShaderSet(shaders[(int)render_pass]);
+	drv->setShader(shaders[(int)render_pass]);
 	for (int stage = 0; stage < (int)ShaderStage::GRAPHICS_STAGE_COUNT; stage++)
 	{
 		for (unsigned int i = 0; i < textures[stage].size(); i++)

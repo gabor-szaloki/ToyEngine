@@ -41,6 +41,7 @@ namespace drv_d3d11
 		IBuffer* createBuffer(const BufferDesc& desc) override;
 		ResId createRenderState(const RenderStateDesc& desc) override;
 		ResId createShaderSet(const ShaderSetDesc& desc) override;
+		ResId createComputeShader(const ComputeShaderDesc& desc) override;
 		ResId createInputLayout(const InputLayoutElementDesc* descs, unsigned int num_descs, ResId shader_set) override;
 		void destroyResource(ResId res_id) override;
 
@@ -55,11 +56,12 @@ namespace drv_d3d11
 		void setRenderTarget(ResId target_id, ResId depth_id) override;
 		void setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id) override;
 		void setRenderState(ResId res_id) override;
-		void setShaderSet(ResId res_id) override;
+		void setShader(ResId res_id) override;
 		void setView(float x, float y, float w, float h, float z_min, float z_max) override;
 
 		void draw(unsigned int vertex_count, unsigned int start_vertex) override;
 		void drawIndexed(unsigned int index_count, unsigned int start_index, int base_vertex) override;
+		void dispatch(unsigned int num_threadgroups_x, unsigned int num_threadgroups_y, unsigned int num_threadgroups_z) override;
 
 		void clearRenderTargets(const RenderTargetClearParams clear_params) override;
 
