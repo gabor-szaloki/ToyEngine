@@ -12,11 +12,11 @@
 #pragma warning(default:4244)
 #include <Driver/ITexture.h>
 #include <Driver/IBuffer.h>
+#include <Engine/MeshRenderer.h>
 #include <Util/ThreadPool.h>
 #include <Util/AutoImGui.h>
 
 #include "ConstantBuffers.h"
-#include "MeshRenderer.h"
 #include "Light.h"
 #include "Sky.h"
 

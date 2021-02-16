@@ -3,7 +3,9 @@
 #include <memory>
 #include <string>
 
-#include "RendererCommon.h"
+#include <Common.h>
+#include <Driver/IDriver.h>
+
 #include "Transform.h"
 
 struct StandardVertexData;

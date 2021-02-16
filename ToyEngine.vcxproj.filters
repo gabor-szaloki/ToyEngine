@@ -67,6 +67,9 @@
     <Filter Include="Source\3rdParty\OBJ_Loader">
       <UniqueIdentifier>{4658c576-7ccd-4e7f-b492-6a5dc51e31d7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Engine">
+      <UniqueIdentifier>{684740d0-ebe4-48fa-b2c2-8b4895a67010}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Common.cpp">
@@ -123,13 +126,7 @@
     <ClCompile Include="Source\Renderer\Light.cpp">
       <Filter>Source\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer\MeshRenderer.cpp">
-      <Filter>Source\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Renderer\WorldRenderer.cpp">
-      <Filter>Source\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Material.cpp">
       <Filter>Source\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="Source\3rdParty\ImGui\implot.cpp">
@@ -158,6 +155,12 @@
     </ClCompile>
     <ClCompile Include="Source\Renderer\WorldRendererGui.cpp">
       <Filter>Source\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Material.cpp">
+      <Filter>Source\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\MeshRenderer.cpp">
+      <Filter>Source\Engine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1085,16 +1088,10 @@
     <ClInclude Include="Source\Renderer\Light.h">
       <Filter>Source\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Renderer\MeshRenderer.h">
-      <Filter>Source\Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Renderer\RendererCommon.h">
       <Filter>Source\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Source\Renderer\WorldRenderer.h">
-      <Filter>Source\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Renderer\Material.h">
       <Filter>Source\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Source\3rdParty\ImGui\implot.h">
@@ -1184,9 +1181,6 @@
     <ClInclude Include="Source\Renderer\PostFx.h">
       <Filter>Source\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Renderer\Transform.h">
-      <Filter>Source\Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Util\FpsLimiter.h">
       <Filter>Source\Util</Filter>
     </ClInclude>
@@ -1195,6 +1189,15 @@
     </ClInclude>
     <ClInclude Include="Source\3rdParty\OBJ_Loader\OBJ_Loader.h">
       <Filter>Source\3rdParty\OBJ_Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Material.h">
+      <Filter>Source\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\MeshRenderer.h">
+      <Filter>Source\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Transform.h">
+      <Filter>Source\Engine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

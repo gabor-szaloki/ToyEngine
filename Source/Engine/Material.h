@@ -1,10 +1,11 @@
 #pragma once
 
-#include "RendererCommon.h"
-
 #include <array>
 #include <vector>
 #include <string>
+
+#include <Common.h>
+#include <Driver/IDriver.h>
 
 class ITexture;
 

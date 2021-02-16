@@ -2,10 +2,10 @@
 
 #include <3rdParty/imgui/imgui.h>
 #include <Driver/IBuffer.h>
+#include <Renderer/ConstantBuffers.h>
+#include <Renderer/WorldRenderer.h>
 
 #include "Material.h"
-#include "ConstantBuffers.h"
-#include "WorldRenderer.h"
 
 MeshRenderer::MeshRenderer(const std::string& name_, Material* material_, ResId input_layout_id)
 	: name(name_), material(material_), inputLayoutId(input_layout_id)

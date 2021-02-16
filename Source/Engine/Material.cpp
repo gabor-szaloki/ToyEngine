@@ -2,8 +2,7 @@
 
 #include <assert.h>
 #include <Driver/ITexture.h>
-
-#include "WorldRenderer.h"
+#include <Renderer/WorldRenderer.h>
 
 Material::Material(const std::string& name_, const std::array<ResId, (int)RenderPass::_COUNT>& shaders_) : name(name_)
 {

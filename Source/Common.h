@@ -21,6 +21,13 @@ char* wcs_to_utf8(const wchar_t* wcs_str, char* utf8_buf, int utf8_buf_len);
 inline float to_deg(float rad) { return rad * RAD_TO_DEG; }
 inline float to_rad(float deg) { return deg * DEG_TO_RAD; }
 
+enum class RenderPass
+{
+	FORWARD,
+	SHADOW,
+	_COUNT // Not an actual render pass, only used for enumeration, or declaring arrays
+};
+
 struct ProfileScopeHelper
 {
 	ProfileScopeHelper(const char* label);

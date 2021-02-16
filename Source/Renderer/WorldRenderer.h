@@ -11,9 +11,9 @@
 #include <3rdParty/mini/ini.h>
 
 #include <Driver/IDriver.h>
+#include <Engine/Material.h>
 
 #include "Camera.h"
-#include "Material.h"
 #include "PostFx.h"
 
 class ITexture;

@@ -3,13 +3,6 @@
 #include <Common.h>
 #include <Driver/IDriver.h>
 
-enum class RenderPass
-{
-	FORWARD,
-	SHADOW,
-	_COUNT // Not an actual render pass, only used for enumeration, or declaring arrays
-};
-
 struct ResIdHolder
 {
 	ResId id;
