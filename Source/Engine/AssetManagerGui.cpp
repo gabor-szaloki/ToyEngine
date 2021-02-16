@@ -41,7 +41,9 @@ void AssetManager::sceneGui()
 		autoimgui::save_custom_param("lastLoadedScenePath", scenePaths[currentScene]);
 	}
 
-	if (ImGui::CollapsingHeader("Mesh renderers"))
+	ImGui::Separator();
+
+	if (ImGui::CollapsingHeader("Mesh renderers", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		ImGui::Indent();
 		for (MeshRenderer* mr : sceneMeshRenderers)

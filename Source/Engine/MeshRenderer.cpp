@@ -87,7 +87,9 @@ void MeshRenderer::render(RenderPass render_pass)
 	else
 	{
 		bool materialOverridden = false;
-		for (int i = firstSubmeshToRender; i <= lastSubmeshToRender; i++)
+		int i = std::max(0, firstSubmeshToRender);
+		int cnt = std::min(lastSubmeshToRender + 1, (int)submeshes.size());
+		for (; i < cnt; i++)
 		{
 			const SubmeshData& submesh = submeshes[i];
 			if (!submesh.enabled)
