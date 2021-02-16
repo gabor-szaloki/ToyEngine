@@ -10,10 +10,12 @@
 #include <3rdParty/plog/Log.h>
 #include <3rdParty/plog/Appenders/RollingFileAppender.h>
 #include <3rdParty/plog/Appenders/DebugOutputAppender.h>
+#include <Engine/AssetManager.h>
 #include <Renderer/WorldRenderer.h>
 #include <Util/AutoImGui.h>
 #include <Util/ImGuiLogWindow.h>
 #include <Util/FpsLimiter.h>
+#include <Util/ThreadPool.h>
 
 #include "Common.h"
 
@@ -102,13 +104,28 @@ static bool init()
 		PLOG_FATAL << "Driver initialization failed.";
 		return false;
 	}
+
+	const int numCores = std::thread::hardware_concurrency();
+	const int numWorkerThreads = std::clamp(numCores - 1, 3, 12);
+	PLOG_INFO << "Detected number of processor cores: " << numCores;
+	PLOG_INFO << "Initializing thread pool with " << numWorkerThreads << " threads";
+	tp = new ThreadPool(numWorkerThreads);
+
+	am = new AssetManager();
+
 	wr = new WorldRenderer();
+
+	std::string scenePath = autoimgui::load_custom_param("lastLoadedScenePath", "Assets/Scenes/default.ini");
+	am->loadScene(scenePath);
+
 	return true;
 }
 
 static void shutdown()
 {
+	delete tp; // delete ThreadPool first, so jobs in flight don't end up working on deleted data
 	delete wr;
+	delete am;
 	drv->shutdown();
 	delete drv;
 	autoimgui::shutdown();

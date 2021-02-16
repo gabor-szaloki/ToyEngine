@@ -4,8 +4,7 @@
 #include <map>
 #include <3rdParty/imgui/imgui.h>
 #include <3rdParty/imgui/implot.h>
-#define MINI_CASE_SENSITIVE
-#include <3rdParty/mini/ini.h>
+#include <Util/CaseSensitiveIni.h>
 
 #include "Common.h"
 

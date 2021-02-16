@@ -6,6 +6,8 @@
 #include <3rdParty/plog/Log.h>
 
 extern class IDriver* drv;
+extern class ThreadPool* tp;
+extern class AssetManager* am;
 extern class WorldRenderer* wr;
 extern void create_driver_d3d11();
 extern void* get_hwnd();

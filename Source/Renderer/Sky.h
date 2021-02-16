@@ -1,7 +1,9 @@
 #pragma once
 
-#include "RendererCommon.h"
 #include <memory>
+
+#include <Common.h>
+#include <Util/ResIdHolder.h>
 
 struct SkyCbData
 {

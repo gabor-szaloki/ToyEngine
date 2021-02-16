@@ -1,6 +1,7 @@
 #pragma once
 
-#include "RendererCommon.h"
+#include <Common.h>
+#include <Util/ResIdHolder.h>
 
 class PostFx
 {

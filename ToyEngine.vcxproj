@@ -38,6 +38,8 @@
     <ClCompile Include="Source\Driver\D3D11\RenderState.cpp" />
     <ClCompile Include="Source\Driver\D3D11\ShaderSet.cpp" />
     <ClCompile Include="Source\Driver\D3D11\Texture.cpp" />
+    <ClCompile Include="Source\Engine\AssetManager.cpp" />
+    <ClCompile Include="Source\Engine\AssetManagerGui.cpp" />
     <ClCompile Include="Source\Engine\Material.cpp" />
     <ClCompile Include="Source\Engine\MeshRenderer.cpp" />
     <ClCompile Include="Source\Program.cpp" />
@@ -381,20 +383,23 @@
     <ClInclude Include="Source\Driver\ITexture.h" />
     <ClInclude Include="Source\Driver\DriverConsts.h" />
     <ClInclude Include="Source\Driver\TexFmt.h" />
+    <ClInclude Include="Source\Engine\AssetManager.h" />
     <ClInclude Include="Source\Engine\Material.h" />
     <ClInclude Include="Source\Engine\MeshRenderer.h" />
     <ClInclude Include="Source\Engine\Transform.h" />
+    <ClInclude Include="Source\Engine\VertexData.h" />
     <ClInclude Include="Source\Renderer\Camera.h" />
     <ClInclude Include="Source\Renderer\ConstantBuffers.h" />
     <ClInclude Include="Source\Renderer\Light.h" />
     <ClInclude Include="Source\Renderer\PostFx.h" />
-    <ClInclude Include="Source\Renderer\RendererCommon.h" />
     <ClInclude Include="Source\Renderer\Sky.h" />
     <ClInclude Include="Source\Renderer\WorldRenderer.h" />
     <ClInclude Include="Source\Util\AutoImGui.h" />
+    <ClInclude Include="Source\Util\CaseSensitiveIni.h" />
     <ClInclude Include="Source\Util\FpsLimiter.h" />
     <ClInclude Include="Source\Util\ImGuiLogWindow.h" />
     <ClInclude Include="Source\Util\PreciseSleep.h" />
+    <ClInclude Include="Source\Util\ResIdHolder.h" />
     <ClInclude Include="Source\Util\ThreadPool.h" />
   </ItemGroup>
   <ItemGroup>

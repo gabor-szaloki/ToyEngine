@@ -8,6 +8,8 @@
 #include <Util/AutoImGui.h>
 
 IDriver* drv;
+ThreadPool* tp;
+AssetManager* am;
 WorldRenderer* wr;
 
 wchar_t* utf8_to_wcs(const char* utf8_str, wchar_t* wcs_buf, int wcs_buf_len)

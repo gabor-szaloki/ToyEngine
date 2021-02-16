@@ -5,6 +5,8 @@
 #include <Renderer/ConstantBuffers.h>
 #include <Renderer/WorldRenderer.h>
 
+#include "AssetManager.h"
+#include "VertexData.h"
 #include "Material.h"
 
 MeshRenderer::MeshRenderer(const std::string& name_, Material* material_, ResId input_layout_id)
@@ -56,9 +58,9 @@ void MeshRenderer::render(RenderPass render_pass)
 	bool useDefaultMesh = vb == nullptr || ib == nullptr;
 	if (useDefaultMesh)
 	{
-		ibToUse = wr->defaultMeshIb.get();
-		vbToUse = wr->defaultMeshVb.get();
-		ilToUse = wr->defaultInputLayout;
+		ibToUse = am->getDefaultMeshIb();
+		vbToUse = am->getDefaultMeshVb();
+		ilToUse = am->getDefaultInputLayout();
 		tmToUse = XMMatrixScaling(.1f, .1f, .1f) * XMMatrixRotationY(wr->getTime() * 10.f) * XMMatrixTranslationFromVector(transformMatrix.r[3]);
 	}
 	else
@@ -149,6 +151,7 @@ void MeshRenderer::gui()
 	buf = "Submeshes##" + name;
 	if (ImGui::CollapsingHeader(buf.c_str()))
 	{
+		ImGui::Indent();
 		for (int i = 0; i < submeshes.size(); i++)
 		{
 			SubmeshData& submesh = submeshes[i];
@@ -163,5 +166,6 @@ void MeshRenderer::gui()
 				ImGui::Text("startVertex: %d", submesh.startVertex);
 			}
 		}
+		ImGui::Unindent();
 	}
 }

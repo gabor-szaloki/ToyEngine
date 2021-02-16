@@ -1,14 +1,6 @@
 #pragma once
 
-#include "RendererCommon.h"
-
-struct StandardVertexData
-{
-	XMFLOAT3 position;
-	XMFLOAT3 normal;
-	unsigned int color;
-	XMFLOAT2 uv;
-};
+#include <Common.h>
 
 struct PerFrameConstantBufferData
 {

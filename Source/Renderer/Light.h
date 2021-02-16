@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RendererCommon.h"
+#include <Common.h>
 
 class Light
 {

@@ -1,17 +1,12 @@
 #pragma once
 
-#include "RendererCommon.h"
+#include <Common.h>
 
 #include <memory>
 #include <vector>
-#include <array>
 #include <string>
 
-#define MINI_CASE_SENSITIVE
-#include <3rdParty/mini/ini.h>
-
-#include <Driver/IDriver.h>
-#include <Engine/Material.h>
+#include <Util/ResIdHolder.h>
 
 #include "Camera.h"
 #include "PostFx.h"
@@ -43,12 +38,10 @@ public:
 	Camera& getCamera() { return camera; };
 	float getTime() { return time; }
 	Sky& getSky() { return *sky; }
-	Material* getMaterial(int id);
 
 	void rendererSettingsGui();
 	void lightingGui();
 	void shadowMapGui();
-	void meshRendererGui();
 
 	struct CameraInputState
 	{
@@ -75,26 +68,10 @@ public:
 	float shadowDistance = 30.0f;
 	float directionalShadowDistance = 20.0f;
 
-	std::array<ITexture*, (int)MaterialTexture::Purpose::_COUNT> defaultTextures;
-	std::unique_ptr<IBuffer> defaultMeshIb;
-	std::unique_ptr<IBuffer> defaultMeshVb;
-	ResId defaultInputLayout;
-
 private:
 	void initResolutionDependentResources();
 	void closeResolutionDependentResources();
-	void initShaders();
-	void closeShaders();
-	void initDefaultAssets();
-	// TODO: Separate loader code from WorldRenderer
-	enum class LoadExecutionMode { ASYNC, SYNC };
-	ITexture* loadTextureFromPng(const std::string& path, bool srgb, LoadExecutionMode lem = LoadExecutionMode::ASYNC);
-	bool loadTexturesToStandardMaterial(const MaterialTexturePaths& paths, Material* material, LoadExecutionMode lem = LoadExecutionMode::ASYNC);
-	bool loadMesh(const std::string& name, MeshData& mesh_data);
-	bool loadMesh2(const std::string& name, MeshData& mesh_data);
-	bool loadMeshToMeshRenderer(const std::string& name, MeshRenderer& mesh_renderer, LoadExecutionMode lem = LoadExecutionMode::ASYNC);
-	void loadScene(const std::string& scene_file);
-	void unloadCurrentScene();
+
 	void performShadowPass(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix);
 	void performForwardPass();
 
@@ -114,24 +91,6 @@ private:
 	std::unique_ptr<IBuffer> perFrameCb;
 	std::unique_ptr<IBuffer> perCameraCb;
 	std::unique_ptr<IBuffer> perObjectCb;
-
-	std::array<ResId, (int)RenderPass::_COUNT> standardShaders;
-	ResIdHolder standardInputLayout = BAD_RESID;
-
-	std::unique_ptr<mINI::INIFile> materialsIniFile;
-	mINI::INIStructure materialsIni;
-	std::unique_ptr<mINI::INIFile> modelsIniFile;
-	mINI::INIStructure modelsIni;
-	std::unique_ptr<mINI::INIFile> currentSceneIniFile;
-	mINI::INIStructure currentSceneIni;
-	std::string currentSceneIniFilePath;
-
-	std::vector<ITexture*> managedTextures;
-	std::vector<ITexture*> sceneTextures;
-	std::vector<Material*> sceneMaterials;
-	std::vector<MeshRenderer*> sceneMeshRenderers;
-
-	std::unique_ptr<ThreadPool> threadPool;
 
 	std::unique_ptr<Sky> sky;
 	PostFx postFx;

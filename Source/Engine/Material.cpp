@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <Driver/ITexture.h>
 #include <Renderer/WorldRenderer.h>
+#include "AssetManager.h"
 
 Material::Material(const std::string& name_, const std::array<ResId, (int)RenderPass::_COUNT>& shaders_) : name(name_)
 {
@@ -28,7 +29,7 @@ void Material::set(RenderPass render_pass)
 		{
 			ITexture* tex = textures[stage][i].tex;
 			if (tex != nullptr && tex->isStub())
-				tex = wr->defaultTextures[(int)textures[stage][i].purpose];
+				tex = am->getDefaultTexture(textures[stage][i].purpose);
 			ResId texId = tex != nullptr ? tex->getId() : BAD_RESID;
 			drv->setTexture((ShaderStage)stage, i, texId, true);
 		}

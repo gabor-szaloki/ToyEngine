@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RendererCommon.h"
+#include <Common.h>
 
 __declspec(align(16)) class Camera
 {
