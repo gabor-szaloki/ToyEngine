@@ -90,20 +90,21 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 
 	auto load = [paths, material, baseTexture, normalRoughMetalTexture]
 	{
-		auto logLoadError = [](unsigned int error, const std::string& path)
+		auto loadTex = [&](const std::string& path, std::vector<unsigned char>& data, unsigned int& width, unsigned int& height)
 		{
+			PLOG_DEBUG << "Loading texture from file: " << path;
+			unsigned int error = lodepng::decode(data, width, height, paths.albedo);
 			if (error != 0)
 			{
 				PLOG_ERROR << "Error loading texture." << std::endl
 					<< "\tFile: " << path << std::endl
 					<< "\tError: " << lodepng_error_text(error);
-				return true;
+				return false;
 			}
-			return false;
+			return true;
 		};
 
 		static constexpr int NUM_CHANNELS = 4;
-		unsigned int error = 0;
 
 		bool hasAlbedo = !paths.albedo.empty();
 		bool hasOpacity = !paths.opacity.empty();
@@ -117,9 +118,7 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 			unsigned int albedoWidth = 0, albedoHeight = 0;
 			if (hasAlbedo)
 			{
-				PLOG_INFO << "Loading texture from file: " << paths.albedo;
-				error = lodepng::decode(albedoData, albedoWidth, albedoHeight, paths.albedo);
-				if (logLoadError(error, paths.albedo))
+				if (!loadTex(paths.albedo, albedoData, albedoWidth, albedoHeight))
 					return;
 				albedoOpacityWidth = albedoWidth;
 				albedoOpacityHeight = albedoHeight;
@@ -129,9 +128,7 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 			unsigned int opacityWidth = 0, opacityHeight = 0;
 			if (hasSeparateOpacity)
 			{
-				PLOG_INFO << "Loading texture from file: " << paths.opacity;
-				error = lodepng::decode(opacityData, opacityWidth, opacityHeight, paths.opacity);
-				if (logLoadError(error, paths.opacity))
+				if (!loadTex(paths.opacity, opacityData, opacityWidth, opacityHeight))
 					return;
 				if (hasAlbedo && (opacityWidth != albedoOpacityWidth || opacityHeight != albedoOpacityHeight))
 				{
@@ -187,9 +184,7 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 		unsigned int normalWidth = 0, normalHeight = 0;
 		if (hasNormal)
 		{
-			PLOG_INFO << "Loading texture from file: " << paths.normal;
-			error = lodepng::decode(normalData, normalWidth, normalHeight, paths.normal);
-			if (logLoadError(error, paths.normal))
+			if (!loadTex(paths.normal, normalData, normalWidth, normalHeight))
 				return;
 			normalRoughMetalWidth = normalWidth;
 			normalRoughMetalHeight = normalHeight;
@@ -199,9 +194,7 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 		unsigned int roughnessWidth = 0, roughnessHeight = 0;
 		if (hasRoughness)
 		{
-			PLOG_INFO << "Loading texture from file: " << paths.roughness;
-			error = lodepng::decode(roughnessData, roughnessWidth, roughnessHeight, paths.roughness);
-			if (logLoadError(error, paths.roughness))
+			if (!loadTex(paths.roughness, roughnessData, roughnessWidth, roughnessHeight))
 				return;
 			if (hasNormal && (roughnessWidth != normalRoughMetalWidth || roughnessHeight != normalRoughMetalHeight))
 			{
@@ -218,9 +211,7 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 		unsigned int metalnessWidth = 0, metalnessHeight = 0;
 		if (hasMetalness)
 		{
-			PLOG_INFO << "Loading texture from file: " << paths.metalness;
-			error = lodepng::decode(metalnessData, metalnessWidth, metalnessHeight, paths.metalness);
-			if (logLoadError(error, paths.metalness))
+			if (!loadTex(paths.metalness, metalnessData, metalnessWidth, metalnessHeight))
 				return;
 			if ((hasNormal || hasRoughness) && (metalnessWidth != normalRoughMetalWidth || metalnessHeight != normalRoughMetalHeight))
 			{
