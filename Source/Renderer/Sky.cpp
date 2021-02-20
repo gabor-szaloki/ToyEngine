@@ -36,6 +36,8 @@ Sky::Sky()
 	cbDesc.elementByteSize = sizeof(cbData);
 	cb.reset(drv->createBuffer(cbDesc));
 	cb->updateData(&cbData);
+
+	setWorldRendererAmbientLighting();
 }
 
 void Sky::render()
@@ -50,6 +52,7 @@ void Sky::render()
 void Sky::gui()
 {
 	bool changed = false;
+
 	changed |= ImGui::ColorEdit3Srgb("Top color", &cbData.topColor_Exponent.x);
 	changed |= ImGui::DragFloat("Top exponent", &cbData.topColor_Exponent.w);
 	changed |= ImGui::ColorEdit3Srgb("Horizon color", &cbData.horizonColor.x);
@@ -59,8 +62,26 @@ void Sky::gui()
 	changed |= ImGui::SliderFloat("Sun intensity", &cbData.skyIntensity_SunIntensity_SunAlpha_SunBeta.y, 0.f, 5.f);
 	changed |= ImGui::DragFloat("Sun alpha", &cbData.skyIntensity_SunIntensity_SunAlpha_SunBeta.z);
 	changed |= ImGui::DragFloat("Sun beta", &cbData.skyIntensity_SunIntensity_SunAlpha_SunBeta.w);
+
+	static bool applyToAmbientLighting = true;
+	changed |= ImGui::Checkbox("Apply changes to ambient lighting", &applyToAmbientLighting);
+
 	if (changed)
+	{
 		cb->updateData(&cbData);
+		if (applyToAmbientLighting)
+			setWorldRendererAmbientLighting();
+	}
+}
+
+void Sky::setWorldRendererAmbientLighting()
+{
+	XMFLOAT4 bottomColor = cbData.bottomColor_Exponent;
+	bottomColor.w = 1.f;
+	XMFLOAT4 topColor = cbData.topColor_Exponent;
+	topColor.w = 1.f;
+	float skyIntensity = cbData.skyIntensity_SunIntensity_SunAlpha_SunBeta.x;
+	wr->setAmbientLighting(bottomColor, topColor, skyIntensity);
 }
 
 REGISTER_IMGUI_WINDOW("Sky parameters", [] { wr->getSky().gui(); });

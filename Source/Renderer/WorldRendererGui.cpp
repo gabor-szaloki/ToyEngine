@@ -29,8 +29,9 @@ void WorldRenderer::lightingGui()
 {
 	if (ImGui::CollapsingHeader("Ambient light", ImGuiTreeNodeFlags_DefaultOpen))
 	{
-		ImGui::SliderFloat("Intensity##ambient", &ambientLightIntensity, 0.0f, 1.0f);
-		ImGui::ColorEdit3("Color##ambient", reinterpret_cast<float*>(&ambientLightColor));
+		ImGui::SliderFloat("Intensity##ambient", &ambientLightIntensity, 0.0f, 2.0f);
+		ImGui::ColorEdit3("Bottom color", reinterpret_cast<float*>(&ambientLightBottomColor));
+		ImGui::ColorEdit3("Top color", reinterpret_cast<float*>(&ambientLightTopColor));
 	}
 
 	if (ImGui::CollapsingHeader("Main light", ImGuiTreeNodeFlags_DefaultOpen))

@@ -48,7 +48,8 @@ float3 Lighting(SurfaceOutput s, float3 pointToEye, float mainLightShadowAttenua
 	float3 diffuse = s.albedo * lambert;
 
 	// Ambient contribution
-	float3 ambient = s.albedo * _AmbientLightColor.rgb;
+	float3 ambientColor = lerp(_AmbientLightBottomColor.rgb, _AmbientLightTopColor.rgb, s.normal.y * 0.5 + 0.5);
+	float3 ambient = s.albedo * ambientColor * 0.5;
 
 	return ambient + (kD * diffuse +/* kS * */specular) * mainLightShadowAttenuation;
 }

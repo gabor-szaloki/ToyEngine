@@ -35,12 +35,15 @@ WorldRenderer::WorldRenderer()
 	setShadowResolution(2048);
 	setShadowBias(50000, 1.0f);
 	initResolutionDependentResources();
-
-	sky = std::make_unique<Sky>();
 }
 
 WorldRenderer::~WorldRenderer()
 {
+}
+
+void WorldRenderer::init()
+{
+	sky = std::make_unique<Sky>();
 }
 
 void WorldRenderer::onResize(int display_width, int display_height)
@@ -100,7 +103,8 @@ void WorldRenderer::render()
 
 	// Update per-frame constant buffer
 	PerFrameConstantBufferData perFrameCbData;
-	perFrameCbData.ambientLightColor = get_final_light_color(ambientLightColor, ambientLightIntensity);
+	perFrameCbData.ambientLightBottomColor = get_final_light_color(ambientLightBottomColor, ambientLightIntensity);
+	perFrameCbData.ambientLightTopColor = get_final_light_color(ambientLightTopColor, ambientLightIntensity);
 	perFrameCbData.mainLightColor = get_final_light_color(mainLight->GetColor(), mainLight->GetIntensity());
 	XMMATRIX mainLightTranslateMatrix = XMMatrixTranslationFromVector(camera.GetEye() + camera.GetForward() * shadowDistance * 0.5f); // TODO: align to texel
 	XMMATRIX inverseLightViewMatrix = XMMatrixRotationRollPitchYaw(mainLight->GetPitch(), mainLight->GetYaw(), 0.0f) * mainLightTranslateMatrix;
@@ -124,6 +128,13 @@ void WorldRenderer::render()
 	drv->setRenderTarget(drv->getBackbufferTexture()->getId(), BAD_RESID);
 	drv->setTexture(ShaderStage::PS, 0, hdrTarget->getId(), true);
 	postFx.perform();
+}
+
+void WorldRenderer::setAmbientLighting(const XMFLOAT4& bottom_color, const XMFLOAT4& top_color, float intensity)
+{
+	ambientLightBottomColor = bottom_color;
+	ambientLightTopColor = top_color;
+	ambientLightIntensity = intensity;
 }
 
 unsigned int WorldRenderer::getShadowResolution()

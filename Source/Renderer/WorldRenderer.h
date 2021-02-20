@@ -26,11 +26,13 @@ class WorldRenderer
 public:
 	WorldRenderer();
 	~WorldRenderer();
+	void init();
 
 	void onResize(int display_width, int display_height);
 	void update(float delta_time);
 	void render();
 
+	void setAmbientLighting(const XMFLOAT4& bottom_color, const XMFLOAT4& top_color, float intensity);
 	unsigned int getShadowResolution();
 	void setShadowResolution(unsigned int shadow_resolution);
 	void setShadowBias(int depth_bias, float slope_scaled_depth_bias);
@@ -59,8 +61,9 @@ public:
 
 	bool showWireframe = false;
 
-	float ambientLightIntensity = 0.5f;
-	XMFLOAT4 ambientLightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	float ambientLightIntensity = 1.0f;
+	XMFLOAT4 ambientLightBottomColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	XMFLOAT4 ambientLightTopColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	std::unique_ptr<Light> mainLight;
 	bool shadowEnabled = true;
 	int shadowDepthBias = 0;

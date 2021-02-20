@@ -114,6 +114,7 @@ static bool init()
 	am = new AssetManager();
 
 	wr = new WorldRenderer();
+	wr->init();
 
 	std::string scenePath = autoimgui::load_custom_param("lastLoadedScenePath", "Assets/Scenes/default.ini");
 	am->loadScene(scenePath);

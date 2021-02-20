@@ -4,7 +4,8 @@
 
 struct PerFrameConstantBufferData
 {
-	XMFLOAT4 ambientLightColor;
+	XMFLOAT4 ambientLightBottomColor;
+	XMFLOAT4 ambientLightTopColor;
 	XMFLOAT4 mainLightColor;
 	XMFLOAT4 mainLightDirection;
 	XMMATRIX mainLightShadowMatrix;
