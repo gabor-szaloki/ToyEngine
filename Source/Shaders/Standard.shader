@@ -1,3 +1,6 @@
+#pragma warning(disable:3568) // warning X3568 : 'multi_compile' : unknown pragma ignored
+#pragma multi_compile ALPHA_TEST_OFF ALPHA_TEST_ON
+
 //--------------------------------------------------------------------------------------
 // Includes
 //--------------------------------------------------------------------------------------
@@ -66,7 +69,7 @@ float4 StandardOpaqueForwardPS(VSOutputStandardForward i) : SV_TARGET
 
 	float mainLightShadowAttenuation = SampleMainLightShadow(i.shadowCoords);
 	c.rgb = Lighting(s, pointToEye, mainLightShadowAttenuation);
-	
+
 	return c;
 }
 

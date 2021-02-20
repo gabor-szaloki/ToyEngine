@@ -2,7 +2,7 @@
 
 PostFx::PostFx()
 {
-	ShaderSetDesc shaderDesc("Source/Shaders/PostFx.shader");
+	ShaderSetDesc shaderDesc("PostFx", "Source/Shaders/PostFx.shader");
 	shaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "DefaultPostFxVsFunc";
 	shaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "PostFxPS";
 	shader = drv->createShaderSet(shaderDesc);
@@ -16,7 +16,7 @@ PostFx::PostFx()
 void PostFx::perform()
 {
 	PROFILE_SCOPE("PostFx");
-	drv->setShader(shader);
+	drv->setShader(shader, 0);
 	drv->setRenderState(renderState);
 	drv->draw(3, 0);
 }

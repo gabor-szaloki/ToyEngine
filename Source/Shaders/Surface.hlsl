@@ -4,13 +4,16 @@
 #include "ConstantBuffers.hlsl"
 #include "NormalMapping.hlsl"
 
-Texture2D _BaseTexture   : register(t0);
+#define ALPHA_TEST_THRESHOLD 0.5
+
+Texture2D _BaseTexture             : register(t0);
 Texture2D _NormalRoughMetalTexture : register(t1);
-SamplerState _Sampler    : register(s0);
+SamplerState _Sampler              : register(s0);
 
 struct SurfaceOutput
 {
 	float3 albedo;
+	float opacity;
 	float3 normal;
 	float roughness;
 	float metalness;
@@ -20,8 +23,12 @@ SurfaceOutput Surface(float3 pointToEye, float3 normal, float2 uv, float4 vertCo
 {
 	SurfaceOutput s;
 
-	// Albedo
+	// Albedo + Opacity
 	float4 baseTextureSample = _BaseTexture.Sample(_Sampler, uv);
+	s.opacity = baseTextureSample.a;
+#if ALPHA_TEST_ON
+	clip(s.opacity - ALPHA_TEST_THRESHOLD);
+#endif
 	s.albedo = baseTextureSample.rgb * vertColor.rgb;
 
 	// Normal

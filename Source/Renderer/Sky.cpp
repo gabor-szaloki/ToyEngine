@@ -20,7 +20,7 @@ namespace ImGui
 
 Sky::Sky()
 {
-	ShaderSetDesc skyShaderDesc("Source/Shaders/Sky.shader");
+	ShaderSetDesc skyShaderDesc("Sky", "Source/Shaders/Sky.shader");
 	skyShaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "DefaultPostFxVsFunc";
 	skyShaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "SkyPS";
 	skyShader = drv->createShaderSet(skyShaderDesc);
@@ -41,7 +41,7 @@ Sky::Sky()
 void Sky::render()
 {
 	PROFILE_SCOPE("Sky");
-	drv->setShader(skyShader);
+	drv->setShader(skyShader, 0);
 	drv->setRenderState(skyRenderState);
 	drv->setConstantBuffer(ShaderStage::PS, 3, cb->getId());
 	drv->draw(3, 0);

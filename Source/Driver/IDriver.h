@@ -34,7 +34,7 @@ public:
 	virtual void setRenderTarget(ResId target_id, ResId depth_id) = 0;
 	virtual void setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id) = 0;
 	virtual void setRenderState(ResId res_id) = 0;
-	virtual void setShader(ResId res_id) = 0;
+	virtual void setShader(ResId res_id, unsigned int variant_index) = 0;
 	virtual void setView(float x, float y, float w, float h, float z_min, float z_max) = 0;
 
 	virtual void draw(unsigned int vertex_count, unsigned int start_vertex) = 0;
@@ -50,6 +50,7 @@ public:
 	virtual void beginEvent(const char* label) = 0;
 	virtual void endEvent() = 0;
 
+	virtual unsigned int getShaderVariantIndexForKeywords(ResId shader_res_id, const char** keywords, unsigned int num_keywords) = 0;
 	virtual TexFmt getIndexFormat() = 0;
 	virtual const DriverSettings& getSettings() = 0;
 	virtual void setSettings(const DriverSettings& new_settings) = 0;

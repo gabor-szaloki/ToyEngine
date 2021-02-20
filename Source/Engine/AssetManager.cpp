@@ -84,6 +84,9 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 {
 	ITexture* baseTexture = drv->createTextureStub();
 	ITexture* normalRoughMetalTexture = drv->createTextureStub();
+	material->setTexture(ShaderStage::PS, 0, baseTexture, MaterialTexture::Purpose::COLOR);
+	material->setTexture(ShaderStage::PS, 1, normalRoughMetalTexture, MaterialTexture::Purpose::NORMAL);
+	material->setKeyword("ALPHA_TEST_ON", !paths.opacity.empty());
 
 	auto load = [paths, material, baseTexture, normalRoughMetalTexture]
 	{
@@ -99,22 +102,75 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 			return false;
 		};
 
+		static constexpr int NUM_CHANNELS = 4;
 		unsigned int error = 0;
 
-		if (!paths.albedo.empty())
+		bool hasAlbedo = !paths.albedo.empty();
+		bool hasOpacity = !paths.opacity.empty();
+		bool hasSeparateOpacity = hasOpacity && paths.albedo != paths.opacity;
+
+		if (hasAlbedo || hasOpacity)
 		{
-			PLOG_INFO << "Loading texture from file: " << paths.albedo;
+			unsigned int albedoOpacityWidth = 0, albedoOpacityHeight = 0;
+
 			std::vector<unsigned char> albedoData;
-			unsigned int albedoWidth, albedoHeight;
-			error = lodepng::decode(albedoData, albedoWidth, albedoHeight, paths.albedo);
-			if (logLoadError(error, paths.albedo))
-				return;
+			unsigned int albedoWidth = 0, albedoHeight = 0;
+			if (hasAlbedo)
+			{
+				PLOG_INFO << "Loading texture from file: " << paths.albedo;
+				error = lodepng::decode(albedoData, albedoWidth, albedoHeight, paths.albedo);
+				if (logLoadError(error, paths.albedo))
+					return;
+				albedoOpacityWidth = albedoWidth;
+				albedoOpacityHeight = albedoHeight;
+			}
+
+			std::vector<unsigned char> opacityData;
+			unsigned int opacityWidth = 0, opacityHeight = 0;
+			if (hasSeparateOpacity)
+			{
+				PLOG_INFO << "Loading texture from file: " << paths.opacity;
+				error = lodepng::decode(opacityData, opacityWidth, opacityHeight, paths.opacity);
+				if (logLoadError(error, paths.opacity))
+					return;
+				if (hasAlbedo && (opacityWidth != albedoOpacityWidth || opacityHeight != albedoOpacityHeight))
+				{
+					PLOG_ERROR << "Mismatching dimensions of albedo and opacity texture." << std::endl
+						<< "\tAlbedo: " << paths.albedo << " (" << albedoOpacityWidth << "x" << albedoOpacityHeight << ")" << std::endl
+						<< "\tOpacity: " << paths.opacity << " (" << opacityWidth << "x" << opacityHeight << ")";
+					return;
+				}
+				albedoOpacityWidth = opacityWidth;
+				albedoOpacityHeight = opacityHeight;
+			}
+
+			const int numTexels = albedoOpacityWidth * albedoOpacityHeight;
+			const int numBytes = numTexels * NUM_CHANNELS;
+
+			if (!hasAlbedo)
+				albedoData.assign(numBytes, 127u);
+			if (!hasOpacity)
+				opacityData.assign(numBytes, 255u);
+
+			std::vector<unsigned char> albedoOpacityData;
+			albedoOpacityData.resize(numBytes);
+			for (int i = 0; i < numTexels; i++)
+			{
+				int r = i * NUM_CHANNELS + 0;
+				int g = i * NUM_CHANNELS + 1;
+				int b = i * NUM_CHANNELS + 2;
+				int a = i * NUM_CHANNELS + 3;
+				albedoOpacityData[r] = albedoData[r];
+				albedoOpacityData[g] = albedoData[g];
+				albedoOpacityData[b] = albedoData[b];
+				albedoOpacityData[a] = hasSeparateOpacity ? opacityData[r] : albedoData[a];
+			}
 
 			TextureDesc baseTexDesc(material->name + "_base", albedoWidth, albedoHeight, TexFmt::R8G8B8A8_UNORM_SRGB, 0);
 			baseTexDesc.bindFlags = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET;
 			baseTexDesc.miscFlags = RESOURCE_MISC_GENERATE_MIPS;
 			baseTexture->recreate(baseTexDesc);
-			baseTexture->updateData(0, nullptr, (void*)albedoData.data());
+			baseTexture->updateData(0, nullptr, (void*)albedoOpacityData.data());
 			baseTexture->generateMips();
 		}
 
@@ -150,8 +206,8 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 			if (hasNormal && (roughnessWidth != normalRoughMetalWidth || roughnessHeight != normalRoughMetalHeight))
 			{
 				PLOG_ERROR << "Mismatching dimensions of normal and roughness texture." << std::endl
-					<< "\tNormal: " << paths.normal << " (" << normalRoughMetalWidth << "x" << normalRoughMetalWidth << ")" << std::endl
-					<< "\tRougness: " << paths.roughness << " (" << roughnessWidth << "x" << normalRoughMetalWidth << ")";
+					<< "\tNormal: " << paths.normal << " (" << normalRoughMetalWidth << "x" << normalRoughMetalHeight << ")" << std::endl
+					<< "\tRougness: " << paths.roughness << " (" << roughnessWidth << "x" << roughnessHeight << ")";
 				return;
 			}
 			normalRoughMetalWidth = roughnessWidth;
@@ -181,7 +237,6 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 		assert(!hasNormal || !hasMetalness || normalData.size() == metalnessData.size());
 		assert(!hasRoughness || !hasMetalness || roughnessData.size() == metalnessData.size());
 
-		static constexpr int NUM_CHANNELS = 4;
 		const int numTexels = normalRoughMetalWidth * normalRoughMetalHeight;
 		const int numBytes = numTexels * NUM_CHANNELS;
 
@@ -219,8 +274,6 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 	else
 		load();
 
-	material->setTexture(ShaderStage::PS, 0, baseTexture, MaterialTexture::Purpose::COLOR);
-	material->setTexture(ShaderStage::PS, 1, normalRoughMetalTexture, MaterialTexture::Purpose::NORMAL);
 	return true;
 }
 
@@ -269,6 +322,8 @@ bool AssetManager::loadMesh(const std::string& name, MeshData& mesh_data)
 		MaterialTexturePaths paths;
 		if (!mtl.diffuse_texname.empty())
 			paths.albedo = dir + "/" + mtl.diffuse_texname;
+		if (!mtl.alpha_texname.empty())
+			paths.opacity = dir + "/" + mtl.alpha_texname;
 		if (!mtl.bump_texname.empty())
 			paths.normal = dir + "/" + mtl.bump_texname;
 		if (!mtl.specular_highlight_texname.empty())
@@ -455,6 +510,8 @@ bool AssetManager::loadMesh2(const std::string& name, MeshData& out_mesh_data)
 				MaterialTexturePaths paths;
 				if (!mtl.map_Kd.empty())
 					paths.albedo = dir + "/" + mtl.map_Kd;
+				if (!mtl.map_d.empty())
+					paths.opacity = dir + "/" + mtl.map_d;
 				if (!mtl.map_bump.empty())
 					paths.normal = dir + "/" + mtl.map_bump;
 				if (!mtl.map_Ns.empty())
@@ -586,6 +643,7 @@ void AssetManager::loadScene(const std::string& scene_file)
 
 					MaterialTexturePaths texturePaths;
 					texturePaths.albedo = materialsIni[materialName]["albedo_tex"];
+					texturePaths.opacity = materialsIni[materialName]["opacity_tex"];
 					texturePaths.normal = materialsIni[materialName]["normal_tex"];
 					texturePaths.roughness = materialsIni[materialName]["roughness_tex"];
 					texturePaths.metalness = materialsIni[materialName]["metalness_tex"];
@@ -658,12 +716,12 @@ void AssetManager::initInis()
 
 void AssetManager::initShaders()
 {
-	ShaderSetDesc errorShaderDesc("Source/Shaders/Error.shader");
+	ShaderSetDesc errorShaderDesc("Error", "Source/Shaders/Error.shader");
 	errorShaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "ErrorVS";
 	errorShaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "ErrorPS";
 	drv->setErrorShaderDesc(errorShaderDesc);
 
-	ShaderSetDesc shaderDesc("Source/Shaders/Standard.shader");
+	ShaderSetDesc shaderDesc("Standard", "Source/Shaders/Standard.shader");
 	shaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "StandardForwardVS";
 	shaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "StandardOpaqueForwardPS";
 	standardShaders[(int)RenderPass::FORWARD] = drv->createShaderSet(shaderDesc);

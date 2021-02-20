@@ -56,7 +56,7 @@ namespace drv_d3d11
 		void setRenderTarget(ResId target_id, ResId depth_id) override;
 		void setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id) override;
 		void setRenderState(ResId res_id) override;
-		void setShader(ResId res_id) override;
+		void setShader(ResId res_id, unsigned int variant_index) override;
 		void setView(float x, float y, float w, float h, float z_min, float z_max) override;
 
 		void draw(unsigned int vertex_count, unsigned int start_vertex) override;
@@ -72,6 +72,7 @@ namespace drv_d3d11
 		void beginEvent(const char* label) override;
 		void endEvent() override;
 
+		unsigned int getShaderVariantIndexForKeywords(ResId shader_res_id, const char** keywords, unsigned int num_keywords) override;
 		TexFmt getIndexFormat() override { return TexFmt::R32_UINT; }
 		const DriverSettings& getSettings() override { return settings; };
 		void setSettings(const DriverSettings& new_settings) override;
@@ -83,6 +84,7 @@ namespace drv_d3d11
 		ID3D11DeviceContext& getContext() { return *context; }
 		std::mutex& getContextMutex() { return contextMutex; }
 		std::mutex& getResourceMutex() { return resourceMutex; }
+		const ShaderSet* getErrorShaderSet() { return errorShader.get(); }
 
 		ResId registerTexture(Texture* tex);
 		void unregisterTexture(ResId id);

@@ -458,14 +458,11 @@ void Driver::setRenderState(ResId res_id)
 	context->OMSetDepthStencilState(rs->getDepthStencilState(), 0);
 }
 
-void Driver::setShader(ResId res_id)
+void Driver::setShader(ResId res_id, unsigned int variant_index)
 {
 	RESOURCE_LOCK_GUARD
 	assert(shaders.find(res_id) != shaders.end());
-	ShaderSet* shaderToSet = shaders[res_id];
-	if (!shaderToSet->isCompiledSuccessfully())
-		shaderToSet = errorShader.get();
-	shaderToSet->set();
+	shaders[res_id]->setToContext(variant_index);
 }
 
 void Driver::setView(float x, float y, float w, float h, float z_min, float z_max)
@@ -555,6 +552,13 @@ void Driver::endEvent()
 	CONTEXT_LOCK_GUARD
 	perf->EndEvent();
 #endif
+}
+
+unsigned int Driver::getShaderVariantIndexForKeywords(ResId shader_res_id, const char** keywords, unsigned int num_keywords)
+{
+	RESOURCE_LOCK_GUARD
+	assert(shaders.find(shader_res_id) != shaders.end());
+	return shaders[shader_res_id]->getVariantIndexForKeywords(keywords, num_keywords);
 }
 
 void Driver::setSettings(const DriverSettings& new_settings)
