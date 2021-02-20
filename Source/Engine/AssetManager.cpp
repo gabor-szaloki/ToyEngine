@@ -93,7 +93,7 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 		auto loadTex = [&](const std::string& path, std::vector<unsigned char>& data, unsigned int& width, unsigned int& height)
 		{
 			PLOG_DEBUG << "Loading texture from file: " << path;
-			unsigned int error = lodepng::decode(data, width, height, paths.albedo);
+			unsigned int error = lodepng::decode(data, width, height, path);
 			if (error != 0)
 			{
 				PLOG_ERROR << "Error loading texture." << std::endl
