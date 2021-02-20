@@ -80,7 +80,7 @@ ITexture* AssetManager::loadTextureFromPng(const std::string& path, bool srgb, L
 	return texture;
 }
 
-bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& paths, Material* material, LoadExecutionMode lem)
+bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& paths, Material* material, bool flip_normal_green, LoadExecutionMode lem)
 {
 	ITexture* baseTexture = drv->createTextureStub();
 	ITexture* normalRoughMetalTexture = drv->createTextureStub();
@@ -88,7 +88,7 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 	material->setTexture(ShaderStage::PS, 1, normalRoughMetalTexture, MaterialTexture::Purpose::NORMAL);
 	material->setKeyword("ALPHA_TEST_ON", !paths.opacity.empty());
 
-	auto load = [paths, material, baseTexture, normalRoughMetalTexture]
+	auto load = [paths, material, flip_normal_green, baseTexture, normalRoughMetalTexture]
 	{
 		auto loadTex = [&](const std::string& path, std::vector<unsigned char>& data, unsigned int& width, unsigned int& height)
 		{
@@ -247,7 +247,7 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 			int b = i * NUM_CHANNELS + 2;
 			int a = i * NUM_CHANNELS + 3;
 			normalRoughMetalData[r] = normalData[r];
-			normalRoughMetalData[g] = normalData[g];
+			normalRoughMetalData[g] = flip_normal_green ? 255u - normalData[g] : normalData[g];
 			normalRoughMetalData[b] = metalnessData[r];
 			normalRoughMetalData[a] = roughnessData[r];
 		}
@@ -322,7 +322,7 @@ bool AssetManager::loadMesh(const std::string& name, MeshData& mesh_data)
 		if (!mtl.ambient_texname.empty())
 			paths.metalness = dir + "/" + mtl.ambient_texname;
 
-		loadTexturesToStandardMaterial(paths, material);
+		loadTexturesToStandardMaterial(paths, material, flipUvX != flipUvY);
 
 		for (const std::vector<MaterialTexture>& stageTextures : material->getTextures())
 			for (const MaterialTexture& matTex : stageTextures)
@@ -510,7 +510,7 @@ bool AssetManager::loadMesh2(const std::string& name, MeshData& out_mesh_data)
 				if (!mtl.map_Ka.empty())
 					paths.metalness = dir + "/" + mtl.map_Ka;
 
-				loadTexturesToStandardMaterial(paths, material);
+				loadTexturesToStandardMaterial(paths, material, flipUvX != flipUvY);
 
 				for (const std::vector<MaterialTexture>& stageTextures : material->getTextures())
 					for (const MaterialTexture& matTex : stageTextures)
@@ -639,7 +639,7 @@ void AssetManager::loadScene(const std::string& scene_file)
 					texturePaths.roughness = materialsIni[materialName]["roughness_tex"];
 					texturePaths.metalness = materialsIni[materialName]["metalness_tex"];
 
-					loadTexturesToStandardMaterial(texturePaths, material);
+					loadTexturesToStandardMaterial(texturePaths, material, false);
 
 					for (const std::vector<MaterialTexture>& stageTextures : material->getTextures())
 						for (const MaterialTexture& matTex : stageTextures)
