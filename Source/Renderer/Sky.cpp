@@ -30,6 +30,9 @@ Sky::Sky()
 
 void Sky::render()
 {
+	if (!enabled)
+		return;
+
 	PROFILE_SCOPE("Sky");
 	drv->setShader(skyShader, 0);
 	drv->setRenderState(skyRenderState);
@@ -39,6 +42,8 @@ void Sky::render()
 
 void Sky::gui()
 {
+	ImGui::Checkbox("Enabled", &enabled);
+
 	bool changed = false;
 
 	changed |= ImGui::ColorEdit3("Top color", &cbData.topColor_Exponent.x);

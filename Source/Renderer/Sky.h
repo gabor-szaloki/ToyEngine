@@ -23,6 +23,7 @@ public:
 private:
 	void setWorldRendererAmbientLighting();
 
+	bool enabled = true;
 	ResIdHolder skyShader;
 	ResIdHolder skyRenderState;
 	SkyCbData cbData;

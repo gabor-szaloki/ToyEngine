@@ -75,7 +75,10 @@ private:
 	void initResolutionDependentResources();
 	void closeResolutionDependentResources();
 
-	void performShadowPass(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix);
+	void setupFrame(XMMATRIX& out_light_view_matrix, XMMATRIX& out_light_proj_matrix);
+	void setupShadowCamera(const XMMATRIX& light_view_matrix, const XMMATRIX& light_proj_matrix);
+	void setupForwardCamera();
+	void performShadowPass();
 	void performForwardPass();
 
 	float time;

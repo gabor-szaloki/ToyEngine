@@ -26,7 +26,7 @@ inline float to_rad(float deg) { return deg * DEG_TO_RAD; }
 enum class RenderPass
 {
 	FORWARD,
-	SHADOW,
+	DEPTH,
 	_COUNT // Not an actual render pass, only used for enumeration, or declaring arrays
 };
 

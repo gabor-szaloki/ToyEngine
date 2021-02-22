@@ -75,7 +75,7 @@ float4 StandardOpaqueForwardPS(VSOutputStandardForward i) : SV_TARGET
 
 // Shadow Pass
 
-VSOutputStandardShadow StandardShadowVS(VSInputStandard v)
+VSOutputStandardShadow StandardDepthOnlyVS(VSInputStandard v)
 {
 	VSOutputStandardShadow o;
 
@@ -87,6 +87,6 @@ VSOutputStandardShadow StandardShadowVS(VSInputStandard v)
 	return o;
 }
 
-void StandardOpaqueShadowPS()
+void StandardOpaqueDepthOnlyPS()
 {
 }

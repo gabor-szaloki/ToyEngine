@@ -716,9 +716,9 @@ void AssetManager::initShaders()
 	shaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "StandardForwardVS";
 	shaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "StandardOpaqueForwardPS";
 	standardShaders[(int)RenderPass::FORWARD] = drv->createShaderSet(shaderDesc);
-	shaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "StandardShadowVS";
-	shaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "StandardOpaqueShadowPS";
-	standardShaders[(int)RenderPass::SHADOW] = drv->createShaderSet(shaderDesc);
+	shaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "StandardDepthOnlyVS";
+	shaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "StandardOpaqueDepthOnlyPS";
+	standardShaders[(int)RenderPass::DEPTH] = drv->createShaderSet(shaderDesc);
 
 	constexpr unsigned int NUM_STANDARD_INPUT_LAYOUT_ELEMENTS = 4;
 	InputLayoutElementDesc standardInputLayoutDesc[NUM_STANDARD_INPUT_LAYOUT_ELEMENTS] =

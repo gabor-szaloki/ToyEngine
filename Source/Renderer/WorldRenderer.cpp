@@ -101,26 +101,14 @@ void WorldRenderer::render()
 {
 	PROFILE_SCOPE("RenderWorld");
 
-	// Update per-frame constant buffer
-	PerFrameConstantBufferData perFrameCbData;
-	perFrameCbData.ambientLightBottomColor = get_final_light_color(ambientLightBottomColor, ambientLightIntensity);
-	perFrameCbData.ambientLightTopColor = get_final_light_color(ambientLightTopColor, ambientLightIntensity);
-	perFrameCbData.mainLightColor = get_final_light_color(mainLight->GetColor(), mainLight->GetIntensity());
-	XMMATRIX mainLightTranslateMatrix = XMMatrixTranslationFromVector(camera.GetEye() + camera.GetForward() * shadowDistance * 0.5f); // TODO: align to texel
-	XMMATRIX inverseLightViewMatrix = XMMatrixRotationRollPitchYaw(mainLight->GetPitch(), mainLight->GetYaw(), 0.0f) * mainLightTranslateMatrix;
-	XMStoreFloat4(&perFrameCbData.mainLightDirection, inverseLightViewMatrix.r[2]);
-	XMMATRIX lightViewMatrix = XMMatrixInverse(nullptr, inverseLightViewMatrix);
-	XMMATRIX lightProjectionMatrix = XMMatrixOrthographicLH(shadowDistance, shadowDistance, -directionalShadowDistance, directionalShadowDistance);
-	perFrameCbData.mainLightShadowMatrix = get_shadow_matrix(lightViewMatrix, lightProjectionMatrix);
-	const float shadowResolution = (float)shadowMap->getDesc().width;
-	const float invShadowResolution = 1.0f / shadowResolution;
-	perFrameCbData.mainLightShadowResolution = XMFLOAT4(invShadowResolution, invShadowResolution, shadowResolution, shadowResolution);
-	perFrameCb->updateData(&perFrameCbData);
+	XMMATRIX lightViewMatrix;
+	XMMATRIX lightProjectionMatrix;
+	setupFrame(lightViewMatrix, lightProjectionMatrix);
 
-	drv->setConstantBuffer(ShaderStage::VS, 0, perFrameCb->getId());
-	drv->setConstantBuffer(ShaderStage::PS, 0, perFrameCb->getId());
+	setupShadowCamera(lightViewMatrix, lightProjectionMatrix);
+	performShadowPass();
 
-	performShadowPass(lightViewMatrix, lightProjectionMatrix);
+	setupForwardCamera();
 	performForwardPass();
 
 	sky->render();
@@ -187,49 +175,40 @@ void WorldRenderer::closeResolutionDependentResources()
 	hdrTarget.reset();
 }
 
-void WorldRenderer::performShadowPass(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix)
+void WorldRenderer::setupFrame(XMMATRIX& out_light_view_matrix, XMMATRIX& out_light_proj_matrix)
 {
-	PROFILE_SCOPE("ShadowPass");
+	PerFrameConstantBufferData perFrameCbData;
+	perFrameCbData.ambientLightBottomColor = get_final_light_color(ambientLightBottomColor, ambientLightIntensity);
+	perFrameCbData.ambientLightTopColor = get_final_light_color(ambientLightTopColor, ambientLightIntensity);
+	perFrameCbData.mainLightColor = get_final_light_color(mainLight->GetColor(), mainLight->GetIntensity());
+	XMMATRIX mainLightTranslateMatrix = XMMatrixTranslationFromVector(camera.GetEye() + camera.GetForward() * shadowDistance * 0.5f); // TODO: align to texel
+	XMMATRIX inverseLightViewMatrix = XMMatrixRotationRollPitchYaw(mainLight->GetPitch(), mainLight->GetYaw(), 0.0f) * mainLightTranslateMatrix;
+	XMStoreFloat4(&perFrameCbData.mainLightDirection, inverseLightViewMatrix.r[2]);
+	out_light_view_matrix = XMMatrixInverse(nullptr, inverseLightViewMatrix);
+	out_light_proj_matrix = XMMatrixOrthographicLH(shadowDistance, shadowDistance, -directionalShadowDistance, directionalShadowDistance);
+	perFrameCbData.mainLightShadowMatrix = get_shadow_matrix(out_light_view_matrix, out_light_proj_matrix);
+	const float shadowResolution = (float)shadowMap->getDesc().width;
+	const float invShadowResolution = 1.0f / shadowResolution;
+	perFrameCbData.mainLightShadowResolution = XMFLOAT4(invShadowResolution, invShadowResolution, shadowResolution, shadowResolution);
+	perFrameCb->updateData(&perFrameCbData);
 
-	drv->setRenderState(shadowRenderStateId);
-	drv->setRenderTarget(BAD_RESID, shadowMap->getId());
-	drv->setView(0, 0, (float)shadowMap->getDesc().width, (float)shadowMap->getDesc().height, 0, 1);
+	drv->setConstantBuffer(ShaderStage::VS, 0, perFrameCb->getId());
+	drv->setConstantBuffer(ShaderStage::PS, 0, perFrameCb->getId());
+}
 
-	RenderTargetClearParams clearParams(CLEAR_FLAG_DEPTH, 0, 1.0f);
-	drv->clearRenderTargets(clearParams);
-
-	if (!shadowEnabled)
-		return;
-
+void WorldRenderer::setupShadowCamera(const XMMATRIX& light_view_matrix, const XMMATRIX& light_proj_matrix)
+{
 	PerCameraConstantBufferData perCameraCbData{};
-	perCameraCbData.view = lightViewMatrix;
-	perCameraCbData.projection = lightProjectionMatrix;
+	perCameraCbData.view = light_view_matrix;
+	perCameraCbData.projection = light_proj_matrix;
 	perCameraCb->updateData(&perCameraCbData);
 
 	drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
 	drv->setConstantBuffer(ShaderStage::PS, 1, perCameraCb->getId());
-
-	for (MeshRenderer* mr : am->getSceneMeshRenderers())
-		mr->render(RenderPass::SHADOW);
 }
 
-void WorldRenderer::performForwardPass()
+void WorldRenderer::setupForwardCamera()
 {
-	PROFILE_SCOPE("ForwardPass");
-
-	drv->setRenderState(showWireframe ? forwardWireframeRenderStateId : forwardRenderStateId);
-
-	const TextureDesc& targetDesc = hdrTarget->getDesc();
-	drv->setRenderTarget(hdrTarget->getId(), depthTex->getId());
-	drv->setView(0, 0, (float)targetDesc.width, (float)targetDesc.height, 0, 1);
-
-	RenderTargetClearParams clearParams;
-	clearParams.color[0] = 0.0f;
-	clearParams.color[1] = 0.2f;
-	clearParams.color[2] = 0.4f;
-	clearParams.color[3] = 1.0f;
-	drv->clearRenderTargets(clearParams);
-
 	PerCameraConstantBufferData perCameraCbData;
 	perCameraCbData.view = camera.GetViewMatrix();
 	perCameraCbData.projection = camera.GetProjectionMatrix();
@@ -246,6 +225,38 @@ void WorldRenderer::performForwardPass()
 
 	drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
 	drv->setConstantBuffer(ShaderStage::PS, 1, perCameraCb->getId());
+}
+
+void WorldRenderer::performShadowPass()
+{
+	PROFILE_SCOPE("ShadowPass");
+
+	drv->setRenderState(shadowRenderStateId);
+	drv->setRenderTarget(BAD_RESID, shadowMap->getId());
+	drv->setView(0, 0, (float)shadowMap->getDesc().width, (float)shadowMap->getDesc().height, 0, 1);
+
+	RenderTargetClearParams clearParams(CLEAR_FLAG_DEPTH, 0, 1.0f);
+	drv->clearRenderTargets(clearParams);
+
+	if (!shadowEnabled)
+		return;
+
+	for (MeshRenderer* mr : am->getSceneMeshRenderers())
+		mr->render(RenderPass::DEPTH);
+}
+
+void WorldRenderer::performForwardPass()
+{
+	PROFILE_SCOPE("ForwardPass");
+
+	drv->setRenderState(showWireframe ? forwardWireframeRenderStateId : forwardRenderStateId);
+
+	const TextureDesc& targetDesc = hdrTarget->getDesc();
+	drv->setRenderTarget(hdrTarget->getId(), depthTex->getId());
+	drv->setView(0, 0, (float)targetDesc.width, (float)targetDesc.height, 0, 1);
+
+	RenderTargetClearParams clearParams(0.0f, 0.2f, 0.4f, 1.0f, 1.0f);
+	drv->clearRenderTargets(clearParams);
 
 	drv->setTexture(ShaderStage::PS, 2, shadowMap->getId(), true);
 
