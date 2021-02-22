@@ -76,9 +76,10 @@ private:
 	void closeResolutionDependentResources();
 
 	void setupFrame(XMMATRIX& out_light_view_matrix, XMMATRIX& out_light_proj_matrix);
-	void setupShadowCamera(const XMMATRIX& light_view_matrix, const XMMATRIX& light_proj_matrix);
-	void setupForwardCamera();
+	void setupShadowPass(const XMMATRIX& light_view_matrix, const XMMATRIX& light_proj_matrix);
+	void setupDepthAndForwardPasses();
 	void performShadowPass();
+	void performDepthPrepass();
 	void performForwardPass();
 
 	float time;
@@ -89,6 +90,8 @@ private:
 
 	std::unique_ptr<ITexture> hdrTarget;
 	std::unique_ptr<ITexture> depthTex;
+	ResIdHolder depthPrepassRenderStateId = BAD_RESID;
+	ResIdHolder depthPrepassWireframeRenderStateId = BAD_RESID;
 	ResIdHolder forwardRenderStateId = BAD_RESID;
 	ResIdHolder forwardWireframeRenderStateId = BAD_RESID;
 	std::unique_ptr<ITexture> shadowMap;

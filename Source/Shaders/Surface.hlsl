@@ -25,11 +25,8 @@ SurfaceOutput Surface(float3 pointToEye, float3 normal, float2 uv, float4 vertCo
 
 	// Albedo + Opacity
 	float4 baseTextureSample = _BaseTexture.Sample(_Sampler, uv);
-	s.opacity = baseTextureSample.a;
-#if ALPHA_TEST_ON
-	clip(s.opacity - ALPHA_TEST_THRESHOLD);
-#endif
 	s.albedo = baseTextureSample.rgb * vertColor.rgb;
+	s.opacity = baseTextureSample.a;
 
 	// Normal
 	float4 normalRoughMetal = _NormalRoughMetalTexture.Sample(_Sampler, uv);

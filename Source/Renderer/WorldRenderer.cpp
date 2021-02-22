@@ -27,10 +27,17 @@ WorldRenderer::WorldRenderer()
 	cbDesc.elementByteSize = sizeof(PerObjectConstantBufferData);
 	perObjectCb.reset(drv->createBuffer(cbDesc));
 
-	RenderStateDesc forwaredRsDesc;
-	forwardRenderStateId = drv->createRenderState(forwaredRsDesc);
-	forwaredRsDesc.rasterizerDesc.wireframe = true;
-	forwardWireframeRenderStateId = drv->createRenderState(forwaredRsDesc);
+	RenderStateDesc depthPrepassRsDesc;
+	depthPrepassRenderStateId = drv->createRenderState(depthPrepassRsDesc);
+	depthPrepassRsDesc.rasterizerDesc.wireframe = true;
+	depthPrepassWireframeRenderStateId = drv->createRenderState(depthPrepassRsDesc);
+
+	RenderStateDesc forwardRsDesc;
+	forwardRsDesc.depthStencilDesc.depthWrite = false;
+	forwardRsDesc.depthStencilDesc.DepthFunc = ComparisonFunc::EQUAL;
+	forwardRenderStateId = drv->createRenderState(forwardRsDesc);
+	forwardRsDesc.rasterizerDesc.wireframe = true;
+	forwardWireframeRenderStateId = drv->createRenderState(forwardRsDesc);
 
 	setShadowResolution(2048);
 	setShadowBias(50000, 1.0f);
@@ -105,10 +112,11 @@ void WorldRenderer::render()
 	XMMATRIX lightProjectionMatrix;
 	setupFrame(lightViewMatrix, lightProjectionMatrix);
 
-	setupShadowCamera(lightViewMatrix, lightProjectionMatrix);
+	setupShadowPass(lightViewMatrix, lightProjectionMatrix);
 	performShadowPass();
 
-	setupForwardCamera();
+	setupDepthAndForwardPasses();
+	performDepthPrepass();
 	performForwardPass();
 
 	sky->render();
@@ -196,50 +204,73 @@ void WorldRenderer::setupFrame(XMMATRIX& out_light_view_matrix, XMMATRIX& out_li
 	drv->setConstantBuffer(ShaderStage::PS, 0, perFrameCb->getId());
 }
 
-void WorldRenderer::setupShadowCamera(const XMMATRIX& light_view_matrix, const XMMATRIX& light_proj_matrix)
+void WorldRenderer::setupShadowPass(const XMMATRIX& light_view_matrix, const XMMATRIX& light_proj_matrix)
 {
+	// Shadow camera
 	PerCameraConstantBufferData perCameraCbData{};
 	perCameraCbData.view = light_view_matrix;
 	perCameraCbData.projection = light_proj_matrix;
 	perCameraCb->updateData(&perCameraCbData);
-
 	drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
 	drv->setConstantBuffer(ShaderStage::PS, 1, perCameraCb->getId());
+
+	// Setup state and render target
+	drv->setRenderState(shadowRenderStateId);
+	drv->setRenderTarget(BAD_RESID, shadowMap->getId());
+	drv->setView(0, 0, (float)shadowMap->getDesc().width, (float)shadowMap->getDesc().height, 0, 1);
+	RenderTargetClearParams clearParams(CLEAR_FLAG_DEPTH, 0, 1.0f);
+	drv->clearRenderTargets(clearParams);
 }
 
-void WorldRenderer::setupForwardCamera()
+void WorldRenderer::setupDepthAndForwardPasses()
 {
-	PerCameraConstantBufferData perCameraCbData;
-	perCameraCbData.view = camera.GetViewMatrix();
-	perCameraCbData.projection = camera.GetProjectionMatrix();
-	XMStoreFloat4(&perCameraCbData.cameraWorldPosition, camera.GetEye());
-	XMMATRIX viewRotMatrix = perCameraCbData.view;
-	viewRotMatrix.r[3] = XMVectorSet(0, 0, 0, 1);
-	XMMATRIX viewRotProjMatrix = viewRotMatrix * perCameraCbData.projection;
-	XMMATRIX invViewRotProjMatrix = XMMatrixInverse(nullptr, viewRotProjMatrix);
-	XMStoreFloat4(&perCameraCbData.viewVecLT, XMVector3TransformCoord(XMVectorSet(-1.f, +1.f, 1.f, 0.f), invViewRotProjMatrix));
-	XMStoreFloat4(&perCameraCbData.viewVecRT, XMVector3TransformCoord(XMVectorSet(+1.f, +1.f, 1.f, 0.f), invViewRotProjMatrix));
-	XMStoreFloat4(&perCameraCbData.viewVecLB, XMVector3TransformCoord(XMVectorSet(-1.f, -1.f, 1.f, 0.f), invViewRotProjMatrix));
-	XMStoreFloat4(&perCameraCbData.viewVecRB, XMVector3TransformCoord(XMVectorSet(+1.f, -1.f, 1.f, 0.f), invViewRotProjMatrix));
-	perCameraCb->updateData(&perCameraCbData);
+	// Main camera
+	{
+		PerCameraConstantBufferData perCameraCbData;
+		perCameraCbData.view = camera.GetViewMatrix();
+		perCameraCbData.projection = camera.GetProjectionMatrix();
+		XMStoreFloat4(&perCameraCbData.cameraWorldPosition, camera.GetEye());
+		XMMATRIX viewRotMatrix = perCameraCbData.view;
+		viewRotMatrix.r[3] = XMVectorSet(0, 0, 0, 1);
+		XMMATRIX viewRotProjMatrix = viewRotMatrix * perCameraCbData.projection;
+		XMMATRIX invViewRotProjMatrix = XMMatrixInverse(nullptr, viewRotProjMatrix);
+		XMStoreFloat4(&perCameraCbData.viewVecLT, XMVector3TransformCoord(XMVectorSet(-1.f, +1.f, 1.f, 0.f), invViewRotProjMatrix));
+		XMStoreFloat4(&perCameraCbData.viewVecRT, XMVector3TransformCoord(XMVectorSet(+1.f, +1.f, 1.f, 0.f), invViewRotProjMatrix));
+		XMStoreFloat4(&perCameraCbData.viewVecLB, XMVector3TransformCoord(XMVectorSet(-1.f, -1.f, 1.f, 0.f), invViewRotProjMatrix));
+		XMStoreFloat4(&perCameraCbData.viewVecRB, XMVector3TransformCoord(XMVectorSet(+1.f, -1.f, 1.f, 0.f), invViewRotProjMatrix));
+		perCameraCb->updateData(&perCameraCbData);
 
-	drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
-	drv->setConstantBuffer(ShaderStage::PS, 1, perCameraCb->getId());
+		drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
+		drv->setConstantBuffer(ShaderStage::PS, 1, perCameraCb->getId());
+	}
+
+	// Setup render target
+	{
+		const TextureDesc& targetDesc = hdrTarget->getDesc();
+		drv->setRenderTarget(hdrTarget->getId(), depthTex->getId());
+		drv->setView(0, 0, (float)targetDesc.width, (float)targetDesc.height, 0, 1);
+
+		RenderTargetClearParams clearParams(0.0f, 0.2f, 0.4f, 1.0f, 1.0f);
+		drv->clearRenderTargets(clearParams);
+	}
 }
 
 void WorldRenderer::performShadowPass()
 {
 	PROFILE_SCOPE("ShadowPass");
 
-	drv->setRenderState(shadowRenderStateId);
-	drv->setRenderTarget(BAD_RESID, shadowMap->getId());
-	drv->setView(0, 0, (float)shadowMap->getDesc().width, (float)shadowMap->getDesc().height, 0, 1);
-
-	RenderTargetClearParams clearParams(CLEAR_FLAG_DEPTH, 0, 1.0f);
-	drv->clearRenderTargets(clearParams);
-
 	if (!shadowEnabled)
 		return;
+
+	for (MeshRenderer* mr : am->getSceneMeshRenderers())
+		mr->render(RenderPass::DEPTH);
+}
+
+void WorldRenderer::performDepthPrepass()
+{
+	PROFILE_SCOPE("DepthPrepass");
+
+	drv->setRenderState(showWireframe ? depthPrepassWireframeRenderStateId : depthPrepassRenderStateId);
 
 	for (MeshRenderer* mr : am->getSceneMeshRenderers())
 		mr->render(RenderPass::DEPTH);
@@ -250,13 +281,6 @@ void WorldRenderer::performForwardPass()
 	PROFILE_SCOPE("ForwardPass");
 
 	drv->setRenderState(showWireframe ? forwardWireframeRenderStateId : forwardRenderStateId);
-
-	const TextureDesc& targetDesc = hdrTarget->getDesc();
-	drv->setRenderTarget(hdrTarget->getId(), depthTex->getId());
-	drv->setView(0, 0, (float)targetDesc.width, (float)targetDesc.height, 0, 1);
-
-	RenderTargetClearParams clearParams(0.0f, 0.2f, 0.4f, 1.0f, 1.0f);
-	drv->clearRenderTargets(clearParams);
 
 	drv->setTexture(ShaderStage::PS, 2, shadowMap->getId(), true);
 
