@@ -34,6 +34,9 @@ struct VSOutputStandardForward
 struct VSOutputStandardShadow
 {
 	float4 position : SV_POSITION;
+#if ALPHA_TEST_ON
+	float2 uv : TEXCOORD0;
+#endif
 };
 
 //--------------------------------------------------------------------------------------
@@ -84,9 +87,17 @@ VSOutputStandardShadow StandardDepthOnlyVS(VSInputStandard v)
 	float4 clipPos = mul(_Projection, viewPos);
 	o.position = clipPos;
 
+#if ALPHA_TEST_ON
+	o.uv = v.uv;
+#endif
+
 	return o;
 }
 
-void StandardOpaqueDepthOnlyPS()
+void StandardOpaqueDepthOnlyPS(VSOutputStandardShadow i)
 {
+#if ALPHA_TEST_ON
+	float opacity = _BaseTexture.Sample(_Sampler, i.uv).a;
+	clip(opacity - ALPHA_TEST_THRESHOLD);
+#endif
 }
