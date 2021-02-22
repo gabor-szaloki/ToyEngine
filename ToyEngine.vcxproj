@@ -397,6 +397,7 @@
     <ClInclude Include="Source\Util\AutoImGui.h" />
     <ClInclude Include="Source\Util\CaseSensitiveIni.h" />
     <ClInclude Include="Source\Util\FpsLimiter.h" />
+    <ClInclude Include="Source\Util\ImGuiExtensions.h" />
     <ClInclude Include="Source\Util\ImGuiLogWindow.h" />
     <ClInclude Include="Source\Util\PreciseSleep.h" />
     <ClInclude Include="Source\Util\ResIdHolder.h" />

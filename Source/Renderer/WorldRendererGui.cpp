@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <3rdParty/imgui/imgui.h>
+#include <Util/ImGuiExtensions.h>
 #include <Util/AutoImGui.h>
 #include <Driver/ITexture.h>
 
@@ -31,7 +32,9 @@ void WorldRenderer::lightingGui()
 	{
 		ImGui::SliderFloat("Intensity##ambient", &ambientLightIntensity, 0.0f, 2.0f);
 		ImGui::ColorEdit3("Bottom color", reinterpret_cast<float*>(&ambientLightBottomColor));
+		ImGui::ColorEdit3Srgb("Bottom color (SRGB)", reinterpret_cast<float*>(&ambientLightBottomColor));
 		ImGui::ColorEdit3("Top color", reinterpret_cast<float*>(&ambientLightTopColor));
+		ImGui::ColorEdit3Srgb("Top color (SRGB)", reinterpret_cast<float*>(&ambientLightTopColor));
 	}
 
 	if (ImGui::CollapsingHeader("Main light", ImGuiTreeNodeFlags_DefaultOpen))
@@ -46,7 +49,9 @@ void WorldRenderer::lightingGui()
 			mainLight->SetPitch(mainLightPitch);
 		if (ImGui::SliderFloat("Intensity##main", &mainLightIntensity, 0.0f, 2.0f))
 			mainLight->SetIntensity(mainLightIntensity);
-		if (ImGui::ColorEdit3("Color##main", reinterpret_cast<float*>(&mainLightColor)))
+		if (ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&mainLightColor)))
+			mainLight->SetColor(mainLightColor);
+		if (ImGui::ColorEdit3Srgb("Color (SRGB)", reinterpret_cast<float*>(&mainLightColor)))
 			mainLight->SetColor(mainLightColor);
 	}
 

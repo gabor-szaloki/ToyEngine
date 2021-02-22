@@ -2,21 +2,9 @@
 
 #include <3rdParty/imgui/imgui.h>
 #include <Util/AutoImGui.h>
+#include <Util/ImGuiExtensions.h>
 #include <Driver/IBuffer.h>
 #include "WorldRenderer.h"
-
-namespace ImGui
-{
-	bool ColorEdit3Srgb(const char* label, float col[3], ImGuiColorEditFlags flags = 0)
-	{
-		for (int i = 0; i < 3; i++)
-			col[i] = powf(col[i], 1.0f/2.2f);
-		bool result = ColorEdit3(label, col, flags);
-		for (int i = 0; i < 3; i++)
-			col[i] = powf(col[i], 2.2f);
-		return result;
-	}
-}
 
 Sky::Sky()
 {
@@ -53,10 +41,13 @@ void Sky::gui()
 {
 	bool changed = false;
 
-	changed |= ImGui::ColorEdit3Srgb("Top color", &cbData.topColor_Exponent.x);
+	changed |= ImGui::ColorEdit3("Top color", &cbData.topColor_Exponent.x);
+	changed |= ImGui::ColorEdit3Srgb("Top color (SRGB)", &cbData.topColor_Exponent.x);
 	changed |= ImGui::DragFloat("Top exponent", &cbData.topColor_Exponent.w);
-	changed |= ImGui::ColorEdit3Srgb("Horizon color", &cbData.horizonColor.x);
-	changed |= ImGui::ColorEdit3Srgb("Bottom color", &cbData.bottomColor_Exponent.x);
+	changed |= ImGui::ColorEdit3("Horizon color", &cbData.horizonColor.x);
+	changed |= ImGui::ColorEdit3Srgb("Horizon color (SRGB)", &cbData.horizonColor.x);
+	changed |= ImGui::ColorEdit3("Bottom color", &cbData.bottomColor_Exponent.x);
+	changed |= ImGui::ColorEdit3Srgb("Bottom color (SRGB)", &cbData.bottomColor_Exponent.x);
 	changed |= ImGui::DragFloat("Bottom exponent", &cbData.bottomColor_Exponent.w);
 	changed |= ImGui::SliderFloat("Sky intensity", &cbData.skyIntensity_SunIntensity_SunAlpha_SunBeta.x, 0.f, 2.f);
 	changed |= ImGui::SliderFloat("Sun intensity", &cbData.skyIntensity_SunIntensity_SunAlpha_SunBeta.y, 0.f, 5.f);

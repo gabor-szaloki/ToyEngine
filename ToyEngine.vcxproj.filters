@@ -1214,6 +1214,9 @@
     <ClInclude Include="Source\Engine\VertexData.h">
       <Filter>Source\Engine</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Util\ImGuiExtensions.h">
+      <Filter>Source\Util</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Source\3rdParty\glm\CMakeLists.txt">
