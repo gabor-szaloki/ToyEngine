@@ -22,6 +22,8 @@ namespace plog
 		};
 		std::vector<LogLine> lines;
 		std::mutex linesMutex;
+		unsigned int errorCount = 0;
+		unsigned int warningCount = 0;
 	};
 
 	class ToyTxtFormatter

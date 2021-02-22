@@ -37,15 +37,34 @@ void ImGuiLogWindow::write(const Record& record)
 
 	std::scoped_lock<std::mutex> lock(linesMutex);
 	lines.push_back(l);
+	if (l.severity == plog::Severity::error || l.severity == plog::Severity::fatal)
+		errorCount++;
+	else if (l.severity == plog::Severity::warning)
+		warningCount++;
 }
 
 void ImGuiLogWindow::perform()
 {
 	ImGui::BeginMenuBar();
+
+	const ImVec4 white(1, 1, 1, 1);
+	const ImVec4 red(1, 0, 0, 1);
+	const ImVec4 yellow(1, 1, 0, 1);
+	ImGui::TextColored(errorCount > 0 ? red : white, "Errors: %d", errorCount);
+	if (ImGui::IsItemHovered())
+		ImGui::SetTooltip("Click to see first error");
+	bool scrollToFirstError = errorCount > 0 && ImGui::IsItemClicked();
+	ImGui::TextColored(warningCount > 0 ? yellow : white, "Warnings: %d", warningCount);
+	if (ImGui::IsItemHovered())
+		ImGui::SetTooltip("Click to see first warning");
+	bool scrollToFirstWarning = warningCount > 0 && ImGui::IsItemClicked();
+
 	if (ImGui::Button("Clear"))
 	{
 		std::scoped_lock<std::mutex> lock(linesMutex);
 		lines.clear();
+		errorCount = 0;
+		warningCount = 0;
 	}
 
 	if (ImGui::Button("Show log file"))
@@ -92,6 +111,7 @@ void ImGuiLogWindow::perform()
 	filter.Draw("", 100);
 	if (ImGui::Button("x"))
 		filter.Clear();
+
 	ImGui::EndMenuBar();
 
 	{
@@ -108,6 +128,18 @@ void ImGuiLogWindow::perform()
 				if (ImGui::MenuItem("Copy to clipboard"))
 					ImGui::SetClipboardText(l.text.c_str());
 				ImGui::EndPopup();
+			}
+			if (scrollToFirstError && (l.severity == plog::Severity::error || l.severity == plog::Severity::fatal))
+			{
+				ImGui::SetScrollHereY();
+				scrollToFirstError = false;
+				autoScroll = false;
+			}
+			if (scrollToFirstWarning && l.severity == plog::Severity::warning)
+			{
+				ImGui::SetScrollHereY();
+				scrollToFirstWarning = false;
+				autoScroll = false;
 			}
 		}
 	}
