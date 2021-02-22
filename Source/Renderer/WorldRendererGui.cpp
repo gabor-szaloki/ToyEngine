@@ -21,11 +21,6 @@ static XMVECTOR euler_to_quaternion(XMVECTOR e)
 	return XMLoadFloat4(&q);
 }
 
-void WorldRenderer::rendererSettingsGui()
-{
-	ImGui::Checkbox("Show wireframe", &showWireframe);
-}
-
 void WorldRenderer::lightingGui()
 {
 	if (ImGui::CollapsingHeader("Ambient light", ImGuiTreeNodeFlags_DefaultOpen))
@@ -81,6 +76,5 @@ void WorldRenderer::shadowMapGui()
 	ImGui::Image(shadowMap->getViewHandle(), ImVec2(zoom * shadowResolution, zoom * shadowResolution));
 }
 
-REGISTER_IMGUI_WINDOW("Renderer settings", []() { wr->rendererSettingsGui(); });
 REGISTER_IMGUI_WINDOW("Lighting settings", []() { wr->lightingGui(); });
 REGISTER_IMGUI_WINDOW_EX("Shadowmap debug", nullptr, 100, ImGuiWindowFlags_HorizontalScrollbar, []() { wr->shadowMapGui(); });

@@ -291,8 +291,12 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		case VK_F2:
 			autoimgui::is_active = !autoimgui::is_active;
 			break;
+		case VK_F3:
+			wr->toggleWireframe();
+			break;
 		case VK_F5:
 			drv->recompileShaders();
+			break;
 		case VK_CONTROL:
 			ctrl = true;
 			break;
@@ -350,5 +354,7 @@ void exit_program()
 }
 
 REGISTER_IMGUI_FUNCTION_EX("App", "Toggle fullscreen", "F11", 100, [] { PostMessage(hWnd, WM_KEYDOWN, VK_F11, 0); });
+REGISTER_IMGUI_FUNCTION_EX("App", "Toggle wireframe", "F3", 101, [] { wr->toggleWireframe(); });
+REGISTER_IMGUI_FUNCTION_EX("App", "Recompile shaders", "F5", 101, [] { drv->recompileShaders(); });
 REGISTER_IMGUI_FUNCTION_EX("App", "Exit", "Alt+F4", 999, exit_program);
 REGISTER_IMGUI_FUNCTION_EX("ImGui", "Hide ImGui", "F2", 100, []() { autoimgui::is_active = false; });

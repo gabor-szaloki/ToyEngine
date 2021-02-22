@@ -32,6 +32,7 @@ public:
 	void update(float delta_time);
 	void render();
 
+	void toggleWireframe() { showWireframe = !showWireframe; }
 	void setAmbientLighting(const XMFLOAT4& bottom_color, const XMFLOAT4& top_color, float intensity);
 	unsigned int getShadowResolution();
 	void setShadowResolution(unsigned int shadow_resolution);
@@ -41,7 +42,6 @@ public:
 	float getTime() { return time; }
 	Sky& getSky() { return *sky; }
 
-	void rendererSettingsGui();
 	void lightingGui();
 	void shadowMapGui();
 
