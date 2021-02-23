@@ -50,9 +50,7 @@ VSOutputStandardForward StandardForwardVS(VSInputStandard v)
 	VSOutputStandardForward o;
 
 	float4 worldPos = mul(_World, v.position);
-	float4 viewPos = mul(_View, worldPos);
-	float4 clipPos = mul(_Projection, viewPos);
-	o.position = clipPos;
+	o.position = mul(_ViewProjection, worldPos);
 
 	o.normal = normalize(mul(_World, float4(v.normal, 0)).xyz);
 	o.color = v.color;
@@ -83,9 +81,7 @@ VSOutputStandardShadow StandardDepthOnlyVS(VSInputStandard v)
 	VSOutputStandardShadow o;
 
 	float4 worldPos = mul(_World, v.position);
-	float4 viewPos = mul(_View, worldPos);
-	float4 clipPos = mul(_Projection, viewPos);
-	o.position = clipPos;
+	o.position = mul(_ViewProjection, worldPos);
 
 #if ALPHA_TEST_ON
 	o.uv = v.uv;

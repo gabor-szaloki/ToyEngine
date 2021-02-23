@@ -16,6 +16,7 @@ struct PerCameraConstantBufferData
 {
 	XMMATRIX view;
 	XMMATRIX projection;
+	XMMATRIX viewProjection;
 	XMFLOAT4 cameraWorldPosition;
 	XMFLOAT4 viewVecLT;
 	XMFLOAT4 viewVecRT;

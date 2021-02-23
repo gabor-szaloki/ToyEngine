@@ -210,6 +210,7 @@ void WorldRenderer::setupShadowPass(const XMMATRIX& light_view_matrix, const XMM
 	PerCameraConstantBufferData perCameraCbData{};
 	perCameraCbData.view = light_view_matrix;
 	perCameraCbData.projection = light_proj_matrix;
+	perCameraCbData.viewProjection = light_view_matrix * light_proj_matrix;
 	perCameraCb->updateData(&perCameraCbData);
 	drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
 	drv->setConstantBuffer(ShaderStage::PS, 1, perCameraCb->getId());
@@ -229,6 +230,7 @@ void WorldRenderer::setupDepthAndForwardPasses()
 		PerCameraConstantBufferData perCameraCbData;
 		perCameraCbData.view = camera.GetViewMatrix();
 		perCameraCbData.projection = camera.GetProjectionMatrix();
+		perCameraCbData.viewProjection = perCameraCbData.view * perCameraCbData.projection;
 		XMStoreFloat4(&perCameraCbData.cameraWorldPosition, camera.GetEye());
 		XMMATRIX viewRotMatrix = perCameraCbData.view;
 		viewRotMatrix.r[3] = XMVectorSet(0, 0, 0, 1);

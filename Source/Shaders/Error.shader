@@ -3,9 +3,7 @@
 float4 ErrorVS(float4 pos : POSITION) : SV_POSITION
 {
 	float4 worldPos = mul(_World, pos);
-	float4 viewPos = mul(_View, worldPos);
-	float4 clipPos = mul(_Projection, viewPos);
-	return clipPos;
+	return mul(_ViewProjection, worldPos);
 }
 
 float4 ErrorPS() : SV_TARGET
