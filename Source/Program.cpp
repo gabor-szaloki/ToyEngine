@@ -285,6 +285,10 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		case 0x51: // Q
 			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingDown = true;
 			break;
+		case 0x52: // R
+			if (ctrl)
+				drv->recompileShaders();
+			break;
 		case VK_SHIFT:
 			if (rightMouseButtonHeldDown) wr->cameraInputState.isSpeeding = true;
 			break;
@@ -293,9 +297,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			break;
 		case VK_F3:
 			wr->toggleWireframe();
-			break;
-		case VK_F5:
-			drv->recompileShaders();
 			break;
 		case VK_CONTROL:
 			ctrl = true;
@@ -355,6 +356,6 @@ void exit_program()
 
 REGISTER_IMGUI_FUNCTION_EX("App", "Toggle fullscreen", "F11", 100, [] { PostMessage(hWnd, WM_KEYDOWN, VK_F11, 0); });
 REGISTER_IMGUI_FUNCTION_EX("App", "Toggle wireframe", "F3", 101, [] { wr->toggleWireframe(); });
-REGISTER_IMGUI_FUNCTION_EX("App", "Recompile shaders", "F5", 101, [] { drv->recompileShaders(); });
+REGISTER_IMGUI_FUNCTION_EX("App", "Recompile shaders", "Ctrl+R", 101, [] { drv->recompileShaders(); });
 REGISTER_IMGUI_FUNCTION_EX("App", "Exit", "Alt+F4", 999, exit_program);
 REGISTER_IMGUI_FUNCTION_EX("ImGui", "Hide ImGui", "F2", 100, []() { autoimgui::is_active = false; });
