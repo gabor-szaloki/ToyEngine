@@ -10,6 +10,12 @@
 #include "Shadow.hlsl"
 
 //--------------------------------------------------------------------------------------
+// Resources
+//--------------------------------------------------------------------------------------
+Texture2D<float> _SsaoTex    : register(t3);
+SamplerState _SsaoTexSampler : register(s3);
+
+//--------------------------------------------------------------------------------------
 // Input/Output structures
 //--------------------------------------------------------------------------------------
 
@@ -64,12 +70,14 @@ VSOutputStandardForward StandardForwardVS(VSInputStandard v)
 float4 StandardOpaqueForwardPS(VSOutputStandardForward i) : SV_TARGET
 {
 	float4 c = 1;
+	float2 screenUv = i.position.xy * _ViewportResolution.zw;
 
 	float3 pointToEye = _CameraWorldPosition.xyz - i.worldPos;
 	SurfaceOutput s = Surface(pointToEye, i.normal, i.uv, i.color);
 
 	float mainLightShadowAttenuation = SampleMainLightShadow(i.shadowCoords);
-	c.rgb = Lighting(s, pointToEye, mainLightShadowAttenuation);
+	float ssao = _SsaoTex.Sample(_SsaoTexSampler, screenUv);
+	c.rgb = Lighting(s, pointToEye, mainLightShadowAttenuation, ssao);
 
 	return c;
 }

@@ -1,3 +1,5 @@
+#define POSTFX_NEED_UV 1
+
 #include "PostFxCommon.hlsl"
 #include "Tonemapping.hlsl"
 

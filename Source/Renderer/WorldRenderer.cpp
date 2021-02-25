@@ -7,6 +7,7 @@
 
 #include "ConstantBuffers.h"
 #include "Light.h"
+#include "Ssao.h"
 #include "Sky.h"
 
 WorldRenderer::WorldRenderer()
@@ -41,7 +42,6 @@ WorldRenderer::WorldRenderer()
 
 	setShadowResolution(2048);
 	setShadowBias(50000, 1.0f);
-	initResolutionDependentResources();
 }
 
 WorldRenderer::~WorldRenderer()
@@ -50,6 +50,7 @@ WorldRenderer::~WorldRenderer()
 
 void WorldRenderer::init()
 {
+	initResolutionDependentResources();
 	sky = std::make_unique<Sky>();
 }
 
@@ -62,7 +63,6 @@ void WorldRenderer::onResize(int display_width, int display_height)
 	closeResolutionDependentResources();
 	drv->resize(display_width, display_height);
 	initResolutionDependentResources();
-	camera.Resize((float)display_width, (float)display_height);
 }
 
 void WorldRenderer::update(float delta_time)
@@ -117,6 +117,9 @@ void WorldRenderer::render()
 
 	setupDepthAndForwardPasses();
 	performDepthPrepass();
+
+	ssao->perform();
+
 	performForwardPass();
 
 	sky->render();
@@ -160,6 +163,7 @@ void WorldRenderer::setShadowBias(int depth_bias, float slope_scaled_depth_bias)
 	RenderStateDesc desc;
 	desc.rasterizerDesc.depthBias = shadowDepthBias;
 	desc.rasterizerDesc.slopeScaledDepthBias = shadowSlopeScaledDepthBias;
+	desc.rasterizerDesc.depthClipEnable = false;
 	shadowRenderStateId = drv->createRenderState(desc);
 }
 
@@ -173,14 +177,27 @@ void WorldRenderer::initResolutionDependentResources()
 	hdrTarget.reset(drv->createTexture(hdrTargetDesc));
 
 	TextureDesc depthTexDesc("depthTex", displayResolution.x, displayResolution.y,
-		TexFmt::D32_FLOAT_S8X24_UINT, 1, ResourceUsage::DEFAULT, BIND_DEPTH_STENCIL);
+		TexFmt::R24G8_TYPELESS, 1, ResourceUsage::DEFAULT, BIND_DEPTH_STENCIL | BIND_SHADER_RESOURCE);
+	depthTexDesc.srvFormatOverride = TexFmt::R24_UNORM_X8_TYPELESS;
+	depthTexDesc.dsvFormatOverride = TexFmt::D24_UNORM_S8_UINT;
+	depthTexDesc.samplerDesc.filter = FILTER_MIN_MAG_MIP_POINT;
 	depthTex.reset(drv->createTexture(depthTexDesc));
+
+	camera.Resize((float)displayResolution.x, (float)displayResolution.y);
+
+	ssao = std::make_unique<Ssao>(displayResolution);
 }
 
 void WorldRenderer::closeResolutionDependentResources()
 {
 	depthTex.reset();
 	hdrTarget.reset();
+	ssao.reset();
+}
+
+XMVECTOR calculate_shadow_camera_pos(const Camera& camera, float shadow_distance)
+{
+	return camera.GetEye() + camera.GetForward() * shadow_distance * 0.5f; // TODO: align to texel
 }
 
 void WorldRenderer::setupFrame(XMMATRIX& out_light_view_matrix, XMMATRIX& out_light_proj_matrix)
@@ -189,7 +206,7 @@ void WorldRenderer::setupFrame(XMMATRIX& out_light_view_matrix, XMMATRIX& out_li
 	perFrameCbData.ambientLightBottomColor = get_final_light_color(ambientLightBottomColor, ambientLightIntensity);
 	perFrameCbData.ambientLightTopColor = get_final_light_color(ambientLightTopColor, ambientLightIntensity);
 	perFrameCbData.mainLightColor = get_final_light_color(mainLight->GetColor(), mainLight->GetIntensity());
-	XMMATRIX mainLightTranslateMatrix = XMMatrixTranslationFromVector(camera.GetEye() + camera.GetForward() * shadowDistance * 0.5f); // TODO: align to texel
+	XMMATRIX mainLightTranslateMatrix = XMMatrixTranslationFromVector(calculate_shadow_camera_pos(camera, shadowDistance));
 	XMMATRIX inverseLightViewMatrix = XMMatrixRotationRollPitchYaw(mainLight->GetPitch(), mainLight->GetYaw(), 0.0f) * mainLightTranslateMatrix;
 	XMStoreFloat4(&perFrameCbData.mainLightDirection, inverseLightViewMatrix.r[2]);
 	out_light_view_matrix = XMMatrixInverse(nullptr, inverseLightViewMatrix);
@@ -204,6 +221,11 @@ void WorldRenderer::setupFrame(XMMATRIX& out_light_view_matrix, XMMATRIX& out_li
 	drv->setConstantBuffer(ShaderStage::PS, 0, perFrameCb->getId());
 }
 
+static XMFLOAT4 get_projection_params(float zn, float zf, bool persp)
+{
+	return XMFLOAT4(zn * zf, zn - zf, zf, persp ? 1.0f : 0.0f);
+}
+
 void WorldRenderer::setupShadowPass(const XMMATRIX& light_view_matrix, const XMMATRIX& light_proj_matrix)
 {
 	// Shadow camera
@@ -211,6 +233,10 @@ void WorldRenderer::setupShadowPass(const XMMATRIX& light_view_matrix, const XMM
 	perCameraCbData.view = light_view_matrix;
 	perCameraCbData.projection = light_proj_matrix;
 	perCameraCbData.viewProjection = light_view_matrix * light_proj_matrix;
+	perCameraCbData.projectionParams = get_projection_params(-directionalShadowDistance, directionalShadowDistance, false);
+	XMStoreFloat4(&perCameraCbData.cameraWorldPosition, calculate_shadow_camera_pos(camera, shadowDistance));
+	float shadowResolution = getShadowResolution();
+	perCameraCbData.viewportResolution = XMFLOAT4(shadowResolution, shadowResolution, 1.f / shadowResolution, 1.f / shadowResolution);
 	perCameraCb->updateData(&perCameraCbData);
 	drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
 	drv->setConstantBuffer(ShaderStage::PS, 1, perCameraCb->getId());
@@ -231,29 +257,35 @@ void WorldRenderer::setupDepthAndForwardPasses()
 		perCameraCbData.view = camera.GetViewMatrix();
 		perCameraCbData.projection = camera.GetProjectionMatrix();
 		perCameraCbData.viewProjection = perCameraCbData.view * perCameraCbData.projection;
+		perCameraCbData.projectionParams = get_projection_params(camera.GetNearPlane(), camera.GetFarPlane(), true);
 		XMStoreFloat4(&perCameraCbData.cameraWorldPosition, camera.GetEye());
+		perCameraCbData.viewportResolution = XMFLOAT4(
+			camera.GetViewportWidth(), camera.GetViewportHeight(),
+			1.f / camera.GetViewportWidth(), 1.f / camera.GetViewportHeight());
+
 		XMMATRIX viewRotMatrix = perCameraCbData.view;
 		viewRotMatrix.r[3] = XMVectorSet(0, 0, 0, 1);
 		XMMATRIX viewRotProjMatrix = viewRotMatrix * perCameraCbData.projection;
 		XMMATRIX invViewRotProjMatrix = XMMatrixInverse(nullptr, viewRotProjMatrix);
-		XMStoreFloat4(&perCameraCbData.viewVecLT, XMVector3TransformCoord(XMVectorSet(-1.f, +1.f, 1.f, 0.f), invViewRotProjMatrix));
-		XMStoreFloat4(&perCameraCbData.viewVecRT, XMVector3TransformCoord(XMVectorSet(+1.f, +1.f, 1.f, 0.f), invViewRotProjMatrix));
-		XMStoreFloat4(&perCameraCbData.viewVecLB, XMVector3TransformCoord(XMVectorSet(-1.f, -1.f, 1.f, 0.f), invViewRotProjMatrix));
-		XMStoreFloat4(&perCameraCbData.viewVecRB, XMVector3TransformCoord(XMVectorSet(+1.f, -1.f, 1.f, 0.f), invViewRotProjMatrix));
+		float invFarPlane = 1.0f / camera.GetFarPlane();
+		XMStoreFloat4(&perCameraCbData.viewVecLT, XMVector3TransformCoord(XMVectorSet(-1.f, +1.f, 1.f, 0.f), invViewRotProjMatrix) * invFarPlane);
+		XMStoreFloat4(&perCameraCbData.viewVecRT, XMVector3TransformCoord(XMVectorSet(+1.f, +1.f, 1.f, 0.f), invViewRotProjMatrix) * invFarPlane);
+		XMStoreFloat4(&perCameraCbData.viewVecLB, XMVector3TransformCoord(XMVectorSet(-1.f, -1.f, 1.f, 0.f), invViewRotProjMatrix) * invFarPlane);
+		XMStoreFloat4(&perCameraCbData.viewVecRB, XMVector3TransformCoord(XMVectorSet(+1.f, -1.f, 1.f, 0.f), invViewRotProjMatrix) * invFarPlane);
+
 		perCameraCb->updateData(&perCameraCbData);
 
 		drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
 		drv->setConstantBuffer(ShaderStage::PS, 1, perCameraCb->getId());
 	}
 
-	// Setup render target
+	// Clear targets
 	{
 		const TextureDesc& targetDesc = hdrTarget->getDesc();
 		drv->setRenderTarget(hdrTarget->getId(), depthTex->getId());
 		drv->setView(0, 0, (float)targetDesc.width, (float)targetDesc.height, 0, 1);
 
-		RenderTargetClearParams clearParams(0.0f, 0.2f, 0.4f, 1.0f, 1.0f);
-		drv->clearRenderTargets(clearParams);
+		drv->clearRenderTargets(RenderTargetClearParams::clear_all(0.0f, 0.2f, 0.4f, 1.0f, 1.0f));
 	}
 }
 
@@ -273,6 +305,7 @@ void WorldRenderer::performDepthPrepass()
 	PROFILE_SCOPE("DepthPrepass");
 
 	drv->setRenderState(showWireframe ? depthPrepassWireframeRenderStateId : depthPrepassRenderStateId);
+	drv->setRenderTarget(BAD_RESID, depthTex->getId());
 
 	for (MeshRenderer* mr : am->getSceneMeshRenderers())
 		mr->render(RenderPass::DEPTH);
@@ -283,11 +316,14 @@ void WorldRenderer::performForwardPass()
 	PROFILE_SCOPE("ForwardPass");
 
 	drv->setRenderState(showWireframe ? forwardWireframeRenderStateId : forwardRenderStateId);
+	drv->setRenderTarget(hdrTarget->getId(), depthTex->getId());
 
 	drv->setTexture(ShaderStage::PS, 2, shadowMap->getId(), true);
+	drv->setTexture(ShaderStage::PS, 3, ssao->getResultTex()->getId(), true);
 
 	for (MeshRenderer* mr : am->getSceneMeshRenderers())
 		mr->render(RenderPass::FORWARD);
 
 	drv->setTexture(ShaderStage::PS, 2, BAD_RESID, true);
+	drv->setTexture(ShaderStage::PS, 3, BAD_RESID, true);
 }

@@ -17,6 +17,7 @@ class IBuffer;
 class ThreadPool;
 class Light;
 class MeshRenderer;
+class Ssao;
 class Sky;
 
 struct MeshData;
@@ -37,13 +38,16 @@ public:
 	unsigned int getShadowResolution();
 	void setShadowResolution(unsigned int shadow_resolution);
 	void setShadowBias(int depth_bias, float slope_scaled_depth_bias);
+	ITexture* getDepthTex() const { return depthTex.get(); }
 	ITexture* getShadowMap() const { return shadowMap.get(); };
 	Camera& getCamera() { return camera; };
 	float getTime() { return time; }
 	Sky& getSky() { return *sky; }
+	Ssao& getSsao() { return *ssao; }
 
 	void lightingGui();
 	void shadowMapGui();
+	void ssaoTexGui();
 
 	struct CameraInputState
 	{
@@ -101,6 +105,7 @@ private:
 	std::unique_ptr<IBuffer> perCameraCb;
 	std::unique_ptr<IBuffer> perObjectCb;
 
+	std::unique_ptr<Ssao> ssao;
 	std::unique_ptr<Sky> sky;
 	PostFx postFx;
 };

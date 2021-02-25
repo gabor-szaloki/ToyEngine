@@ -17,7 +17,9 @@ struct PerCameraConstantBufferData
 	XMMATRIX view;
 	XMMATRIX projection;
 	XMMATRIX viewProjection;
+	XMFLOAT4 projectionParams; // x: zn*zf, y: zn-zf, z: zf, w: perspective = 1 : 0
 	XMFLOAT4 cameraWorldPosition;
+	XMFLOAT4 viewportResolution;
 	XMFLOAT4 viewVecLT;
 	XMFLOAT4 viewVecRT;
 	XMFLOAT4 viewVecLB;

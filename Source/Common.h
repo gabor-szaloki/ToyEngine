@@ -1,6 +1,7 @@
 #pragma once
 
 #pragma warning(disable:4267) // warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+#pragma warning(disable:4244) // warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 
 #include <DirectXMath.h>
 #include <3rdParty/plog/Log.h>
@@ -17,6 +18,8 @@ extern const char* get_log_file_path();
 // TODO: move to some kind of utils
 wchar_t* utf8_to_wcs(const char* utf8_str, wchar_t* wcs_buf, int wcs_buf_len);
 char* wcs_to_utf8(const wchar_t* wcs_str, char* utf8_buf, int utf8_buf_len);
+
+#define M_PI 3.14159265358979323846
 
 #define RAD_TO_DEG 57.2957795f;	
 #define DEG_TO_RAD 0.0174532925f;

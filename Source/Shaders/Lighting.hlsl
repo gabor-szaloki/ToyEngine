@@ -29,7 +29,7 @@ float3 GGX_Specular(float3 lightColor, float3 normal, float3 lightVector, float3
 	return radiance;
 }
 
-float3 Lighting(SurfaceOutput s, float3 pointToEye, float mainLightShadowAttenuation)
+float3 Lighting(SurfaceOutput s, float3 pointToEye, float mainLightShadowAttenuation, float ao)
 {
 	float3 lightVector = -_MainLightDirection.xyz;
 	float3 viewVector = normalize(pointToEye);
@@ -51,7 +51,7 @@ float3 Lighting(SurfaceOutput s, float3 pointToEye, float mainLightShadowAttenua
 	float3 ambientColor = lerp(_AmbientLightBottomColor.rgb, _AmbientLightTopColor.rgb, s.normal.y * 0.5 + 0.5);
 	float3 ambient = s.albedo * ambientColor * 0.5;
 
-	return ambient + (kD * diffuse +/* kS * */specular) * mainLightShadowAttenuation;
+	return ambient * ao + (kD * diffuse +/* kS * */specular) * mainLightShadowAttenuation;
 }
 
 #endif

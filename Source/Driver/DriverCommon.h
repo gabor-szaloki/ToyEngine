@@ -106,6 +106,7 @@ struct RasterizerDesc
 	CullMode cullMode = CullMode::BACK;
 	int depthBias = 0;
 	float slopeScaledDepthBias = 0;
+	bool depthClipEnable = true;
 	bool scissorEnable = false;
 };
 
@@ -162,12 +163,32 @@ struct RenderTargetClearParams
 		unsigned int clear_flags = CLEAR_FLAG_ALL, unsigned char color_target_mask = 0xFF,
 		float depth_ = 1.0f, unsigned char stencil_ = 0) :
 		clearFlags(clear_flags), colorTargetMask(color_target_mask), depth(depth_), stencil(stencil_) {}
-	RenderTargetClearParams(float color_r, float color_g, float color_b, float color_a, float depth_)
+
+	static inline RenderTargetClearParams clear_color(float color_r, float color_g, float color_b, float color_a)
 	{
-		color[0] = color_r;
-		color[1] = color_g;
-		color[2] = color_b;
-		color[3] = color_a;
-		depth = depth_;
+		RenderTargetClearParams p(CLEAR_FLAG_COLOR);
+		p.color[0] = color_r;
+		p.color[1] = color_g;
+		p.color[2] = color_b;
+		p.color[3] = color_a;
+		return p;
+	}
+
+	static inline RenderTargetClearParams clear_depth(float depth)
+	{
+		RenderTargetClearParams p(CLEAR_FLAG_DEPTH);
+		p.depth = depth;
+		return p;
+	}
+
+	static inline RenderTargetClearParams clear_all(float color_r, float color_g, float color_b, float color_a, float depth)
+	{
+		RenderTargetClearParams p(CLEAR_FLAG_ALL);
+		p.color[0] = color_r;
+		p.color[1] = color_g;
+		p.color[2] = color_b;
+		p.color[3] = color_a;
+		p.depth = depth;
+		return p;
 	}
 };

@@ -7,6 +7,7 @@
 
 #include "WorldRenderer.h"
 #include "Light.h"
+#include "Ssao.h"
 
 static XMVECTOR euler_to_quaternion(XMVECTOR e)
 {
@@ -30,6 +31,10 @@ void WorldRenderer::lightingGui()
 		ImGui::ColorEdit3Srgb("Bottom color (SRGB)", reinterpret_cast<float*>(&ambientLightBottomColor));
 		ImGui::ColorEdit3("Top color", reinterpret_cast<float*>(&ambientLightTopColor));
 		ImGui::ColorEdit3Srgb("Top color (SRGB)", reinterpret_cast<float*>(&ambientLightTopColor));
+		ImGui::Indent();
+		if (ImGui::CollapsingHeader("SSAO"))
+			ssao->gui();
+		ImGui::Unindent();
 	}
 
 	if (ImGui::CollapsingHeader("Main light", ImGuiTreeNodeFlags_DefaultOpen))
@@ -76,5 +81,15 @@ void WorldRenderer::shadowMapGui()
 	ImGui::Image(shadowMap->getViewHandle(), ImVec2(zoom * shadowResolution, zoom * shadowResolution));
 }
 
+void WorldRenderer::ssaoTexGui()
+{
+	ITexture* ssaoTex = ssao->getResultTex();
+	XMINT2 ssaoTexRes(ssaoTex->getDesc().width, ssaoTex->getDesc().height);
+	static float zoom = 0.5f;
+	ImGui::SliderFloat("Zoom", &zoom, 0.1f, 5.0f);
+	ImGui::Image(ssaoTex->getViewHandle(), ImVec2(zoom * ssaoTexRes.x, zoom * ssaoTexRes.y));
+}
+
 REGISTER_IMGUI_WINDOW("Lighting settings", []() { wr->lightingGui(); });
-REGISTER_IMGUI_WINDOW_EX("Shadowmap debug", nullptr, 100, ImGuiWindowFlags_HorizontalScrollbar, []() { wr->shadowMapGui(); });
+REGISTER_IMGUI_WINDOW_EX("Shadowmap debug", nullptr, 200, ImGuiWindowFlags_HorizontalScrollbar, []() { wr->shadowMapGui(); });
+REGISTER_IMGUI_WINDOW_EX("SSAO tex debug", nullptr, 201, ImGuiWindowFlags_HorizontalScrollbar, []() { wr->ssaoTexGui(); });
