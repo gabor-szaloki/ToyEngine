@@ -12,7 +12,7 @@ Texture2D<float> _RandomTex    : register(t1);
 cbuffer HbaoConstantBuffer : register(b3)
 {
 	float4 _RadiusToScreen_R2_NegInvR2_NDotVBias;
-	float4 _PowExponent_AOMultiplier__;
+	float4 _PowExponent_AOMultiplier_BlurSharpness_;
 	float4 _Resolution_InvResolution;
 	float4 _ProjInfo;
 }
@@ -22,8 +22,9 @@ cbuffer HbaoConstantBuffer : register(b3)
 #define _NegInvR2 _RadiusToScreen_R2_NegInvR2_NDotVBias.z
 #define _NDotVBias _RadiusToScreen_R2_NegInvR2_NDotVBias.w
 #define _Resolution _Resolution_InvResolution.xy
-#define _PowExponent _PowExponent_AOMultiplier__.x
-#define _AOMultiplier _PowExponent_AOMultiplier__.y
+#define _PowExponent _PowExponent_AOMultiplier_BlurSharpness_.x
+#define _AOMultiplier _PowExponent_AOMultiplier_BlurSharpness_.y
+#define _BlurSharpness _PowExponent_AOMultiplier_BlurSharpness_.z
 #define _InvResolution _Resolution_InvResolution.zw
 
 static const uint NUM_STEPS = 4;
@@ -114,7 +115,7 @@ float ComputeCoarseAO(float2 FullResUV, float RadiusPixels, float4 Rand, float3 
 	return clamp(1.0 - AO * 2.0, 0, 1);
 }
 
-float HbaoPs(DefaultPostFxVsOutput i) : SV_TARGET
+float HbaoCalcPs(DefaultPostFxVsOutput i) : SV_TARGET
 {
 	float3 ViewPosition = FetchViewPos(i.uv);
 
@@ -131,4 +132,55 @@ float HbaoPs(DefaultPostFxVsOutput i) : SV_TARGET
 	AO = pow(AO, _PowExponent);
 
 	return AO;
+}
+
+
+//----------------------------------------------------------------------------------
+// Bilateral blur pass
+//----------------------------------------------------------------------------------
+
+Texture2D<float> _BlurSourceTex : register(t2);
+SamplerState _BlurSourceSampler : register(s2);
+
+float BlurFunction(float2 uv, float r, float4 center_c, float center_d, inout float w_total)
+{
+	float c = _BlurSourceTex.Sample(_BlurSourceSampler, uv);
+	float d = linearize_depth(_DepthTex.Sample(_DepthSampler, uv));
+
+	const float BlurSigma = BLUR_KERNEL_RADIUS * 0.5;
+	const float BlurFalloff = 1.0 / (2.0 * BlurSigma * BlurSigma);
+
+	float ddiff = (d - center_d) * _BlurSharpness;
+	float w = exp2(-r * r * BlurFalloff - ddiff * ddiff);
+	w_total += w;
+
+	return c * w;
+}
+
+float HbaoBlurPs(DefaultPostFxVsOutput i) : SV_TARGET
+{
+	float center_c = _BlurSourceTex.Sample(_BlurSourceSampler, i.uv);
+	float center_d = linearize_depth(_DepthTex.Sample(_DepthSampler, i.uv));
+
+	float c_total = center_c;
+	float w_total = 1.0;
+
+	// _InvResolution is set to:
+	// (1/width,  0) - for horizontal pass
+	// (0, 1/height) - for vertical pass
+
+	uint r;
+	for (r = 1; r <= uint(BLUR_KERNEL_RADIUS); ++r)
+	{
+		float2 uv = i.uv + _InvResolution * r;
+		c_total += BlurFunction(uv, r, center_c, center_d, w_total);
+	}
+
+	for (r = 1; r <= uint(BLUR_KERNEL_RADIUS); ++r)
+	{
+		float2 uv = i.uv - _InvResolution * r;
+		c_total += BlurFunction(uv, r, center_c, center_d, w_total);
+	}
+
+	return c_total / w_total;
 }

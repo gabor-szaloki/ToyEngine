@@ -11,19 +11,26 @@
 
 Ssao::Ssao(XMINT2 resolution_) : resolution(resolution_)
 {
-	ShaderSetDesc hbaoShaderDesc("HBAO", "Source/Shaders/HBAO.shader");
-	hbaoShaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "DefaultPostFxVsFunc";
-	hbaoShaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "HbaoPs";
-	hbaoShader = drv->createShaderSet(hbaoShaderDesc);
+	ShaderSetDesc hbaoCalcShaderDesc("HbaoCalc", "Source/Shaders/HBAO.shader");
+	hbaoCalcShaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "DefaultPostFxVsFunc";
+	hbaoCalcShaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "HbaoCalcPs";
+	hbaoCalcShader = drv->createShaderSet(hbaoCalcShaderDesc);
+
+	ShaderSetDesc hbaoBlurShaderDesc("HbaoBlur", "Source/Shaders/HBAO.shader");
+	hbaoBlurShaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "DefaultPostFxVsFunc";
+	hbaoBlurShaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "HbaoBlurPs";
+	hbaoBlurShader = drv->createShaderSet(hbaoBlurShaderDesc);
 
 	RenderStateDesc rsDesc;
 	rsDesc.depthStencilDesc.depthTest = false;
 	rsDesc.depthStencilDesc.depthWrite = false;
 	renderState = drv->createRenderState(rsDesc);
 
-	TextureDesc ssaoTexDesc("ssaoTex", resolution.x, resolution.y, TexFmt::R16_UNORM, 1,
+	TextureDesc hbaoTexDesc("hbaoTex_0", resolution.x, resolution.y, TexFmt::R8_UNORM, 1,
 		ResourceUsage::DEFAULT, BIND_RENDER_TARGET | BIND_SHADER_RESOURCE);
-	ssaoTex.reset(drv->createTexture(ssaoTexDesc));
+	hbaoTex[0].reset(drv->createTexture(hbaoTexDesc));
+	hbaoTexDesc.name = "hbaoTex_1";
+	hbaoTex[1].reset(drv->createTexture(hbaoTexDesc));
 
 	TextureDesc randomTexDesc("ssaoRandomTex", RANDOM_TEX_SIZE, RANDOM_TEX_SIZE, TexFmt::R16G16B16A16_SNORM, 1,
 		ResourceUsage::DEFAULT, BIND_SHADER_RESOURCE);
@@ -65,22 +72,60 @@ Ssao::Ssao(XMINT2 resolution_) : resolution(resolution_)
 
 void Ssao::perform()
 {
-	PROFILE_SCOPE("SSAO");
+	PROFILE_SCOPE("HBAO");
 
-	drv->setShader(hbaoShader, 0);
-	drv->setRenderState(renderState);
-	drv->setRenderTarget(ssaoTex->getId(), BAD_RESID);
-	drv->setConstantBuffer(ShaderStage::PS, 3, cb->getId());
-	drv->setTexture(ShaderStage::PS, 0, wr->getDepthTex()->getId(), true);
-	drv->setTexture(ShaderStage::PS, 1, randomTex->getId(), false);
-
-	if (tweak.enabled)
-		drv->draw(3, 0);
-	else
+	if (!tweak.enabled)
+	{
+		ResId targets[] = { hbaoTex[0]->getId(), hbaoTex[1]->getId() };
+		drv->setRenderTargets(2, targets, BAD_RESID);
 		drv->clearRenderTargets(RenderTargetClearParams::clear_color(1, 1, 1, 1));
+		return;
+	}
 
+	// Calc pass
+	{
+		PROFILE_SCOPE("Calc");
+
+		drv->setShader(hbaoCalcShader, 0);
+		drv->setRenderState(renderState);
+		drv->setRenderTarget(hbaoTex[0]->getId(), BAD_RESID);
+		drv->setConstantBuffer(ShaderStage::PS, 3, cb->getId());
+		drv->setTexture(ShaderStage::PS, 0, wr->getDepthTex()->getId(), true);
+		drv->setTexture(ShaderStage::PS, 1, randomTex->getId(), false);
+		cbData._Resolution_InvResolution.z = 1.0f / resolution.x;
+		cbData._Resolution_InvResolution.w = 1.0f / resolution.y;
+		cb->updateData(&cbData);
+		drv->draw(3, 0);
+	}
+
+	// Blur passes
+	if (tweak.blur)
+	{
+		PROFILE_SCOPE("Blur");
+
+		drv->setShader(hbaoBlurShader, 0);
+
+		// Horizontal
+		drv->setRenderTarget(hbaoTex[1]->getId(), BAD_RESID);
+		drv->setTexture(ShaderStage::PS, 2, hbaoTex[0]->getId(), true);
+		cbData._Resolution_InvResolution.z = 1.0f / resolution.x;
+		cbData._Resolution_InvResolution.w = 0;
+		cb->updateData(&cbData);
+		drv->draw(3, 0);
+
+		// Vertical
+		drv->setRenderTarget(hbaoTex[0]->getId(), BAD_RESID);
+		drv->setTexture(ShaderStage::PS, 2, hbaoTex[1]->getId(), true);
+		cbData._Resolution_InvResolution.z = 0;
+		cbData._Resolution_InvResolution.w = 1.0f / resolution.y;
+		cb->updateData(&cbData);
+		drv->draw(3, 0);
+	}
+
+	// Cleanup
 	drv->setTexture(ShaderStage::PS, 0, BAD_RESID, false);
 	drv->setTexture(ShaderStage::PS, 1, BAD_RESID, false);
+	drv->setTexture(ShaderStage::PS, 2, BAD_RESID, false);
 	drv->setRenderTarget(BAD_RESID, BAD_RESID);
 }
 
@@ -95,6 +140,11 @@ void Ssao::gui()
 	changed |= ImGui::SliderFloat("Blur sharpness", &tweak.blurSharpness, 0.0f, 128.0f);
 	if (changed)
 		updateCb();
+}
+
+ITexture* Ssao::getResultTex()
+{
+	return hbaoTex[0].get();
 }
 
 void Ssao::updateCb()
@@ -112,7 +162,7 @@ void Ssao::updateCb()
 
 	float powExponent = std::max(0.f, tweak.intensity);
 	float aoMultiplier = 1.0f / (1.0f - nDotVBias);
-	cbData._PowExponent_AOMultiplier__ = XMFLOAT4(powExponent, aoMultiplier, 0, 0);
+	cbData._PowExponent_AOMultiplier_BlurSharpness_ = XMFLOAT4(powExponent, aoMultiplier, tweak.blurSharpness, 0);
 
 	cbData._Resolution_InvResolution = XMFLOAT4(resf.x, resf.y, 1.0f / resf.x, 1.0f / resf.y);
 

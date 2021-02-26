@@ -8,7 +8,7 @@
 struct SsaoCbData
 {
 	XMFLOAT4 _RadiusToScreen_R2_NegInvR2_NDotVBias;
-	XMFLOAT4 _PowExponent_AOMultiplier__;
+	XMFLOAT4 _PowExponent_AOMultiplier_BlurSharpness_;
 	XMFLOAT4 _Resolution_InvResolution;
 	XMFLOAT4 _ProjInfo;
 };
@@ -19,18 +19,18 @@ public:
 	Ssao(XMINT2 resolution_);
 	void perform();
 	void gui();
-	ITexture* getResultTex() { return ssaoTex.get(); };
+	ITexture* getResultTex();
 
 private:
 	void updateCb();
 
 	XMINT2 resolution;
-	ResIdHolder hbaoShader;
-	ResIdHolder blurShader;
+	ResIdHolder hbaoCalcShader;
+	ResIdHolder hbaoBlurShader;
 	ResIdHolder renderState;
 	SsaoCbData cbData;
 	std::unique_ptr<IBuffer> cb;
-	std::unique_ptr<ITexture> ssaoTex;
+	std::unique_ptr<ITexture> hbaoTex[2];
 	std::unique_ptr<ITexture> randomTex;
 
 	struct Tweak {
