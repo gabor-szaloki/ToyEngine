@@ -467,9 +467,20 @@ void Driver::setShader(ResId res_id, unsigned int variant_index)
 
 void Driver::setView(float x, float y, float w, float h, float z_min, float z_max)
 {
-	D3D11_VIEWPORT viewport{x, y, w, h, z_min, z_max};
+	setView(ViewportParams{ x, y, w, h, z_min, z_max });
+}
+
+void Driver::setView(const ViewportParams& vp)
+{
+	D3D11_VIEWPORT viewport{ vp.x, vp.y, vp.w, vp.h, vp.z_min, vp.z_max };
 	CONTEXT_LOCK_GUARD
+	currentViewport = vp;
 	context->RSSetViewports(1, &viewport);
+}
+
+void Driver::getView(ViewportParams& vp)
+{
+	vp = currentViewport;
 }
 
 void Driver::draw(unsigned int vertex_count, unsigned int start_vertex)

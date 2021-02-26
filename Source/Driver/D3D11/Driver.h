@@ -58,6 +58,8 @@ namespace drv_d3d11
 		void setRenderState(ResId res_id) override;
 		void setShader(ResId res_id, unsigned int variant_index) override;
 		void setView(float x, float y, float w, float h, float z_min, float z_max) override;
+		void setView(const ViewportParams& vp) override;
+		void getView(ViewportParams& vp) override;
 
 		void draw(unsigned int vertex_count, unsigned int start_vertex) override;
 		void drawIndexed(unsigned int index_count, unsigned int start_index, int base_vertex) override;
@@ -103,6 +105,7 @@ namespace drv_d3d11
 		void releaseAllResources();
 
 		int displayWidth = -1, displayHeight = -1;
+		ViewportParams currentViewport;
 		DriverSettings settings;
 
 		HWND hWnd;

@@ -36,6 +36,8 @@ public:
 	virtual void setRenderState(ResId res_id) = 0;
 	virtual void setShader(ResId res_id, unsigned int variant_index) = 0;
 	virtual void setView(float x, float y, float w, float h, float z_min, float z_max) = 0;
+	virtual void setView(const ViewportParams& vp) = 0;
+	virtual void getView(ViewportParams& vp) = 0;
 
 	virtual void draw(unsigned int vertex_count, unsigned int start_vertex) = 0;
 	virtual void drawIndexed(unsigned int index_count, unsigned int start_index, int base_vertex) = 0;

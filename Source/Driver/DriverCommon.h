@@ -151,6 +151,11 @@ struct InputLayoutElementDesc
 	TexFmt format;
 };
 
+struct ViewportParams
+{
+	float x, y, w, h, z_min, z_max;
+};
+
 struct RenderTargetClearParams
 {
 	unsigned int clearFlags = CLEAR_FLAG_ALL;

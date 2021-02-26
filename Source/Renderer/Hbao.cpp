@@ -11,6 +11,16 @@
 
 Hbao::Hbao(XMINT2 resolution_) : resolution(resolution_)
 {
+	RenderStateDesc rsDesc;
+	rsDesc.depthStencilDesc.depthTest = false;
+	rsDesc.depthStencilDesc.depthWrite = false;
+	renderState = drv->createRenderState(rsDesc);
+
+	viewport.x = viewport.y = 0;
+	viewport.w = resolution.x;
+	viewport.h = resolution.y;
+	viewport.z_min = viewport.z_max = 0;
+
 	ShaderSetDesc hbaoCalcShaderDesc("HbaoCalc", "Source/Shaders/HBAO.shader");
 	hbaoCalcShaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "DefaultPostFxVsFunc";
 	hbaoCalcShaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "HbaoCalcPs";
@@ -20,11 +30,6 @@ Hbao::Hbao(XMINT2 resolution_) : resolution(resolution_)
 	hbaoBlurShaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "DefaultPostFxVsFunc";
 	hbaoBlurShaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "HbaoBlurPs";
 	hbaoBlurShader = drv->createShaderSet(hbaoBlurShaderDesc);
-
-	RenderStateDesc rsDesc;
-	rsDesc.depthStencilDesc.depthTest = false;
-	rsDesc.depthStencilDesc.depthWrite = false;
-	renderState = drv->createRenderState(rsDesc);
 
 	TextureDesc hbaoTexDesc("hbaoTex_0", resolution.x, resolution.y, TexFmt::R8_UNORM, 1,
 		ResourceUsage::DEFAULT, BIND_RENDER_TARGET | BIND_SHADER_RESOURCE);
@@ -82,12 +87,16 @@ void Hbao::perform()
 		return;
 	}
 
+	ViewportParams originalViewport;
+	drv->getView(originalViewport);
+	drv->setView(viewport);
+	drv->setRenderState(renderState);
+
 	// Calc pass
 	{
 		PROFILE_SCOPE("Calc");
 
 		drv->setShader(hbaoCalcShader, 0);
-		drv->setRenderState(renderState);
 		drv->setRenderTarget(hbaoTex[0]->getId(), BAD_RESID);
 		drv->setConstantBuffer(ShaderStage::PS, 3, cb->getId());
 		drv->setTexture(ShaderStage::PS, 0, wr->getDepthTex()->getId(), true);
@@ -127,18 +136,21 @@ void Hbao::perform()
 	drv->setTexture(ShaderStage::PS, 1, BAD_RESID, false);
 	drv->setTexture(ShaderStage::PS, 2, BAD_RESID, false);
 	drv->setRenderTarget(BAD_RESID, BAD_RESID);
+	drv->setView(originalViewport);
 }
 
-void Hbao::gui()
+void Hbao::gui(float &resolution_scale)
 {
-	bool changed = false;
-	changed |= ImGui::Checkbox("Enabled", &tweak.enabled);
-	changed |= ImGui::SliderFloat("Radius", &tweak.radius, 0.0f, 4.0f);
-	changed |= ImGui::SliderFloat("Intensity", &tweak.intensity, 0.0f, 4.0f);
-	changed |= ImGui::SliderFloat("Bias", &tweak.bias, 0.0f, 0.9999f);
-	changed |= ImGui::Checkbox("Blur active", &tweak.blur);
-	changed |= ImGui::SliderFloat("Blur sharpness", &tweak.blurSharpness, 0.0f, 128.0f);
-	if (changed)
+	bool cbChanged = false;
+	ImGui::Checkbox("Enabled", &tweak.enabled);
+	ImGui::SliderFloat("Resolution scale", &resolution_scale, 0.1f, 1.0f);
+	resolution_scale = std::clamp(resolution_scale, 0.1f, 1.0f);
+	cbChanged |= ImGui::SliderFloat("Radius", &tweak.radius, 0.0f, 4.0f);
+	cbChanged |= ImGui::SliderFloat("Intensity", &tweak.intensity, 0.0f, 4.0f);
+	cbChanged |= ImGui::SliderFloat("Bias", &tweak.bias, 0.0f, 0.9999f);
+	ImGui::Checkbox("Blur active", &tweak.blur);
+	cbChanged |= ImGui::SliderFloat("Blur sharpness", &tweak.blurSharpness, 0.0f, 128.0f);
+	if (cbChanged)
 		updateCb();
 	if (ImGui::Button("Show SSAO texture"))
 		autoimgui::set_window_opened("SSAO tex debug", !autoimgui::is_window_opened("SSAO tex debug"));

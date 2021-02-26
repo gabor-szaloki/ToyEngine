@@ -4,6 +4,7 @@
 #include <Util/ImGuiExtensions.h>
 #include <Util/AutoImGui.h>
 #include <Driver/ITexture.h>
+#include <Driver/IBuffer.h>
 
 #include "WorldRenderer.h"
 #include "Light.h"
@@ -33,7 +34,16 @@ void WorldRenderer::lightingGui()
 		ImGui::ColorEdit3Srgb("Top color (SRGB)", reinterpret_cast<float*>(&ambientLightTopColor));
 		ImGui::Indent();
 		if (ImGui::CollapsingHeader("SSAO"))
-			ssao->gui();
+		{
+			float oldSsaoResolutionScale = ssaoResolutionScale;
+			ssao->gui(ssaoResolutionScale);
+			if (ssaoResolutionScale != oldSsaoResolutionScale)
+			{
+				int w, h;
+				drv->getDisplaySize(w, h);
+				ssao.reset(new Hbao(XMINT2(w * ssaoResolutionScale, h * ssaoResolutionScale)));
+			}
+		}
 		ImGui::Unindent();
 	}
 

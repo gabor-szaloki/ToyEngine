@@ -185,7 +185,8 @@ void WorldRenderer::initResolutionDependentResources()
 
 	camera.Resize((float)displayResolution.x, (float)displayResolution.y);
 
-	ssao = std::make_unique<Hbao>(displayResolution);
+	XMINT2 ssaoResolution(displayResolution.x * ssaoResolutionScale, displayResolution.y * ssaoResolutionScale);
+	ssao = std::make_unique<Hbao>(ssaoResolution);
 }
 
 void WorldRenderer::closeResolutionDependentResources()

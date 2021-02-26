@@ -105,6 +105,7 @@ private:
 	std::unique_ptr<IBuffer> perObjectCb;
 
 	std::unique_ptr<Hbao> ssao;
+	float ssaoResolutionScale = 0.5f;
 	std::unique_ptr<Sky> sky;
 	PostFx postFx;
 };

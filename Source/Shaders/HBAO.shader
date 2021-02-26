@@ -129,7 +129,7 @@ float HbaoCalcPs(DefaultPostFxVsOutput i) : SV_TARGET
 	// Compute projection of disk of radius _R into screen space
 	float RadiusPixels = _RadiusToScreen / ViewPosition.z;
 
-	uint2 tc = i.uv * _Resolution - 0.5;
+	uint2 tc = i.position.xy;
 	float4 Rand = _RandomTex[tc % RANDOM_TEX_SIZE];
 
 	float AO = ComputeCoarseAO(i.uv, RadiusPixels, Rand, ViewPosition, ViewNormal);

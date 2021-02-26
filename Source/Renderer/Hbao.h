@@ -18,16 +18,17 @@ class Hbao
 public:
 	Hbao(XMINT2 resolution_);
 	void perform();
-	void gui();
+	void gui(float& resolution_scale);
 	ITexture* getResultTex();
 
 private:
 	void updateCb();
 
 	XMINT2 resolution;
+	ViewportParams viewport;
+	ResIdHolder renderState;
 	ResIdHolder hbaoCalcShader;
 	ResIdHolder hbaoBlurShader;
-	ResIdHolder renderState;
 	HbaoCbData cbData;
 	std::unique_ptr<IBuffer> cb;
 	std::unique_ptr<ITexture> hbaoTex[2];
