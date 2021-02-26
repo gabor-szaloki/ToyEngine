@@ -1,4 +1,4 @@
-#include "Ssao.h"
+#include "Hbao.h"
 #include <Shaders/HBAO.hlsli>
 
 #include <3rdParty/imgui/imgui.h>
@@ -9,7 +9,7 @@
 #include "WorldRenderer.h"
 #include "Camera.h"
 
-Ssao::Ssao(XMINT2 resolution_) : resolution(resolution_)
+Hbao::Hbao(XMINT2 resolution_) : resolution(resolution_)
 {
 	ShaderSetDesc hbaoCalcShaderDesc("HbaoCalc", "Source/Shaders/HBAO.shader");
 	hbaoCalcShaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "DefaultPostFxVsFunc";
@@ -62,7 +62,7 @@ Ssao::Ssao(XMINT2 resolution_) : resolution(resolution_)
 	BufferDesc cbDesc;
 	cbDesc.bindFlags = BIND_CONSTANT_BUFFER;
 	cbDesc.numElements = 1;
-	cbDesc.name = "SsaoCb";
+	cbDesc.name = "HbaoCb";
 	cbDesc.elementByteSize = sizeof(cbData);
 	cb.reset(drv->createBuffer(cbDesc));
 	cb->updateData(&cbData);
@@ -70,7 +70,7 @@ Ssao::Ssao(XMINT2 resolution_) : resolution(resolution_)
 	updateCb();
 }
 
-void Ssao::perform()
+void Hbao::perform()
 {
 	PROFILE_SCOPE("HBAO");
 
@@ -129,7 +129,7 @@ void Ssao::perform()
 	drv->setRenderTarget(BAD_RESID, BAD_RESID);
 }
 
-void Ssao::gui()
+void Hbao::gui()
 {
 	bool changed = false;
 	changed |= ImGui::Checkbox("Enabled", &tweak.enabled);
@@ -140,14 +140,16 @@ void Ssao::gui()
 	changed |= ImGui::SliderFloat("Blur sharpness", &tweak.blurSharpness, 0.0f, 128.0f);
 	if (changed)
 		updateCb();
+	if (ImGui::Button("Show SSAO texture"))
+		autoimgui::set_window_opened("SSAO tex debug", !autoimgui::is_window_opened("SSAO tex debug"));
 }
 
-ITexture* Ssao::getResultTex()
+ITexture* Hbao::getResultTex()
 {
 	return hbaoTex[0].get();
 }
 
-void Ssao::updateCb()
+void Hbao::updateCb()
 {
 	const Camera& cam = wr->getCamera();
 	XMFLOAT2 resf((float)resolution.x, (float)resolution.y);

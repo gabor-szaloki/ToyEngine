@@ -168,7 +168,7 @@
     <ClCompile Include="Source\Engine\AssetManagerGui.cpp">
       <Filter>Source\Engine</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer\Ssao.cpp">
+    <ClCompile Include="Source\Renderer\Hbao.cpp">
       <Filter>Source\Renderer</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1220,7 +1220,7 @@
     <ClInclude Include="Source\Util\ImGuiExtensions.h">
       <Filter>Source\Util</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Renderer\Ssao.h">
+    <ClInclude Include="Source\Renderer\Hbao.h">
       <Filter>Source\Renderer</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,3 +1,7 @@
+// Code is heavily based on:
+// https://github.com/nvpro-samples/gl_ssao
+
+
 #define POSTFX_NEED_UV 1
 #define POSTFX_NEED_VIEW_VEC 1
 
@@ -136,7 +140,7 @@ float HbaoCalcPs(DefaultPostFxVsOutput i) : SV_TARGET
 
 
 //----------------------------------------------------------------------------------
-// Bilateral blur pass
+// Bilateral separable blur
 //----------------------------------------------------------------------------------
 
 Texture2D<float> _BlurSourceTex : register(t2);

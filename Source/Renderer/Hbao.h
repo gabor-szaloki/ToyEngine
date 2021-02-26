@@ -5,7 +5,7 @@
 #include <Common.h>
 #include <Util/ResIdHolder.h>
 
-struct SsaoCbData
+struct HbaoCbData
 {
 	XMFLOAT4 _RadiusToScreen_R2_NegInvR2_NDotVBias;
 	XMFLOAT4 _PowExponent_AOMultiplier_BlurSharpness_;
@@ -13,10 +13,10 @@ struct SsaoCbData
 	XMFLOAT4 _ProjInfo;
 };
 
-class Ssao
+class Hbao
 {
 public:
-	Ssao(XMINT2 resolution_);
+	Hbao(XMINT2 resolution_);
 	void perform();
 	void gui();
 	ITexture* getResultTex();
@@ -28,7 +28,7 @@ private:
 	ResIdHolder hbaoCalcShader;
 	ResIdHolder hbaoBlurShader;
 	ResIdHolder renderState;
-	SsaoCbData cbData;
+	HbaoCbData cbData;
 	std::unique_ptr<IBuffer> cb;
 	std::unique_ptr<ITexture> hbaoTex[2];
 	std::unique_ptr<ITexture> randomTex;

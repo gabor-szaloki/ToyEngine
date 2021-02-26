@@ -7,7 +7,7 @@
 
 #include "ConstantBuffers.h"
 #include "Light.h"
-#include "Ssao.h"
+#include "Hbao.h"
 #include "Sky.h"
 
 WorldRenderer::WorldRenderer()
@@ -185,7 +185,7 @@ void WorldRenderer::initResolutionDependentResources()
 
 	camera.Resize((float)displayResolution.x, (float)displayResolution.y);
 
-	ssao = std::make_unique<Ssao>(displayResolution);
+	ssao = std::make_unique<Hbao>(displayResolution);
 }
 
 void WorldRenderer::closeResolutionDependentResources()

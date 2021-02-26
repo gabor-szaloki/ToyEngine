@@ -7,7 +7,7 @@
 
 #include "WorldRenderer.h"
 #include "Light.h"
-#include "Ssao.h"
+#include "Hbao.h"
 
 static XMVECTOR euler_to_quaternion(XMVECTOR e)
 {

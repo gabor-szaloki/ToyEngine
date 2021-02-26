@@ -17,7 +17,7 @@ class IBuffer;
 class ThreadPool;
 class Light;
 class MeshRenderer;
-class Ssao;
+class Hbao;
 class Sky;
 
 struct MeshData;
@@ -43,7 +43,6 @@ public:
 	Camera& getCamera() { return camera; };
 	float getTime() { return time; }
 	Sky& getSky() { return *sky; }
-	Ssao& getSsao() { return *ssao; }
 
 	void lightingGui();
 	void shadowMapGui();
@@ -105,7 +104,7 @@ private:
 	std::unique_ptr<IBuffer> perCameraCb;
 	std::unique_ptr<IBuffer> perObjectCb;
 
-	std::unique_ptr<Ssao> ssao;
+	std::unique_ptr<Hbao> ssao;
 	std::unique_ptr<Sky> sky;
 	PostFx postFx;
 };
