@@ -6,6 +6,7 @@ My attempt at a minimalistic D3D11 playground
 - Loading .obj models and .mtl material files
 - Loading .png textures
 - Dear ImGui support for convenient debug tooling
+- Minimalistic support for multi-compiling shader variants
 - Small scene with few objects
 - Sponza scene
 - PBR direct lighting
