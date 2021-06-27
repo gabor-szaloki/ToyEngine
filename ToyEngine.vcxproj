@@ -590,6 +590,11 @@
       <FileType>Document</FileType>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Source\Shaders\Random.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{562E8108-9C6C-4A33-979B-D4DF397DC153}</ProjectGuid>

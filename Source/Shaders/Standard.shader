@@ -76,7 +76,7 @@ float4 StandardOpaqueForwardPS(VSOutputStandardForward i) : SV_TARGET
 	float3 pointToEye = _CameraWorldPosition.xyz - i.worldPos;
 	SurfaceOutput s = Surface(pointToEye, i.normal, i.uv, i.color);
 
-	float mainLightShadowAttenuation = SampleMainLightShadow(i.shadowCoords);
+	float mainLightShadowAttenuation = SampleMainLightShadow(i.shadowCoords, screenUv);
 	float ssao = _SsaoTex.Sample(_SsaoTexSampler, screenUv);
 	c.rgb = Lighting(s, pointToEye, mainLightShadowAttenuation, ssao);
 

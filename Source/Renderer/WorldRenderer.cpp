@@ -128,6 +128,8 @@ void WorldRenderer::render()
 	drv->setRenderTarget(drv->getBackbufferTexture()->getId(), BAD_RESID);
 	drv->setTexture(ShaderStage::PS, 0, hdrTarget->getId(), true);
 	postFx.perform();
+
+	drv->setTexture(ShaderStage::PS, 0, BAD_RESID, true);
 }
 
 void WorldRenderer::setAmbientLighting(const XMFLOAT4& bottom_color, const XMFLOAT4& top_color, float intensity)
@@ -216,7 +218,8 @@ void WorldRenderer::setupFrame(XMMATRIX& out_light_view_matrix, XMMATRIX& out_li
 	perFrameCbData.mainLightShadowMatrix = get_shadow_matrix(out_light_view_matrix, out_light_proj_matrix);
 	const float shadowResolution = (float)shadowMap->getDesc().width;
 	const float invShadowResolution = 1.0f / shadowResolution;
-	perFrameCbData.mainLightShadowResolution = XMFLOAT4(invShadowResolution, invShadowResolution, shadowResolution, shadowResolution);
+	perFrameCbData.mainLightShadowParams = XMFLOAT4(shadowResolution, invShadowResolution, poissonShadowSoftness, 0);
+	perFrameCbData.timeParams = XMFLOAT4(time, 0, 0, 0);
 	perFrameCb->updateData(&perFrameCbData);
 
 	drv->setConstantBuffer(ShaderStage::VS, 0, perFrameCb->getId());

@@ -76,6 +76,7 @@ void WorldRenderer::lightingGui()
 				ImGui::Checkbox("Enabled", &shadowEnabled);
 
 				constexpr int numSoftShadowModes = 3;
+				enum { SOFT_SHADOWS_OFF, SOFT_SHADOWS_9TAP, SOFT_SHADOWS_POISSON };
 				static const char* softShadowModeKeywords[numSoftShadowModes] = { "SOFT_SHADOWS_OFF", "SOFT_SHADOWS_9TAP", "SOFT_SHADOWS_POISSON" };
 				std::vector<std::string>& globalKeywords = am->getGlobalShaderKeywords();
 				int selectedSoftShadowMode = 0;
@@ -102,6 +103,8 @@ void WorldRenderer::lightingGui()
 					for (int i = 0; i < numSoftShadowModes; i++)
 						am->setGlobalShaderKeyword(softShadowModeKeywords[i], i == selectedSoftShadowMode);
 				}
+				if (selectedSoftShadowMode == SOFT_SHADOWS_POISSON)
+					ImGui::SliderFloat("Poisson softness", &poissonShadowSoftness, 0, 0.01f, "%.5f");
 
 				ImGui::SliderFloat("Shadow distance", &shadowDistance, 1.0f, 100.0f);
 				ImGui::SliderFloat("Directional distance", &directionalShadowDistance, 1.0f, 100.0f);
