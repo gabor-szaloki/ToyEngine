@@ -121,6 +121,7 @@ void Hbao::perform()
 		cbData._Resolution_InvResolution.w = 0;
 		cb->updateData(&cbData);
 		drv->draw(3, 0);
+		drv->setTexture(ShaderStage::PS, 2, BAD_RESID, false); // otherwise next debug layer complains in next setRenderTarget call that texture is still bound on input
 
 		// Vertical
 		drv->setRenderTarget(hbaoTex[0]->getId(), BAD_RESID);
