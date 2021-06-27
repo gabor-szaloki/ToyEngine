@@ -12,6 +12,8 @@ Material::Material(const std::string& name_, const std::array<ResId, (int)Render
 		shaders[i] = shaders_[i];
 		currentVariants[i] = 0;
 	}
+	for (const std::string& kw : am->getGlobalShaderKeywords())
+		setKeyword(kw, true);
 }
 
 void Material::setTexture(ShaderStage stage, unsigned int slot, ITexture* tex, MaterialTexture::Purpose purpose)

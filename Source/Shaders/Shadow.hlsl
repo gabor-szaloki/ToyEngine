@@ -2,13 +2,12 @@
 #define SHADOW_INCLUDED
 
 #include "ConstantBuffers.hlsl"
-#include "ShadowSamplingTent.hlsl"
 
 Texture2D<float> _MainLightShadowmap : register(t2);
 SamplerComparisonState _ShadowCmpSampler : register(s2);
 
-#define SOFT_SHADOWS
-#ifdef SOFT_SHADOWS
+#if SOFT_SHADOWS_9TAP
+#include "ShadowSamplingTent.hlsl"
 #define SOFT_SHADOW_SAMPLES 9
 #define SOFT_SHADOW_SAMPLES_FUNC SampleShadow_ComputeSamples_Tent_5x5
 #endif
@@ -22,7 +21,10 @@ float SampleMainLightShadow(float4 shadowCoords)
 	//shadowmapUV.x = 0.5f + shadowmapUV.x * 0.5f;
 	//shadowmapUV.y = 0.5f - shadowmapUV.y * 0.5f;
 
-#ifdef SOFT_SHADOWS
+#if SOFT_SHADOWS_POISSON
+	// TODO
+	return _MainLightShadowmap.SampleCmpLevelZero(_ShadowCmpSampler, shadowmapUV, pixelDepth);
+#elif SOFT_SHADOWS_9TAP
 	float fetchesWeights[SOFT_SHADOW_SAMPLES];
 	float2 fetchesUV[SOFT_SHADOW_SAMPLES];
 	SOFT_SHADOW_SAMPLES_FUNC(_MainLightShadowResolution, shadowmapUV, fetchesWeights, fetchesUV);

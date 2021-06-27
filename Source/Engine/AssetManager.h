@@ -29,7 +29,11 @@ public:
 	void loadScene(const std::string& scene_file);
 	void unloadCurrentScene();
 
-	std::vector<MeshRenderer*>& getSceneMeshRenderers() { return sceneMeshRenderers; };
+	std::vector<MeshRenderer*>& getSceneMeshRenderers() { return sceneMeshRenderers; }
+
+	std::vector<std::string>& getGlobalShaderKeywords() { return globalShaderKeywords; }
+	void setGlobalShaderKeyword(const std::string& keyword, bool enable);
+
 	ITexture* getDefaultTexture(MaterialTexture::Purpose purpose) const { return defaultTextures[(int)purpose]; }
 	IBuffer* getDefaultMeshIb() const { return defaultMeshIb.get(); }
 	IBuffer* getDefaultMeshVb() const { return defaultMeshVb.get(); }
@@ -46,6 +50,8 @@ private:
 	std::vector<ITexture*> sceneTextures;
 	std::vector<Material*> sceneMaterials;
 	std::vector<MeshRenderer*> sceneMeshRenderers;
+
+	std::vector<std::string> globalShaderKeywords;
 
 	std::array<ResId, (int)RenderPass::_COUNT> standardShaders;
 	ResIdHolder standardInputLayout = BAD_RESID;

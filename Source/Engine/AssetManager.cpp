@@ -686,6 +686,23 @@ void AssetManager::unloadCurrentScene()
 	sceneTextures.clear();
 }
 
+void AssetManager::setGlobalShaderKeyword(const std::string& keyword, bool enable)
+{
+	auto it = std::find(globalShaderKeywords.begin(), globalShaderKeywords.end(), keyword);
+	bool keywordCurrentlyEnabled = it != globalShaderKeywords.end();
+
+	if (enable && !keywordCurrentlyEnabled)
+		globalShaderKeywords.push_back(keyword);
+	else if (!enable && keywordCurrentlyEnabled)
+		globalShaderKeywords.erase(it);
+
+	// This adds unnecessary overhead for toggling global keywords, maybe only record keyword changes and
+	// only flush them if we use the material for rendering
+	if (enable != keywordCurrentlyEnabled)
+		for (Material* mat : sceneMaterials)
+			mat->setKeyword(keyword, enable);
+}
+
 void AssetManager::initInis()
 {
 	const char* materialsIniPath = "Assets/materials.ini";

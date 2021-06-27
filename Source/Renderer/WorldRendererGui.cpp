@@ -5,6 +5,7 @@
 #include <Util/AutoImGui.h>
 #include <Driver/ITexture.h>
 #include <Driver/IBuffer.h>
+#include <Engine/AssetManager.h>
 
 #include "WorldRenderer.h"
 #include "Light.h"
@@ -25,62 +26,103 @@ static XMVECTOR euler_to_quaternion(XMVECTOR e)
 
 void WorldRenderer::lightingGui()
 {
-	if (ImGui::CollapsingHeader("Ambient light", ImGuiTreeNodeFlags_DefaultOpen))
+	if (ImGui::BeginTabBar("LightingGuiTabBar"))
 	{
-		ImGui::SliderFloat("Intensity##ambient", &ambientLightIntensity, 0.0f, 2.0f);
-		ImGui::ColorEdit3("Bottom color", reinterpret_cast<float*>(&ambientLightBottomColor));
-		ImGui::ColorEdit3Srgb("Bottom color (SRGB)", reinterpret_cast<float*>(&ambientLightBottomColor));
-		ImGui::ColorEdit3("Top color", reinterpret_cast<float*>(&ambientLightTopColor));
-		ImGui::ColorEdit3Srgb("Top color (SRGB)", reinterpret_cast<float*>(&ambientLightTopColor));
-		ImGui::Indent();
-		if (ImGui::CollapsingHeader("SSAO"))
+		if (ImGui::BeginTabItem("Ambient"))
 		{
-			float oldSsaoResolutionScale = ssaoResolutionScale;
-			ssao->gui(ssaoResolutionScale);
-			if (ssaoResolutionScale != oldSsaoResolutionScale)
+			if (ImGui::CollapsingHeader("Color", ImGuiTreeNodeFlags_DefaultOpen))
 			{
-				int w, h;
-				drv->getDisplaySize(w, h);
-				ssao.reset(new Hbao(XMINT2(w * ssaoResolutionScale, h * ssaoResolutionScale)));
+				ImGui::SliderFloat("Intensity##ambient", &ambientLightIntensity, 0.0f, 2.0f);
+				ImGui::ColorEdit3("Bottom color", reinterpret_cast<float*>(&ambientLightBottomColor));
+				ImGui::ColorEdit3Srgb("Bottom color (SRGB)", reinterpret_cast<float*>(&ambientLightBottomColor));
+				ImGui::ColorEdit3("Top color", reinterpret_cast<float*>(&ambientLightTopColor));
+				ImGui::ColorEdit3Srgb("Top color (SRGB)", reinterpret_cast<float*>(&ambientLightTopColor));
 			}
+			if (ImGui::CollapsingHeader("SSAO", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				float oldSsaoResolutionScale = ssaoResolutionScale;
+				ssao->gui(ssaoResolutionScale);
+				if (ssaoResolutionScale != oldSsaoResolutionScale)
+				{
+					int w, h;
+					drv->getDisplaySize(w, h);
+					ssao.reset(new Hbao(XMINT2(w * ssaoResolutionScale, h * ssaoResolutionScale)));
+				}
+			}
+			ImGui::EndTabItem();
 		}
-		ImGui::Unindent();
-	}
+		if (ImGui::BeginTabItem("Sun"))
+		{
+			if (ImGui::CollapsingHeader("Direction and color", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				float mainLightYaw = mainLight->GetYaw();
+				float mainLightPitch = mainLight->GetPitch();
+				float mainLightIntensity = mainLight->GetIntensity();
+				XMFLOAT4 mainLightColor = mainLight->GetColor();
+				if (ImGui::SliderAngle("Yaw", &mainLightYaw, -180.0f, 180.0f))
+					mainLight->SetYaw(mainLightYaw);
+				if (ImGui::SliderAngle("Pitch", &mainLightPitch, 0.0f, 90.0f))
+					mainLight->SetPitch(mainLightPitch);
+				if (ImGui::SliderFloat("Intensity##main", &mainLightIntensity, 0.0f, 2.0f))
+					mainLight->SetIntensity(mainLightIntensity);
+				if (ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&mainLightColor)))
+					mainLight->SetColor(mainLightColor);
+				if (ImGui::ColorEdit3Srgb("Color (SRGB)", reinterpret_cast<float*>(&mainLightColor)))
+					mainLight->SetColor(mainLightColor);
+			}
 
-	if (ImGui::CollapsingHeader("Main light", ImGuiTreeNodeFlags_DefaultOpen))
-	{
-		float mainLightYaw = mainLight->GetYaw();
-		float mainLightPitch = mainLight->GetPitch();
-		float mainLightIntensity = mainLight->GetIntensity();
-		XMFLOAT4 mainLightColor = mainLight->GetColor();
-		if (ImGui::SliderAngle("Yaw", &mainLightYaw, -180.0f, 180.0f))
-			mainLight->SetYaw(mainLightYaw);
-		if (ImGui::SliderAngle("Pitch", &mainLightPitch, 0.0f, 90.0f))
-			mainLight->SetPitch(mainLightPitch);
-		if (ImGui::SliderFloat("Intensity##main", &mainLightIntensity, 0.0f, 2.0f))
-			mainLight->SetIntensity(mainLightIntensity);
-		if (ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&mainLightColor)))
-			mainLight->SetColor(mainLightColor);
-		if (ImGui::ColorEdit3Srgb("Color (SRGB)", reinterpret_cast<float*>(&mainLightColor)))
-			mainLight->SetColor(mainLightColor);
-	}
+			if (ImGui::CollapsingHeader("Shadows", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::Checkbox("Enabled", &shadowEnabled);
 
-	if (ImGui::CollapsingHeader("Main light shadows", ImGuiTreeNodeFlags_DefaultOpen))
-	{
-		ImGui::Checkbox("Enabled", &shadowEnabled);
-		ImGui::SliderFloat("Shadow distance", &shadowDistance, 1.0f, 100.0f);
-		ImGui::SliderFloat("Directional distance", &directionalShadowDistance, 1.0f, 100.0f);
-		int shadowResolution = getShadowResolution();
-		if (ImGui::InputInt("Resolution", &shadowResolution, 512, 1024))
-			setShadowResolution((int)fmaxf((float)shadowResolution, 128));
-		bool shadowBiasChanged = false;
-		shadowBiasChanged |= ImGui::DragInt("Depth bias", &shadowDepthBias, 100.0f);
-		shadowBiasChanged |= ImGui::DragFloat("Slope scaled depth bias", &shadowSlopeScaledDepthBias, 0.01f);
-		if (shadowBiasChanged)
-			setShadowBias(shadowDepthBias, shadowSlopeScaledDepthBias);
-		if (ImGui::Button("Show shadowmap"))
-			autoimgui::set_window_opened("Shadowmap debug", !autoimgui::is_window_opened("Shadowmap debug"));
+				constexpr int numSoftShadowModes = 3;
+				static const char* softShadowModeKeywords[numSoftShadowModes] = { "SOFT_SHADOWS_OFF", "SOFT_SHADOWS_9TAP", "SOFT_SHADOWS_POISSON" };
+				std::vector<std::string>& globalKeywords = am->getGlobalShaderKeywords();
+				int selectedSoftShadowMode = 0;
+				for (int i = 0; i < numSoftShadowModes; i++)
+				{
+					auto it = std::find(globalKeywords.begin(), globalKeywords.end(), softShadowModeKeywords[i]);
+					if (it != globalKeywords.end())
+					{
+						selectedSoftShadowMode = i;
+						break;
+					}
+				}
+				bool softShadowModeChanged = false;
+				for (int i = 0; i < numSoftShadowModes; i++)
+				{
+					static const char* softShadowModes[numSoftShadowModes] = { "Off", "9-Tap", "Poisson" };
+					softShadowModeChanged |= ImGui::RadioButton(softShadowModes[i], &selectedSoftShadowMode, i);
+					ImGui::SameLine();
+				}
+				ImGui::SameLine(ImGui::GetWindowWidth() * 0.65f, 12); // Hack to continue where labels are
+				ImGui::TextUnformatted("Soft shadow mode");
+				if (softShadowModeChanged)
+				{
+					for (int i = 0; i < numSoftShadowModes; i++)
+						am->setGlobalShaderKeyword(softShadowModeKeywords[i], i == selectedSoftShadowMode);
+				}
+
+				ImGui::SliderFloat("Shadow distance", &shadowDistance, 1.0f, 100.0f);
+				ImGui::SliderFloat("Directional distance", &directionalShadowDistance, 1.0f, 100.0f);
+
+				int shadowResolution = getShadowResolution();
+				if (ImGui::InputInt("Resolution", &shadowResolution, 512, 1024))
+					setShadowResolution((int)fmaxf((float)shadowResolution, 128));
+
+				bool shadowBiasChanged = false;
+				shadowBiasChanged |= ImGui::DragInt("Depth bias", &shadowDepthBias, 100.0f);
+				shadowBiasChanged |= ImGui::DragFloat("Slope scaled depth bias", &shadowSlopeScaledDepthBias, 0.01f);
+				if (shadowBiasChanged)
+					setShadowBias(shadowDepthBias, shadowSlopeScaledDepthBias);
+
+				if (ImGui::Button("Show shadowmap"))
+					autoimgui::set_window_opened("Shadowmap debug", !autoimgui::is_window_opened("Shadowmap debug"));
+			}
+			ImGui::EndTabItem();
+		}
 	}
+	ImGui::EndTabBar();
 }
 
 void WorldRenderer::shadowMapGui()
