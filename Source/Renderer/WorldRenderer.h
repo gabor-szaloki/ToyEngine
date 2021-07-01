@@ -73,7 +73,7 @@ public:
 	float shadowSlopeScaledDepthBias = 0.0f;
 	float shadowDistance = 30.0f;
 	float directionalShadowDistance = 20.0f;
-	float poissonShadowSoftness = 0.002f;
+	float poissonShadowSoftness = 0.003f;
 
 private:
 	void initResolutionDependentResources();

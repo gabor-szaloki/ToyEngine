@@ -218,7 +218,7 @@ void WorldRenderer::setupFrame(XMMATRIX& out_light_view_matrix, XMMATRIX& out_li
 	perFrameCbData.mainLightShadowMatrix = get_shadow_matrix(out_light_view_matrix, out_light_proj_matrix);
 	const float shadowResolution = (float)shadowMap->getDesc().width;
 	const float invShadowResolution = 1.0f / shadowResolution;
-	perFrameCbData.mainLightShadowParams = XMFLOAT4(shadowResolution, invShadowResolution, poissonShadowSoftness, 0);
+	perFrameCbData.mainLightShadowParams = XMFLOAT4(shadowResolution, invShadowResolution, 2 * directionalShadowDistance, poissonShadowSoftness);
 	perFrameCbData.timeParams = XMFLOAT4(time, 0, 0, 0);
 	perFrameCb->updateData(&perFrameCbData);
 

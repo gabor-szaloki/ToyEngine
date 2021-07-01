@@ -104,7 +104,11 @@ void WorldRenderer::lightingGui()
 						am->setGlobalShaderKeyword(softShadowModeKeywords[i], i == selectedSoftShadowMode);
 				}
 				if (selectedSoftShadowMode == SOFT_SHADOWS_POISSON)
+				{
 					ImGui::SliderFloat("Poisson softness", &poissonShadowSoftness, 0, 0.01f, "%.5f");
+					if (ImGui::IsItemHovered())
+						ImGui::SetTooltip("Radius for poisson samples in shadowmap uv");
+				}
 
 				ImGui::SliderFloat("Shadow distance", &shadowDistance, 1.0f, 100.0f);
 				ImGui::SliderFloat("Directional distance", &directionalShadowDistance, 1.0f, 100.0f);
