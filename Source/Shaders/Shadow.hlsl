@@ -40,7 +40,7 @@ SamplerComparisonState _ShadowCmpSampler : register(s2);
 		}
 	#endif
 
-#elif SOFT_SHADOWS_9TAP
+#elif SOFT_SHADOWS_TENT
 	#define SOFT_SHADOW_SAMPLES 9
 	#define SOFT_SHADOW_SAMPLES_FUNC SampleShadow_ComputeSamples_Tent_5x5
 #endif
@@ -80,7 +80,7 @@ float SampleMainLightShadow(float4 shadow_coords, float2 screen_uv)
 	result = saturate(result * (1 + 1000 * _MainLightShadowParams.w));
 	return result;
 
-#elif SOFT_SHADOWS_9TAP
+#elif SOFT_SHADOWS_TENT
 	float fetchesWeights[SOFT_SHADOW_SAMPLES];
 	float2 fetchesUV[SOFT_SHADOW_SAMPLES];
 	SOFT_SHADOW_SAMPLES_FUNC(_MainLightShadowParams.yyxx, shadowmapUv, fetchesWeights, fetchesUV);

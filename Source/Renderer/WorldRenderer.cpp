@@ -40,7 +40,7 @@ WorldRenderer::WorldRenderer()
 	forwardRsDesc.rasterizerDesc.wireframe = true;
 	forwardWireframeRenderStateId = drv->createRenderState(forwardRsDesc);
 
-	am->setGlobalShaderKeyword("SOFT_SHADOWS_9TAP", true);
+	am->setGlobalShaderKeyword("SOFT_SHADOWS_TENT", true);
 	setShadowResolution(2048);
 	setShadowBias(50000, 1.0f);
 }

@@ -76,8 +76,8 @@ void WorldRenderer::lightingGui()
 				ImGui::Checkbox("Enabled", &shadowEnabled);
 
 				constexpr int numSoftShadowModes = 3;
-				enum { SOFT_SHADOWS_OFF, SOFT_SHADOWS_9TAP, SOFT_SHADOWS_POISSON };
-				static const char* softShadowModeKeywords[numSoftShadowModes] = { "SOFT_SHADOWS_OFF", "SOFT_SHADOWS_9TAP", "SOFT_SHADOWS_POISSON" };
+				enum { SOFT_SHADOWS_OFF, SOFT_SHADOWS_TENT, SOFT_SHADOWS_POISSON };
+				static const char* softShadowModeKeywords[numSoftShadowModes] = { "SOFT_SHADOWS_OFF", "SOFT_SHADOWS_TENT", "SOFT_SHADOWS_POISSON" };
 				std::vector<std::string>& globalKeywords = am->getGlobalShaderKeywords();
 				int selectedSoftShadowMode = 0;
 				for (int i = 0; i < numSoftShadowModes; i++)
@@ -92,7 +92,7 @@ void WorldRenderer::lightingGui()
 				bool softShadowModeChanged = false;
 				for (int i = 0; i < numSoftShadowModes; i++)
 				{
-					static const char* softShadowModes[numSoftShadowModes] = { "Off", "9-Tap", "Poisson" };
+					static const char* softShadowModes[numSoftShadowModes] = { "Off", "Tent", "Poisson" };
 					softShadowModeChanged |= ImGui::RadioButton(softShadowModes[i], &selectedSoftShadowMode, i);
 					ImGui::SameLine();
 				}
