@@ -79,8 +79,8 @@ private:
 	void initResolutionDependentResources();
 	void closeResolutionDependentResources();
 
-	void setupFrame(XMMATRIX& out_light_view_matrix, XMMATRIX& out_light_proj_matrix);
-	void setupShadowPass(const XMMATRIX& light_view_matrix, const XMMATRIX& light_proj_matrix);
+	void setupFrame(XMVECTOR& out_shadow_camera_pos, XMMATRIX& out_light_view_matrix, XMMATRIX& out_light_proj_matrix);
+	void setupShadowPass(const XMVECTOR& shadow_camera_pos, const XMMATRIX& light_view_matrix, const XMMATRIX& light_proj_matrix);
 	void setupDepthAndForwardPasses();
 	void performShadowPass();
 	void performDepthPrepass();

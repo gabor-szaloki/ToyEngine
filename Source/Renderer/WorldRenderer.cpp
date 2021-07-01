@@ -109,11 +109,12 @@ void WorldRenderer::render()
 {
 	PROFILE_SCOPE("RenderWorld");
 
+	XMVECTOR shadowCameraPos;
 	XMMATRIX lightViewMatrix;
 	XMMATRIX lightProjectionMatrix;
-	setupFrame(lightViewMatrix, lightProjectionMatrix);
+	setupFrame(shadowCameraPos, lightViewMatrix, lightProjectionMatrix);
 
-	setupShadowPass(lightViewMatrix, lightProjectionMatrix);
+	setupShadowPass(shadowCameraPos, lightViewMatrix, lightProjectionMatrix);
 	performShadowPass();
 
 	setupDepthAndForwardPasses();
@@ -199,26 +200,37 @@ void WorldRenderer::closeResolutionDependentResources()
 	ssao.reset();
 }
 
-XMVECTOR calculate_shadow_camera_pos(const Camera& camera, float shadow_distance)
+XMVECTOR calculate_shadow_camera_pos(const Camera& camera, const XMMATRIX& light_rotation_matrix, float shadow_distance, float shadow_resolution)
 {
-	return camera.GetEye() + camera.GetForward() * shadow_distance * 0.5f; // TODO: align to texel
+	XMVECTOR pos = camera.GetEye() + camera.GetForward() * shadow_distance * 0.5f;
+
+	// Align to shadowmap texel
+	XMMATRIX lightViewRotationMatrix = XMMatrixInverse(nullptr, light_rotation_matrix);
+	XMVECTOR viewSpacePos = XMVector3TransformCoord(pos, lightViewRotationMatrix);
+	float shadowTexelSize = shadow_distance / shadow_resolution;
+	viewSpacePos = XMVectorSetX(viewSpacePos, roundf(XMVectorGetX(viewSpacePos) / shadowTexelSize) * shadowTexelSize);
+	viewSpacePos = XMVectorSetY(viewSpacePos, roundf(XMVectorGetY(viewSpacePos) / shadowTexelSize) * shadowTexelSize);
+	pos = XMVector3TransformCoord(viewSpacePos, light_rotation_matrix);
+
+	return pos;
 }
 
-void WorldRenderer::setupFrame(XMMATRIX& out_light_view_matrix, XMMATRIX& out_light_proj_matrix)
+void WorldRenderer::setupFrame(XMVECTOR& out_shadow_camera_pos, XMMATRIX& out_light_view_matrix, XMMATRIX& out_light_proj_matrix)
 {
 	PerFrameConstantBufferData perFrameCbData;
 	perFrameCbData.ambientLightBottomColor = get_final_light_color(ambientLightBottomColor, ambientLightIntensity);
 	perFrameCbData.ambientLightTopColor = get_final_light_color(ambientLightTopColor, ambientLightIntensity);
 	perFrameCbData.mainLightColor = get_final_light_color(mainLight->GetColor(), mainLight->GetIntensity());
-	XMMATRIX mainLightTranslateMatrix = XMMatrixTranslationFromVector(calculate_shadow_camera_pos(camera, shadowDistance));
-	XMMATRIX inverseLightViewMatrix = XMMatrixRotationRollPitchYaw(mainLight->GetPitch(), mainLight->GetYaw(), 0.0f) * mainLightTranslateMatrix;
+	const float shadowResolution = (float)shadowMap->getDesc().width;
+	XMMATRIX mainLightRotationMatrix = XMMatrixRotationRollPitchYaw(mainLight->GetPitch(), mainLight->GetYaw(), 0.0f);
+	out_shadow_camera_pos = calculate_shadow_camera_pos(camera, mainLightRotationMatrix, shadowDistance, shadowResolution);
+	XMMATRIX mainLightTranslateMatrix = XMMatrixTranslationFromVector(out_shadow_camera_pos);
+	XMMATRIX inverseLightViewMatrix = mainLightRotationMatrix * mainLightTranslateMatrix;
 	XMStoreFloat4(&perFrameCbData.mainLightDirection, inverseLightViewMatrix.r[2]);
 	out_light_view_matrix = XMMatrixInverse(nullptr, inverseLightViewMatrix);
 	out_light_proj_matrix = XMMatrixOrthographicLH(shadowDistance, shadowDistance, -directionalShadowDistance, directionalShadowDistance);
 	perFrameCbData.mainLightShadowMatrix = get_shadow_matrix(out_light_view_matrix, out_light_proj_matrix);
-	const float shadowResolution = (float)shadowMap->getDesc().width;
-	const float invShadowResolution = 1.0f / shadowResolution;
-	perFrameCbData.mainLightShadowParams = XMFLOAT4(shadowResolution, invShadowResolution, 2 * directionalShadowDistance, poissonShadowSoftness);
+	perFrameCbData.mainLightShadowParams = XMFLOAT4(shadowResolution, 1.0f / shadowResolution, 2 * directionalShadowDistance, poissonShadowSoftness);
 	perFrameCbData.timeParams = XMFLOAT4(time, 0, 0, 0);
 	perFrameCb->updateData(&perFrameCbData);
 
@@ -231,7 +243,7 @@ static XMFLOAT4 get_projection_params(float zn, float zf, bool persp)
 	return XMFLOAT4(zn * zf, zn - zf, zf, persp ? 1.0f : 0.0f);
 }
 
-void WorldRenderer::setupShadowPass(const XMMATRIX& light_view_matrix, const XMMATRIX& light_proj_matrix)
+void WorldRenderer::setupShadowPass(const XMVECTOR& shadow_camera_pos, const XMMATRIX& light_view_matrix, const XMMATRIX& light_proj_matrix)
 {
 	// Shadow camera
 	PerCameraConstantBufferData perCameraCbData{};
@@ -239,7 +251,7 @@ void WorldRenderer::setupShadowPass(const XMMATRIX& light_view_matrix, const XMM
 	perCameraCbData.projection = light_proj_matrix;
 	perCameraCbData.viewProjection = light_view_matrix * light_proj_matrix;
 	perCameraCbData.projectionParams = get_projection_params(-directionalShadowDistance, directionalShadowDistance, false);
-	XMStoreFloat4(&perCameraCbData.cameraWorldPosition, calculate_shadow_camera_pos(camera, shadowDistance));
+	XMStoreFloat4(&perCameraCbData.cameraWorldPosition, shadow_camera_pos);
 	float shadowResolution = getShadowResolution();
 	perCameraCbData.viewportResolution = XMFLOAT4(shadowResolution, shadowResolution, 1.f / shadowResolution, 1.f / shadowResolution);
 	perCameraCb->updateData(&perCameraCbData);
