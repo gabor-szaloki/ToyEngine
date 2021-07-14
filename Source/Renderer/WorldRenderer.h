@@ -94,11 +94,13 @@ private:
 
 	std::unique_ptr<ITexture> hdrTarget;
 	std::unique_ptr<ITexture> depthTex;
+	ResIdHolder linearClampSampler = BAD_RESID;
 	ResIdHolder depthPrepassRenderStateId = BAD_RESID;
 	ResIdHolder depthPrepassWireframeRenderStateId = BAD_RESID;
 	ResIdHolder forwardRenderStateId = BAD_RESID;
 	ResIdHolder forwardWireframeRenderStateId = BAD_RESID;
 	std::unique_ptr<ITexture> shadowMap;
+	ResIdHolder shadowSampler = BAD_RESID;
 	ResIdHolder shadowRenderStateId = BAD_RESID;
 
 	std::unique_ptr<IBuffer> perFrameCb;

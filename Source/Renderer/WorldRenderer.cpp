@@ -40,6 +40,9 @@ WorldRenderer::WorldRenderer()
 	forwardRsDesc.rasterizerDesc.wireframe = true;
 	forwardWireframeRenderStateId = drv->createRenderState(forwardRsDesc);
 
+	linearClampSampler = drv->createSampler(SamplerDesc(FILTER_MIN_MAG_MIP_LINEAR, TexAddr::CLAMP));
+	shadowSampler = drv->createSampler(SamplerDesc(FILTER_COMPARISON_MIN_MAG_MIP_LINEAR, TexAddr::BORDER, ComparisonFunc::LESS_EQUAL));
+
 	am->setGlobalShaderKeyword("SOFT_SHADOWS_TENT", true);
 	setShadowResolution(2048);
 	setShadowBias(50000, 1.0f);
@@ -127,10 +130,12 @@ void WorldRenderer::render()
 	sky->render();
 
 	drv->setRenderTarget(drv->getBackbufferTexture()->getId(), BAD_RESID);
-	drv->setTexture(ShaderStage::PS, 0, hdrTarget->getId(), true);
+	drv->setTexture(ShaderStage::PS, 0, hdrTarget->getId());
+	drv->setSampler(ShaderStage::PS, 0, linearClampSampler);
 	postFx.perform();
 
-	drv->setTexture(ShaderStage::PS, 0, BAD_RESID, true);
+	drv->setTexture(ShaderStage::PS, 0, BAD_RESID);
+	drv->setSampler(ShaderStage::PS, 0, BAD_RESID);
 }
 
 void WorldRenderer::setAmbientLighting(const XMFLOAT4& bottom_color, const XMFLOAT4& top_color, float intensity)
@@ -153,9 +158,6 @@ void WorldRenderer::setShadowResolution(unsigned int shadow_resolution)
 		TexFmt::R32_TYPELESS, 1, ResourceUsage::DEFAULT, BIND_SHADER_RESOURCE|BIND_DEPTH_STENCIL);
 	shadowMapDesc.srvFormatOverride = TexFmt::R32_FLOAT;
 	shadowMapDesc.dsvFormatOverride = TexFmt::D32_FLOAT;
-	shadowMapDesc.samplerDesc.filter = FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
-	shadowMapDesc.samplerDesc.comparisonFunc = ComparisonFunc::LESS_EQUAL;
-	shadowMapDesc.samplerDesc.setAddressMode(TexAddr::BORDER);
 	shadowMap.reset(drv->createTexture(shadowMapDesc));
 }
 
@@ -184,7 +186,6 @@ void WorldRenderer::initResolutionDependentResources()
 		TexFmt::R24G8_TYPELESS, 1, ResourceUsage::DEFAULT, BIND_DEPTH_STENCIL | BIND_SHADER_RESOURCE);
 	depthTexDesc.srvFormatOverride = TexFmt::R24_UNORM_X8_TYPELESS;
 	depthTexDesc.dsvFormatOverride = TexFmt::D24_UNORM_S8_UINT;
-	depthTexDesc.samplerDesc.filter = FILTER_MIN_MAG_MIP_POINT;
 	depthTex.reset(drv->createTexture(depthTexDesc));
 
 	camera.Resize((float)displayResolution.x, (float)displayResolution.y);
@@ -335,12 +336,16 @@ void WorldRenderer::performForwardPass()
 	drv->setRenderState(showWireframe ? forwardWireframeRenderStateId : forwardRenderStateId);
 	drv->setRenderTarget(hdrTarget->getId(), depthTex->getId());
 
-	drv->setTexture(ShaderStage::PS, 2, shadowMap->getId(), true);
-	drv->setTexture(ShaderStage::PS, 3, ssao->getResultTex()->getId(), true);
+	drv->setTexture(ShaderStage::PS, 2, shadowMap->getId());
+	drv->setSampler(ShaderStage::PS, 2, shadowSampler);
+	drv->setTexture(ShaderStage::PS, 3, ssao->getResultTex()->getId());
+	drv->setSampler(ShaderStage::PS, 3, linearClampSampler);
 
 	for (MeshRenderer* mr : am->getSceneMeshRenderers())
 		mr->render(RenderPass::FORWARD);
 
-	drv->setTexture(ShaderStage::PS, 2, BAD_RESID, true);
-	drv->setTexture(ShaderStage::PS, 3, BAD_RESID, true);
+	drv->setTexture(ShaderStage::PS, 2, BAD_RESID);
+	drv->setSampler(ShaderStage::PS, 2, BAD_RESID);
+	drv->setTexture(ShaderStage::PS, 3, BAD_RESID);
+	drv->setSampler(ShaderStage::PS, 3, BAD_RESID);
 }

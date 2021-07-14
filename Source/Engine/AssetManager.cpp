@@ -770,4 +770,6 @@ void AssetManager::initDefaultAssets()
 	defaultMeshIb.reset(drv->createBuffer(ibDesc));
 
 	defaultInputLayout = standardInputLayout;
+
+	defaultMaterialTextureSampler = drv->createSampler(SamplerDesc());
 }

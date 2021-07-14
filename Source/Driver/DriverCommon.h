@@ -67,17 +67,15 @@ struct TextureDesc
 	unsigned int bindFlags = 0;
 	unsigned int cpuAccessFlags = 0;
 	unsigned int miscFlags = 0;
-	bool hasSampler = true;
-	SamplerDesc samplerDesc;
 
 	TextureDesc() {};
 	TextureDesc(
 		const std::string& name_, unsigned int width_, unsigned int height_,
 		TexFmt format_ = TexFmt::R8G8B8A8_UNORM, unsigned int mips_ = 1,
 		ResourceUsage usage_flags = ResourceUsage::DEFAULT,
-		unsigned int bind_flags = 0, unsigned int cpu_access_flags = 0, unsigned int misc_flags = 0, bool has_sampler = true) :
+		unsigned int bind_flags = 0, unsigned int cpu_access_flags = 0, unsigned int misc_flags = 0) :
 		name(name_), width(width_), height(height_), format(format_), mips(mips_), usageFlags(usage_flags),
-		bindFlags(bind_flags), cpuAccessFlags(cpu_access_flags), miscFlags(misc_flags), hasSampler(has_sampler) {}
+		bindFlags(bind_flags), cpuAccessFlags(cpu_access_flags), miscFlags(misc_flags) {}
 };
 
 struct BufferDesc

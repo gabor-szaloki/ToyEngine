@@ -21,6 +21,7 @@ namespace drv_d3d11
 {
 	class Texture;
 	class Buffer;
+	class Sampler;
 	class RenderState;
 	class ShaderSet;
 	class InputLayout;
@@ -39,6 +40,7 @@ namespace drv_d3d11
 		ITexture* createTexture(const TextureDesc& desc) override;
 		ITexture* createTextureStub() override;
 		IBuffer* createBuffer(const BufferDesc& desc) override;
+		ResId createSampler(const SamplerDesc& desc) override;
 		ResId createRenderState(const RenderStateDesc& desc) override;
 		ResId createShaderSet(const ShaderSetDesc& desc) override;
 		ResId createComputeShader(const ComputeShaderDesc& desc) override;
@@ -51,8 +53,9 @@ namespace drv_d3d11
 		void setConstantBuffer(ShaderStage stage, unsigned int slot, ResId res_id) override;
 		void setBuffer(ShaderStage stage, unsigned int slot, ResId res_id) override;
 		void setRwBuffer(unsigned int slot, ResId res_id) override;
-		void setTexture(ShaderStage stage, unsigned int slot, ResId res_id, bool set_sampler_too) override;
+		void setTexture(ShaderStage stage, unsigned int slot, ResId res_id) override;
 		void setRwTexture(unsigned int slot, ResId res_id) override;
+		void setSampler(ShaderStage stage, unsigned int slot, ResId res_id) override;
 		void setRenderTarget(ResId target_id, ResId depth_id) override;
 		void setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id) override;
 		void setRenderState(ResId res_id) override;
@@ -92,6 +95,8 @@ namespace drv_d3d11
 		void unregisterTexture(ResId id);
 		ResId registerBuffer(Buffer* buf);
 		void unregisterBuffer(ResId id);
+		ResId registerSampler(Sampler* smp);
+		void unregisterSampler(ResId id);
 		ResId registerRenderState(RenderState* rs);
 		void unregisterRenderState(ResId id);
 		ResId registerShaderSet(ShaderSet* shader_set);
@@ -124,6 +129,7 @@ namespace drv_d3d11
 
 		std::map<ResId, Texture*> textures;
 		std::map<ResId, Buffer*> buffers;
+		std::map<ResId, Sampler*> samplers;
 		std::map<ResId, RenderState*> renderStates;
 		std::map<ResId, ShaderSet*> shaders;
 		std::map<ResId, InputLayout*> inputLayouts;

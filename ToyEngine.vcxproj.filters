@@ -171,6 +171,9 @@
     <ClCompile Include="Source\Renderer\Hbao.cpp">
       <Filter>Source\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Driver\D3D11\Sampler.cpp">
+      <Filter>Source\Driver\D3D11</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common.h">
@@ -1222,6 +1225,9 @@
     </ClInclude>
     <ClInclude Include="Source\Renderer\Hbao.h">
       <Filter>Source\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\D3D11\Sampler.h">
+      <Filter>Source\Driver\D3D11</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

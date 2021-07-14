@@ -61,7 +61,8 @@ void Material::set(RenderPass render_pass)
 			if (tex != nullptr && tex->isStub())
 				tex = am->getDefaultTexture(textures[stage][i].purpose);
 			ResId texId = tex != nullptr ? tex->getId() : BAD_RESID;
-			drv->setTexture((ShaderStage)stage, i, texId, true);
+			drv->setTexture((ShaderStage)stage, i, texId);
+			drv->setSampler((ShaderStage)stage, i, am->getDefaultMaterialTextureSampler());
 		}
 	}
 }

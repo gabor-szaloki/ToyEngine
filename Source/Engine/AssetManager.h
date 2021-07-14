@@ -38,6 +38,7 @@ public:
 	IBuffer* getDefaultMeshIb() const { return defaultMeshIb.get(); }
 	IBuffer* getDefaultMeshVb() const { return defaultMeshVb.get(); }
 	ResId getDefaultInputLayout() const { return defaultInputLayout; }
+	ResId getDefaultMaterialTextureSampler() const { return defaultMaterialTextureSampler; }
 
 	void sceneGui();
 
@@ -60,6 +61,7 @@ private:
 	std::unique_ptr<IBuffer> defaultMeshIb;
 	std::unique_ptr<IBuffer> defaultMeshVb;
 	ResId defaultInputLayout = BAD_RESID;
+	ResIdHolder defaultMaterialTextureSampler;
 
 	std::unique_ptr<mINI::INIFile> materialsIniFile;
 	mINI::INIStructure materialsIni;

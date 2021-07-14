@@ -20,11 +20,7 @@ namespace drv_d3d11
 		void setStub(bool is_stub) override { isStub_ = is_stub; }
 		void recreate(const TextureDesc& desc_) override;
 
-		void destroySampler();
-		void createSampler();
-
 		ID3D11Texture2D* getResource() const { return resource; }
-		ID3D11SamplerState* getSampler() const { return sampler; }
 		ID3D11ShaderResourceView* getSrv() const { return srv; }
 		ID3D11UnorderedAccessView* getUav() const { return uav; }
 		ID3D11RenderTargetView* getRtv() const { return rtv; }
@@ -37,7 +33,6 @@ namespace drv_d3d11
 		TextureDesc desc;
 		ResId id = BAD_RESID;
 		ID3D11Texture2D* resource;
-		ID3D11SamplerState* sampler;
 		ID3D11ShaderResourceView* srv;
 		ID3D11UnorderedAccessView* uav;
 		ID3D11RenderTargetView* rtv;

@@ -36,6 +36,7 @@
     <ClCompile Include="Source\Driver\D3D11\Driver.cpp" />
     <ClCompile Include="Source\Driver\D3D11\InputLayout.cpp" />
     <ClCompile Include="Source\Driver\D3D11\RenderState.cpp" />
+    <ClCompile Include="Source\Driver\D3D11\Sampler.cpp" />
     <ClCompile Include="Source\Driver\D3D11\ShaderSet.cpp" />
     <ClCompile Include="Source\Driver\D3D11\Texture.cpp" />
     <ClCompile Include="Source\Engine\AssetManager.cpp" />
@@ -375,6 +376,7 @@
     <ClInclude Include="Source\Driver\D3D11\Driver.h" />
     <ClInclude Include="Source\Driver\D3D11\InputLayout.h" />
     <ClInclude Include="Source\Driver\D3D11\RenderState.h" />
+    <ClInclude Include="Source\Driver\D3D11\Sampler.h" />
     <ClInclude Include="Source\Driver\D3D11\ShaderSet.h" />
     <ClInclude Include="Source\Driver\D3D11\Texture.h" />
     <ClInclude Include="Source\Driver\DriverCommon.h" />

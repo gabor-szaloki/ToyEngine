@@ -21,6 +21,11 @@ Hbao::Hbao(XMINT2 resolution_) : resolution(resolution_)
 	viewport.h = resolution.y;
 	viewport.z_min = viewport.z_max = 0;
 
+	SamplerDesc smpDesc(FILTER_MIN_MAG_MIP_LINEAR, TexAddr::CLAMP);
+	linearClampSampler = drv->createSampler(smpDesc);
+	smpDesc.filter = FILTER_MIN_MAG_MIP_POINT;
+	pointClampSampler = drv->createSampler(smpDesc);
+
 	ShaderSetDesc hbaoCalcShaderDesc("HbaoCalc", "Source/Shaders/HBAO.shader");
 	hbaoCalcShaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "DefaultPostFxVsFunc";
 	hbaoCalcShaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "HbaoCalcPs";
@@ -39,7 +44,6 @@ Hbao::Hbao(XMINT2 resolution_) : resolution(resolution_)
 
 	TextureDesc randomTexDesc("ssaoRandomTex", RANDOM_TEX_SIZE, RANDOM_TEX_SIZE, TexFmt::R16G16B16A16_SNORM, 1,
 		ResourceUsage::DEFAULT, BIND_SHADER_RESOURCE);
-	randomTexDesc.hasSampler = false;
 	randomTex.reset(drv->createTexture(randomTexDesc));
 
 	signed short randomData[RANDOM_ELEMENTS * 4];
@@ -99,8 +103,9 @@ void Hbao::perform()
 		drv->setShader(hbaoCalcShader, 0);
 		drv->setRenderTarget(hbaoTex[0]->getId(), BAD_RESID);
 		drv->setConstantBuffer(ShaderStage::PS, 3, cb->getId());
-		drv->setTexture(ShaderStage::PS, 0, wr->getDepthTex()->getId(), true);
-		drv->setTexture(ShaderStage::PS, 1, randomTex->getId(), false);
+		drv->setTexture(ShaderStage::PS, 0, wr->getDepthTex()->getId());
+		drv->setSampler(ShaderStage::PS, 0, pointClampSampler);
+		drv->setTexture(ShaderStage::PS, 1, randomTex->getId());
 		cbData._Resolution_InvResolution.z = 1.0f / resolution.x;
 		cbData._Resolution_InvResolution.w = 1.0f / resolution.y;
 		cb->updateData(&cbData);
@@ -116,16 +121,17 @@ void Hbao::perform()
 
 		// Horizontal
 		drv->setRenderTarget(hbaoTex[1]->getId(), BAD_RESID);
-		drv->setTexture(ShaderStage::PS, 2, hbaoTex[0]->getId(), true);
+		drv->setTexture(ShaderStage::PS, 2, hbaoTex[0]->getId());
+		drv->setSampler(ShaderStage::PS, 2, linearClampSampler);
 		cbData._Resolution_InvResolution.z = 1.0f / resolution.x;
 		cbData._Resolution_InvResolution.w = 0;
 		cb->updateData(&cbData);
 		drv->draw(3, 0);
-		drv->setTexture(ShaderStage::PS, 2, BAD_RESID, false); // otherwise next debug layer complains in next setRenderTarget call that texture is still bound on input
+		drv->setTexture(ShaderStage::PS, 2, BAD_RESID); // otherwise next debug layer complains in next setRenderTarget call that texture is still bound on input
 
 		// Vertical
 		drv->setRenderTarget(hbaoTex[0]->getId(), BAD_RESID);
-		drv->setTexture(ShaderStage::PS, 2, hbaoTex[1]->getId(), true);
+		drv->setTexture(ShaderStage::PS, 2, hbaoTex[1]->getId()); // linear sampler is already set
 		cbData._Resolution_InvResolution.z = 0;
 		cbData._Resolution_InvResolution.w = 1.0f / resolution.y;
 		cb->updateData(&cbData);
@@ -133,9 +139,11 @@ void Hbao::perform()
 	}
 
 	// Cleanup
-	drv->setTexture(ShaderStage::PS, 0, BAD_RESID, false);
-	drv->setTexture(ShaderStage::PS, 1, BAD_RESID, false);
-	drv->setTexture(ShaderStage::PS, 2, BAD_RESID, false);
+	drv->setTexture(ShaderStage::PS, 0, BAD_RESID);
+	drv->setTexture(ShaderStage::PS, 1, BAD_RESID);
+	drv->setTexture(ShaderStage::PS, 2, BAD_RESID);
+	drv->setSampler(ShaderStage::PS, 0, BAD_RESID);
+	drv->setSampler(ShaderStage::PS, 2, BAD_RESID);
 	drv->setRenderTarget(BAD_RESID, BAD_RESID);
 	drv->setView(originalViewport);
 }

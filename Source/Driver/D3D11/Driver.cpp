@@ -8,6 +8,7 @@
 
 #include "Texture.h"
 #include "Buffer.h"
+#include "Sampler.h"
 #include "RenderState.h"
 #include "ShaderSet.h"
 #include "InputLayout.h"
@@ -159,6 +160,12 @@ IBuffer* Driver::createBuffer(const BufferDesc& desc)
 	return new Buffer(desc);
 }
 
+ResId Driver::createSampler(const SamplerDesc& desc)
+{
+	Sampler* s = new Sampler(desc);
+	return s->getId();
+}
+
 ResId Driver::createRenderState(const RenderStateDesc& desc)
 {
 	RenderState* rs = new RenderState(desc);
@@ -214,6 +221,8 @@ void Driver::destroyResource(ResId res_id)
 	if (erase_if_found(res_id, buffers))
 		return;
 	if (erase_if_found(res_id, textures))
+		return;
+	if (erase_if_found(res_id, samplers))
 		return;
 	assert(false);
 }
@@ -331,7 +340,7 @@ void Driver::setRwBuffer(unsigned int slot, ResId res_id)
 	context->CSSetUnorderedAccessViews(slot, 1, &uav, nullptr);
 }
 
-void Driver::setTexture(ShaderStage stage, unsigned int slot, ResId res_id, bool set_sampler_too)
+void Driver::setTexture(ShaderStage stage, unsigned int slot, ResId res_id)
 {
 	RESOURCE_LOCK_GUARD
 	assert(res_id == BAD_RESID || textures.find(res_id) != textures.end());
@@ -363,35 +372,6 @@ void Driver::setTexture(ShaderStage stage, unsigned int slot, ResId res_id, bool
 		assert(false);
 		break;
 	}
-
-	if (set_sampler_too)
-	{
-		ID3D11SamplerState* sampler = res_id != BAD_RESID ? textures[res_id]->getSampler() : nullptr;
-		switch (stage)
-		{
-		case ShaderStage::VS:
-			context->VSSetSamplers(slot, 1, &sampler);
-			break;
-		case ShaderStage::PS:
-			context->PSSetSamplers(slot, 1, &sampler);
-			break;
-		case ShaderStage::GS:
-			context->GSSetSamplers(slot, 1, &sampler);
-			break;
-		case ShaderStage::HS:
-			context->HSSetSamplers(slot, 1, &sampler);
-			break;
-		case ShaderStage::DS:
-			context->DSSetSamplers(slot, 1, &sampler);
-			break;
-		case ShaderStage::CS:
-			context->CSSetSamplers(slot, 1, &sampler);
-			break;
-		default:
-			assert(false);
-			break;
-		}
-	}
 }
 
 void Driver::setRwTexture(unsigned int slot, ResId res_id)
@@ -403,6 +383,40 @@ void Driver::setRwTexture(unsigned int slot, ResId res_id)
 	ID3D11UnorderedAccessView* uav = res_id != BAD_RESID ? textures[res_id]->getUav() : nullptr;
 	CONTEXT_LOCK_GUARD
 	context->CSSetUnorderedAccessViews(slot, 1, &uav, nullptr);
+}
+
+void Driver::setSampler(ShaderStage stage, unsigned int slot, ResId res_id)
+{
+	RESOURCE_LOCK_GUARD
+	assert(res_id == BAD_RESID || samplers.find(res_id) != samplers.end());
+
+	ID3D11SamplerState* sampler = res_id != BAD_RESID ? samplers[res_id]->getResource() : nullptr;
+
+	CONTEXT_LOCK_GUARD
+	switch (stage)
+	{
+	case ShaderStage::VS:
+		context->VSSetSamplers(slot, 1, &sampler);
+		break;
+	case ShaderStage::PS:
+		context->PSSetSamplers(slot, 1, &sampler);
+		break;
+	case ShaderStage::GS:
+		context->GSSetSamplers(slot, 1, &sampler);
+		break;
+	case ShaderStage::HS:
+		context->HSSetSamplers(slot, 1, &sampler);
+		break;
+	case ShaderStage::DS:
+		context->DSSetSamplers(slot, 1, &sampler);
+		break;
+	case ShaderStage::CS:
+		context->CSSetSamplers(slot, 1, &sampler);
+		break;
+	default:
+		assert(false);
+		break;
+	}
 }
 
 void Driver::setRenderTarget(ResId target_id, ResId depth_id)
@@ -579,11 +593,8 @@ void Driver::setSettings(const DriverSettings& new_settings)
 
 	if (settings.textureFilteringAnisotropy != oldSettings.textureFilteringAnisotropy)
 	{
-		for (auto& [k, v] : textures)
-		{
-			v->destroySampler();
-			v->createSampler();
-		}
+		for (auto& [k, v] : samplers)
+			v->recreate();
 	}
 }
 
@@ -648,6 +659,18 @@ void Driver::unregisterBuffer(ResId id)
 {
 	RESOURCE_LOCK_GUARD
 	erase_resource(id, buffers);
+}
+
+ResId Driver::registerSampler(Sampler* smp)
+{
+	RESOURCE_LOCK_GUARD
+	return emplace_resource(smp, samplers);
+}
+
+void Driver::unregisterSampler(ResId id)
+{
+	RESOURCE_LOCK_GUARD
+	erase_resource(id, samplers);
 }
 
 ResId Driver::registerRenderState(RenderState* rs)
@@ -715,7 +738,6 @@ bool Driver::initResolutionDependentResources(int display_width, int display_hei
 		desc.bindFlags = td.BindFlags;
 		desc.cpuAccessFlags = td.CPUAccessFlags;
 		desc.miscFlags = td.MiscFlags;
-		desc.hasSampler = false;
 		backbuffer = std::make_unique<Texture>(&desc, backBufferTexture);
 
 		set_debug_name(backBufferTexture, desc.name);
@@ -743,6 +765,8 @@ void Driver::releaseAllResources()
 	release_pool(textures);
 	assert(buffers.size() == 0);
 	release_pool(buffers);
+	assert(samplers.size() == 0);
+	release_pool(samplers);
 	assert(renderStates.size() == 0);
 	release_pool(renderStates);
 	assert(shaders.size() == 0);

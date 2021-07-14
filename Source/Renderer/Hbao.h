@@ -27,6 +27,8 @@ private:
 	XMINT2 resolution;
 	ViewportParams viewport;
 	ResIdHolder renderState;
+	ResIdHolder linearClampSampler;
+	ResIdHolder pointClampSampler;
 	ResIdHolder hbaoCalcShader;
 	ResIdHolder hbaoBlurShader;
 	HbaoCbData cbData;
