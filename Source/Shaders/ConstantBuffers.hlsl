@@ -9,6 +9,7 @@ cbuffer PerFrameConstantBuffer : register(b0)
 	float4 _MainLightDirection;
 	float4x4 _MainLightShadowMatrix;
 	float4 _MainLightShadowParams; // x: resolution, y: 1/resolution, z: range, w: radius for poisson samples in shadowmap uv
+	float4 _TonemappingParams; // x: exposure, y,z,w: unused
 	float4 _TimeParams; // x: elapsed seconds, y,z,w: unused
 }
 

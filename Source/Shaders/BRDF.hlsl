@@ -16,11 +16,19 @@ float NormalDistributionGGXTR(float3 normalVec, float3 halfwayVec, float roughne
 	return nom / denom;
 }
 
-float GeometrySchlickGGX(float NdotV, float roughness)  // k is a remapping of roughness based on direct lighting or IBL lighting
+float KGeometryGGXDirect(float roughness)
 {
 	float r = roughness + 1.0f;
-	float k = (r * r) / 8.0f;
+	return (r * r) / 8.0f;
+}
 
+float KGeometryGGXIBL(float roughness)
+{
+	return roughness * roughness / 2.0f;
+}
+
+float GeometrySchlickGGX(float NdotV, float k)  // k is a remapping of roughness based on whether we're using the geometry function for either direct lighting or IBL lighting
+{
 	float nom = NdotV;
 	float denom = NdotV * (1.0f - k) + k;
 

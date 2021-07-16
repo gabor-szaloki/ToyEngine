@@ -232,6 +232,7 @@ void WorldRenderer::setupFrame(XMVECTOR& out_shadow_camera_pos, XMMATRIX& out_li
 	out_light_proj_matrix = XMMatrixOrthographicLH(shadowDistance, shadowDistance, -directionalShadowDistance, directionalShadowDistance);
 	perFrameCbData.mainLightShadowMatrix = get_shadow_matrix(out_light_view_matrix, out_light_proj_matrix);
 	perFrameCbData.mainLightShadowParams = XMFLOAT4(shadowResolution, 1.0f / shadowResolution, 2 * directionalShadowDistance, poissonShadowSoftness);
+	perFrameCbData.tonemappingParams = XMFLOAT4(exposure, 0, 0, 0);
 	perFrameCbData.timeParams = XMFLOAT4(time, 0, 0, 0);
 	perFrameCb->updateData(&perFrameCbData);
 

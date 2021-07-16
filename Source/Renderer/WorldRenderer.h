@@ -111,4 +111,5 @@ private:
 	float ssaoResolutionScale = 1.0f;
 	std::unique_ptr<Sky> sky;
 	PostFx postFx;
+	float exposure = 2.0f;
 };

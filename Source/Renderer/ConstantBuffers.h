@@ -10,6 +10,7 @@ struct PerFrameConstantBufferData
 	XMFLOAT4 mainLightDirection;
 	XMMATRIX mainLightShadowMatrix;
 	XMFLOAT4 mainLightShadowParams;
+	XMFLOAT4 tonemappingParams;
 	XMFLOAT4 timeParams;
 };
 

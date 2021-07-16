@@ -9,7 +9,7 @@ SamplerState _HdrTarget_Sampler : register(s0);
 float4 PostFxPS(DefaultPostFxVsOutput i) : SV_TARGET
 {
 	float4 hdrSceneColor = _HdrTarget.Sample(_HdrTarget_Sampler, i.uv);
-	float3 tonemappedLinearColor = tonemap(hdrSceneColor.rgb);
+	float3 tonemappedLinearColor = tonemap(hdrSceneColor.rgb * _TonemappingParams.x);
 	float3 srgbColor = pow(tonemappedLinearColor.rgb, 1.0f/2.2f);
 	return float4(srgbColor, 1);
 }

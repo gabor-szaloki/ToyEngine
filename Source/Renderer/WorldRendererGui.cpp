@@ -128,6 +128,12 @@ void WorldRenderer::lightingGui()
 			}
 			ImGui::EndTabItem();
 		}
+		if (ImGui::BeginTabItem("PostFx"))
+		{
+			ImGui::DragFloat("Exposure", &exposure);
+
+			ImGui::EndTabItem();
+		}
 	}
 	ImGui::EndTabBar();
 }
