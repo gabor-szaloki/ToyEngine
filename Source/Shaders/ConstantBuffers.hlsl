@@ -32,4 +32,10 @@ cbuffer PerObjectConstantBuffer : register(b2)
 	float4x4 _World;
 }
 
+cbuffer PerMaterialConstantBuffer : register(b3)
+{
+	float4 _MaterialColor;
+	float4 _MaterialParams; // x: metalness scale, y: metalness bias, z: roughness scale, w: roughness bias
+}
+
 #endif

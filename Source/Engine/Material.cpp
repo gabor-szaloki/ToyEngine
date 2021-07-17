@@ -2,7 +2,9 @@
 
 #include <assert.h>
 #include <Driver/ITexture.h>
+#include <Driver/IBuffer.h>
 #include <Renderer/WorldRenderer.h>
+#include <Renderer/ConstantBuffers.h>
 #include "AssetManager.h"
 
 Material::Material(const std::string& name_, const std::array<ResId, (int)RenderPass::_COUNT>& shaders_) : name(name_)
@@ -14,6 +16,23 @@ Material::Material(const std::string& name_, const std::array<ResId, (int)Render
 	}
 	for (const std::string& kw : am->getGlobalShaderKeywords())
 		setKeyword(kw, true);
+
+	BufferDesc cbDesc;
+	cbDesc.bindFlags = BIND_CONSTANT_BUFFER;
+	cbDesc.numElements = 1;
+	cbDesc.name = "perMaterialCb_" + name_;
+	cbDesc.elementByteSize = sizeof(PerMaterialConstantBufferData);
+	cb.reset(drv->createBuffer(cbDesc));
+
+	PerMaterialConstantBufferData cbData;
+	cbData.materialColor = XMFLOAT4(1, 1, 1, 1);
+	cbData.materialParams = XMFLOAT4(1, 0, 1, 0);
+	setConstants(cbData);
+}
+
+void Material::setConstants(const PerMaterialConstantBufferData& cb_data)
+{
+	cb->updateData(&cb_data);
 }
 
 void Material::setTexture(ShaderStage stage, unsigned int slot, ITexture* tex, MaterialTexture::Purpose purpose)
@@ -53,6 +72,7 @@ void Material::setKeyword(const std::string& keyword, bool enable)
 void Material::set(RenderPass render_pass)
 {
 	drv->setShader(shaders[(int)render_pass], currentVariants[(int)render_pass]);
+	drv->setConstantBuffer(ShaderStage::PS, 3, cb->getId());
 	for (int stage = 0; stage < (int)ShaderStage::GRAPHICS_STAGE_COUNT; stage++)
 	{
 		for (unsigned int i = 0; i < textures[stage].size(); i++)

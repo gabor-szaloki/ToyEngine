@@ -25,18 +25,18 @@ SurfaceOutput Surface(float3 pointToEye, float3 normal, float2 uv, float4 vertCo
 
 	// Albedo + Opacity
 	float4 baseTextureSample = _BaseTexture.Sample(_Sampler, uv);
-	s.albedo = baseTextureSample.rgb * vertColor.rgb;
-	s.opacity = baseTextureSample.a;
+	s.albedo = baseTextureSample.rgb * _MaterialColor.rgb * vertColor.rgb;
+	s.opacity = baseTextureSample.a * _MaterialColor.a;
 
 	// Normal
 	float4 normalRoughMetal = _NormalRoughMetalTexture.Sample(_Sampler, uv);
 	s.normal = perturb_normal(normal, float3(normalRoughMetal.xy, 0), pointToEye, uv);
 
 	// Metalness
-	s.metalness = normalRoughMetal.z;
+	s.metalness = normalRoughMetal.z * _MaterialParams.x + _MaterialParams.y;
 
 	// Roughness
-	s.roughness = normalRoughMetal.w;
+	s.roughness = normalRoughMetal.w * _MaterialParams.z + _MaterialParams.w;
 
 	return s;
 }

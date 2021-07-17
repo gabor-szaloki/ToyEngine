@@ -32,3 +32,9 @@ struct PerObjectConstantBufferData
 {
 	XMMATRIX world;
 };
+
+struct PerMaterialConstantBufferData
+{
+	XMFLOAT4 materialColor;
+	XMFLOAT4 materialParams;
+};

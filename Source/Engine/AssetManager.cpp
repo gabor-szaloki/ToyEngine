@@ -12,6 +12,7 @@
 #include <Driver/IBuffer.h>
 #include <Util/ThreadPool.h>
 #include <Renderer/WorldRenderer.h>
+#include <Renderer/ConstantBuffers.h>
 
 #include "Material.h"
 #include "MeshRenderer.h"
@@ -577,6 +578,39 @@ bool AssetManager::loadMeshToMeshRenderer(const std::string& name, MeshRenderer&
 		return load();
 }
 
+static XMFLOAT4 str_to_XMFLOAT4(std::string s)
+{
+	XMFLOAT4 f4(0, 0, 0, 0);
+	if (s.length() == 0)
+		return f4;
+	char delimiter = ',';
+	size_t pos = s.find(delimiter);
+	f4.x = std::stof(s.substr(0, pos));
+	if (pos == std::string::npos) // No comma
+		return f4;
+	s.erase(0, pos + 1);
+	pos = s.find(delimiter);
+	f4.y = std::stof(s.substr(0, pos));
+	if (pos == std::string::npos) // Only 1 comma
+		return f4;
+	s.erase(0, pos + 1);
+	pos = s.find(delimiter);
+	f4.z = std::stof(s.substr(0, pos));
+	if (pos == std::string::npos) // 2 comma
+		return f4;
+	s.erase(0, pos + 1);
+	pos = s.find(delimiter);
+	assert(pos == std::string::npos); // More than 3 comma
+	f4.w = std::stof(s.substr(0, pos));
+	return f4;
+}
+
+XMVECTOR str_to_XMVECTOR(std::string s)
+{
+	XMFLOAT4 f4 = str_to_XMFLOAT4(s);
+	return XMLoadFloat4(&f4);
+}
+
 void AssetManager::loadScene(const std::string& scene_file)
 {
 	currentSceneIniFile = std::make_unique<mINI::INIFile>(scene_file);
@@ -591,27 +625,6 @@ void AssetManager::loadScene(const std::string& scene_file)
 
 	for (auto& sceneElem : currentSceneIni)
 	{
-		auto strToVector = [](std::string s)
-		{
-			if (s.length() == 0)
-				return XMVectorZero();
-			char delimiter = ',';
-			size_t pos = s.find(delimiter);
-			float x = std::stof(s.substr(0, pos));
-			if (pos == std::string::npos) // No comma
-				return XMVectorSet(x, 0, 0, 0);
-			s.erase(0, pos + 1);
-			pos = s.find(delimiter);
-			float y = std::stof(s.substr(0, pos));
-			if (pos == std::string::npos) // Only 1 comma
-				return XMVectorSet(x, y, 0, 0);
-			s.erase(0, pos + 1);
-			pos = s.find(delimiter);
-			assert(pos == std::string::npos); // More than 2 comma
-			float z = std::stof(s.substr(0, pos));
-			return XMVectorSet(x, y, z, 0);
-		};
-
 		auto& elemProperties = currentSceneIni[sceneElem.first];
 
 		if (elemProperties["type"] == "model")
@@ -631,15 +644,24 @@ void AssetManager::loadScene(const std::string& scene_file)
 				else
 				{
 					material = new Material(materialName.c_str(), standardShaders);
+					mINI::INIMap<std::string> materialIni = materialsIni[materialName];
 
 					MaterialTexturePaths texturePaths;
-					texturePaths.albedo = materialsIni[materialName]["albedo_tex"];
-					texturePaths.opacity = materialsIni[materialName]["opacity_tex"];
-					texturePaths.normal = materialsIni[materialName]["normal_tex"];
-					texturePaths.roughness = materialsIni[materialName]["roughness_tex"];
-					texturePaths.metalness = materialsIni[materialName]["metalness_tex"];
+					texturePaths.albedo = materialIni["albedo_tex"];
+					texturePaths.opacity = materialIni["opacity_tex"];
+					texturePaths.normal = materialIni["normal_tex"];
+					texturePaths.roughness = materialIni["roughness_tex"];
+					texturePaths.metalness = materialIni["metalness_tex"];
 
 					loadTexturesToStandardMaterial(texturePaths, material, false);
+
+					PerMaterialConstantBufferData materialCbData;
+					materialCbData.materialColor = materialIni.has("color") ? str_to_XMFLOAT4(materialIni["color"]) : XMFLOAT4(1, 1, 1, 1);
+					materialCbData.materialParams.x = materialIni.has("metalness_scale") ? std::stof(materialIni["metalness_scale"]) : 1;
+					materialCbData.materialParams.y = materialIni.has("metalness_bias") ? std::stof(materialIni["metalness_bias"]) : 0;
+					materialCbData.materialParams.z = materialIni.has("roughness_scale") ? std::stof(materialIni["roughness_scale"]) : 1;
+					materialCbData.materialParams.w = materialIni.has("roughness_bias") ? std::stof(materialIni["roughness_bias"]) : 0;
+					material->setConstants(materialCbData);
 
 					for (const std::vector<MaterialTexture>& stageTextures : material->getTextures())
 						for (const MaterialTexture& matTex : stageTextures)
@@ -655,18 +677,18 @@ void AssetManager::loadScene(const std::string& scene_file)
 			loadMeshToMeshRenderer(modelName, *mr);
 
 			Transform tr;
-			tr.position = strToVector(elemProperties["position"]);
-			tr.rotation = strToVector(elemProperties["rotation"]) * DEG_TO_RAD;
+			tr.position = str_to_XMVECTOR(elemProperties["position"]);
+			tr.rotation = str_to_XMVECTOR(elemProperties["rotation"]) * DEG_TO_RAD;
 			tr.scale = elemProperties["scale"].length() > 0 ? std::stof(elemProperties["scale"]) : 1.0f;
 			mr->setTransform(tr);
 		}
 		else if (elemProperties["type"] == "camera")
 		{
 			if (elemProperties.has("position"))
-				wr->getCamera().SetEye(strToVector(elemProperties["position"]));
+				wr->getCamera().SetEye(str_to_XMVECTOR(elemProperties["position"]));
 			if (elemProperties.has("rotation"))
 			{
-				XMVECTOR rotVec = strToVector(elemProperties["rotation"]) * DEG_TO_RAD;
+				XMVECTOR rotVec = str_to_XMVECTOR(elemProperties["rotation"]) * DEG_TO_RAD;
 				wr->getCamera().SetRotation(rotVec.m128_f32[0], rotVec.m128_f32[1]);
 			}
 		}
