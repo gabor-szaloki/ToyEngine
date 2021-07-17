@@ -24,13 +24,13 @@ float3 GGX_Specular(float3 normal, float3 lightVector, float3 viewVector, float 
 	float kGeom = KGeometryGGXDirect(roughness);
 	float G = GeometrySmith(normal, viewVector, lightVector, kGeom);
 
-	// Calculate the Cook-Torrance nominator and denominator
-	float3 nom = D * G * F;
+	// Calculate the Cook-Torrance numerator and denominator
+	float3 numerator = D * G * F;
 	float vDotN = max(dot(viewVector, normal), 0);
 	float hDotN = max(dot(halfVector, normal), 0);
-	float denom = saturate(4 * vDotN * hDotN + 0.05);
+	float denominator = 4 * vDotN * hDotN;
 
-	return nom / denom;
+	return numerator / max(denominator, 0.001);
 }
 
 float3 Lighting(SurfaceOutput s, float3 pointToEye, float mainLightShadowAttenuation, float ao)
