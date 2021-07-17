@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <map>
 
 #include <Common.h>
 #include <Util/CaseSensitiveIni.h>
@@ -51,6 +52,7 @@ private:
 	std::vector<ITexture*> sceneTextures;
 	std::vector<Material*> sceneMaterials;
 	std::vector<MeshRenderer*> sceneMeshRenderers;
+	std::map<std::string, MeshData*> sceneMeshes;
 
 	std::vector<std::string> globalShaderKeywords;
 

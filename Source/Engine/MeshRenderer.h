@@ -27,6 +27,7 @@ struct MeshData
 	std::vector<StandardVertexData> vertexData;
 	std::vector<unsigned int> indexData;
 	std::vector<SubmeshData> submeshes;
+	std::atomic_bool loaded = false;
 };
 
 class MeshRenderer

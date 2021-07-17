@@ -551,6 +551,8 @@ bool AssetManager::loadMesh2(const std::string& name, MeshData& out_mesh_data)
 		startVertex += (unsigned int)mesh.Vertices.size();
 	}
 
+	out_mesh_data.loaded = true;
+
 	auto finishProcessing = std::chrono::high_resolution_clock::now();
 
 	PLOG_INFO << "Processing mesh '" << name << "' successful. It took " << (finishProcessing - finishLoadTime).count() / 1e9 << " seconds.";
@@ -560,12 +562,32 @@ bool AssetManager::loadMesh2(const std::string& name, MeshData& out_mesh_data)
 
 bool AssetManager::loadMeshToMeshRenderer(const std::string& name, MeshRenderer& mesh_renderer, LoadExecutionMode lem)
 {
-	auto load = [&, name]
+	bool meshAlreadyStartedLoading = false;
+	MeshData* meshData;
+	if (sceneMeshes.find(name) != sceneMeshes.end())
 	{
-		MeshData meshData;
-		if (!loadMesh2(name, meshData))
-			return false;
-		mesh_renderer.load(meshData);
+		meshData = sceneMeshes[name];
+		meshAlreadyStartedLoading = true;
+	}
+	else
+	{
+		meshData = new MeshData;
+		sceneMeshes[name] = meshData;
+	}
+
+	auto load = [&, name, meshData, meshAlreadyStartedLoading]
+	{
+		if (meshAlreadyStartedLoading)
+		{
+			while (!meshData->loaded)
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+		else
+		{
+			if (!loadMesh2(name, *meshData))
+				return false;
+		}
+		mesh_renderer.load(*meshData);
 		return true;
 	};
 
@@ -697,6 +719,9 @@ void AssetManager::loadScene(const std::string& scene_file)
 
 void AssetManager::unloadCurrentScene()
 {
+	for (auto& md : sceneMeshes)
+		delete md.second;
+	sceneMeshes.clear();
 	for (MeshRenderer* mr : sceneMeshRenderers)
 		delete mr;
 	sceneMeshRenderers.clear();
