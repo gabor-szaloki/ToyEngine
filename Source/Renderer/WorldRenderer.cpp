@@ -56,13 +56,6 @@ void WorldRenderer::init()
 {
 	initResolutionDependentResources();
 	sky = std::make_unique<Sky>();
-	// TODO: configure sky per scene
-	panoramicEnvironmentMap.reset(am->loadTexture("Assets/Textures/Environment/autumn_park_4k.hdr", false, true, true,
-		[&](ITexture* tex, bool success)
-		{
-			if (success)
-				sky->markDirty();
-		}));
 }
 
 void WorldRenderer::onResize(int display_width, int display_height)
@@ -161,6 +154,12 @@ void WorldRenderer::setAmbientLighting(const XMFLOAT4& bottom_color, const XMFLO
 	ambientLightBottomColor = bottom_color;
 	ambientLightTopColor = top_color;
 	ambientLightIntensity = intensity;
+}
+
+void WorldRenderer::setEnvironment(ITexture* panoramic_environment_map)
+{
+	panoramicEnvironmentMap.reset(panoramic_environment_map);
+	sky->markDirty();
 }
 
 unsigned int WorldRenderer::getShadowResolution()

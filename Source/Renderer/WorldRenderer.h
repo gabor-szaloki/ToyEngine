@@ -35,6 +35,7 @@ public:
 
 	void toggleWireframe() { showWireframe = !showWireframe; }
 	void setAmbientLighting(const XMFLOAT4& bottom_color, const XMFLOAT4& top_color, float intensity);
+	void setEnvironment(ITexture* panoramic_environment_map);
 	unsigned int getShadowResolution();
 	void setShadowResolution(unsigned int shadow_resolution);
 	void setShadowBias(int depth_bias, float slope_scaled_depth_bias);

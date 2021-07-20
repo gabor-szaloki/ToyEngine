@@ -673,6 +673,8 @@ XMVECTOR str_to_XMVECTOR(std::string s)
 
 void AssetManager::loadScene(const std::string& scene_file)
 {
+	wr->setEnvironment(nullptr);
+
 	currentSceneIniFile = std::make_unique<mINI::INIFile>(scene_file);
 	if (!currentSceneIniFile->read(currentSceneIni))
 	{
@@ -750,6 +752,20 @@ void AssetManager::loadScene(const std::string& scene_file)
 			{
 				XMVECTOR rotVec = str_to_XMVECTOR(elemProperties["rotation"]) * DEG_TO_RAD;
 				wr->getCamera().SetRotation(rotVec.m128_f32[0], rotVec.m128_f32[1]);
+			}
+		}
+		else if (elemProperties["type"] == "environment")
+		{
+			if (elemProperties.has("panoramic_environment_map"))
+			{
+				am->loadTexture(elemProperties["panoramic_environment_map"], false, true, true,
+					[&](ITexture* tex, bool success)
+					{
+						if (success)
+							wr->setEnvironment(tex);
+						else
+							delete tex;
+					});
 			}
 		}
 	}
