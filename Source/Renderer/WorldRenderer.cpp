@@ -56,6 +56,13 @@ void WorldRenderer::init()
 {
 	initResolutionDependentResources();
 	sky = std::make_unique<Sky>();
+	// TODO: configure sky per scene
+	panoramicEnvironmentMap.reset(am->loadTexture("Assets/Textures/Environment/autumn_park_4k.hdr", false, true, true,
+		[&](ITexture* tex, bool success)
+		{
+			if (success)
+				sky->markDirty();
+		}));
 }
 
 void WorldRenderer::onResize(int display_width, int display_height)
@@ -111,6 +118,17 @@ static XMMATRIX get_shadow_matrix(XMMATRIX& lightView, XMMATRIX& lightProj)
 void WorldRenderer::render()
 {
 	PROFILE_SCOPE("RenderWorld");
+
+	if (sky->isDirty())
+	{
+		if (panoramicEnvironmentMap != nullptr && !panoramicEnvironmentMap->isStub())
+		{
+			sky->bakeFromPanoramicTexture(panoramicEnvironmentMap.get());
+			panoramicEnvironmentMap.reset();
+		}
+		else
+			sky->bakeProcedural();
+	}
 
 	XMVECTOR shadowCameraPos;
 	XMMATRIX lightViewMatrix;
@@ -171,6 +189,39 @@ void WorldRenderer::setShadowBias(int depth_bias, float slope_scaled_depth_bias)
 	desc.rasterizerDesc.slopeScaledDepthBias = shadowSlopeScaledDepthBias;
 	desc.rasterizerDesc.depthClipEnable = false;
 	shadowRenderStateId = drv->createRenderState(desc);
+}
+
+static XMFLOAT4 get_projection_params(float zn, float zf, bool persp)
+{
+	return XMFLOAT4(zn * zf, zn - zf, zf, persp ? 1.0f : 0.0f);
+}
+
+void WorldRenderer::setCameraForShaders(const Camera& cam)
+{
+	PerCameraConstantBufferData perCameraCbData;
+	perCameraCbData.view = cam.GetViewMatrix();
+	perCameraCbData.projection = cam.GetProjectionMatrix();
+	perCameraCbData.viewProjection = perCameraCbData.view * perCameraCbData.projection;
+	perCameraCbData.projectionParams = get_projection_params(cam.GetNearPlane(), cam.GetFarPlane(), true);
+	XMStoreFloat4(&perCameraCbData.cameraWorldPosition, cam.GetEye());
+	perCameraCbData.viewportResolution = XMFLOAT4(
+		cam.GetViewportWidth(), cam.GetViewportHeight(),
+		1.f / cam.GetViewportWidth(), 1.f / cam.GetViewportHeight());
+
+	XMMATRIX viewRotMatrix = perCameraCbData.view;
+	viewRotMatrix.r[3] = XMVectorSet(0, 0, 0, 1);
+	XMMATRIX viewRotProjMatrix = viewRotMatrix * perCameraCbData.projection;
+	XMMATRIX invViewRotProjMatrix = XMMatrixInverse(nullptr, viewRotProjMatrix);
+	float invFarPlane = 1.0f / cam.GetFarPlane();
+	XMStoreFloat4(&perCameraCbData.viewVecLT, XMVector3TransformCoord(XMVectorSet(-1.f, +1.f, 1.f, 0.f), invViewRotProjMatrix) * invFarPlane);
+	XMStoreFloat4(&perCameraCbData.viewVecRT, XMVector3TransformCoord(XMVectorSet(+1.f, +1.f, 1.f, 0.f), invViewRotProjMatrix) * invFarPlane);
+	XMStoreFloat4(&perCameraCbData.viewVecLB, XMVector3TransformCoord(XMVectorSet(-1.f, -1.f, 1.f, 0.f), invViewRotProjMatrix) * invFarPlane);
+	XMStoreFloat4(&perCameraCbData.viewVecRB, XMVector3TransformCoord(XMVectorSet(+1.f, -1.f, 1.f, 0.f), invViewRotProjMatrix) * invFarPlane);
+
+	perCameraCb->updateData(&perCameraCbData);
+
+	drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
+	drv->setConstantBuffer(ShaderStage::PS, 1, perCameraCb->getId());
 }
 
 void WorldRenderer::initResolutionDependentResources()
@@ -240,11 +291,6 @@ void WorldRenderer::setupFrame(XMVECTOR& out_shadow_camera_pos, XMMATRIX& out_li
 	drv->setConstantBuffer(ShaderStage::PS, 0, perFrameCb->getId());
 }
 
-static XMFLOAT4 get_projection_params(float zn, float zf, bool persp)
-{
-	return XMFLOAT4(zn * zf, zn - zf, zf, persp ? 1.0f : 0.0f);
-}
-
 void WorldRenderer::setupShadowPass(const XMVECTOR& shadow_camera_pos, const XMMATRIX& light_view_matrix, const XMMATRIX& light_proj_matrix)
 {
 	// Shadow camera
@@ -271,41 +317,13 @@ void WorldRenderer::setupShadowPass(const XMVECTOR& shadow_camera_pos, const XMM
 void WorldRenderer::setupDepthAndForwardPasses()
 {
 	// Main camera
-	{
-		PerCameraConstantBufferData perCameraCbData;
-		perCameraCbData.view = camera.GetViewMatrix();
-		perCameraCbData.projection = camera.GetProjectionMatrix();
-		perCameraCbData.viewProjection = perCameraCbData.view * perCameraCbData.projection;
-		perCameraCbData.projectionParams = get_projection_params(camera.GetNearPlane(), camera.GetFarPlane(), true);
-		XMStoreFloat4(&perCameraCbData.cameraWorldPosition, camera.GetEye());
-		perCameraCbData.viewportResolution = XMFLOAT4(
-			camera.GetViewportWidth(), camera.GetViewportHeight(),
-			1.f / camera.GetViewportWidth(), 1.f / camera.GetViewportHeight());
-
-		XMMATRIX viewRotMatrix = perCameraCbData.view;
-		viewRotMatrix.r[3] = XMVectorSet(0, 0, 0, 1);
-		XMMATRIX viewRotProjMatrix = viewRotMatrix * perCameraCbData.projection;
-		XMMATRIX invViewRotProjMatrix = XMMatrixInverse(nullptr, viewRotProjMatrix);
-		float invFarPlane = 1.0f / camera.GetFarPlane();
-		XMStoreFloat4(&perCameraCbData.viewVecLT, XMVector3TransformCoord(XMVectorSet(-1.f, +1.f, 1.f, 0.f), invViewRotProjMatrix) * invFarPlane);
-		XMStoreFloat4(&perCameraCbData.viewVecRT, XMVector3TransformCoord(XMVectorSet(+1.f, +1.f, 1.f, 0.f), invViewRotProjMatrix) * invFarPlane);
-		XMStoreFloat4(&perCameraCbData.viewVecLB, XMVector3TransformCoord(XMVectorSet(-1.f, -1.f, 1.f, 0.f), invViewRotProjMatrix) * invFarPlane);
-		XMStoreFloat4(&perCameraCbData.viewVecRB, XMVector3TransformCoord(XMVectorSet(+1.f, -1.f, 1.f, 0.f), invViewRotProjMatrix) * invFarPlane);
-
-		perCameraCb->updateData(&perCameraCbData);
-
-		drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
-		drv->setConstantBuffer(ShaderStage::PS, 1, perCameraCb->getId());
-	}
+	setCameraForShaders(camera);
 
 	// Clear targets
-	{
-		const TextureDesc& targetDesc = hdrTarget->getDesc();
-		drv->setRenderTarget(hdrTarget->getId(), depthTex->getId());
-		drv->setView(0, 0, (float)targetDesc.width, (float)targetDesc.height, 0, 1);
-
-		drv->clearRenderTargets(RenderTargetClearParams::clear_all(0.0f, 0.2f, 0.4f, 1.0f, 1.0f));
-	}
+	const TextureDesc& targetDesc = hdrTarget->getDesc();
+	drv->setRenderTarget(hdrTarget->getId(), depthTex->getId());
+	drv->setView(0, 0, (float)targetDesc.width, (float)targetDesc.height, 0, 1);
+	drv->clearRenderTargets(RenderTargetClearParams::clear_all(0.0f, 0.2f, 0.4f, 1.0f, 1.0f));
 }
 
 void WorldRenderer::performShadowPass()

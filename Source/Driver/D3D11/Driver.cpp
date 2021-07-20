@@ -419,7 +419,7 @@ void Driver::setSampler(ShaderStage stage, unsigned int slot, ResId res_id)
 	}
 }
 
-void Driver::setRenderTarget(ResId target_id, ResId depth_id)
+void Driver::setRenderTarget(ResId target_id, ResId depth_id, unsigned int target_slice, unsigned int depth_slice)
 {
 	RESOURCE_LOCK_GUARD
 	assert(target_id == BAD_RESID || textures.find(target_id) != textures.end());
@@ -427,38 +427,39 @@ void Driver::setRenderTarget(ResId target_id, ResId depth_id)
 	assert(depth_id == BAD_RESID || textures.find(depth_id) != textures.end());
 	assert(depth_id == BAD_RESID || textures[depth_id]->getDesc().bindFlags & BIND_DEPTH_STENCIL);
 
-	currentRenderTargets[0] = target_id != BAD_RESID ? textures[target_id] : nullptr;
-	ID3D11RenderTargetView* rtv = currentRenderTargets[0] != nullptr ? currentRenderTargets[0]->getRtv() : nullptr;
+	currentRTVs.fill(nullptr);
+	Texture* targetTex = target_id != BAD_RESID ? textures[target_id] : nullptr;
+	currentRTVs[0] = targetTex != nullptr ? targetTex->getRtv(target_slice) : nullptr;
 
-	currentDepthTarget = depth_id != BAD_RESID ? textures[depth_id] : nullptr;
-	ID3D11DepthStencilView* dsv = currentDepthTarget != nullptr ? currentDepthTarget->getDsv() : nullptr;
+	Texture *depthTex = depth_id != BAD_RESID ? textures[depth_id] : nullptr;
+	currentDSV = depthTex != nullptr ? depthTex->getDsv(depth_slice) : nullptr;
 	
 	CONTEXT_LOCK_GUARD
-	context->OMSetRenderTargets(1, &rtv, dsv);
+	context->OMSetRenderTargets(1, currentRTVs.data(), currentDSV);
 }
 
-void Driver::setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id)
+void Driver::setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id, unsigned int* target_slices, unsigned int depth_slice)
 {
 	RESOURCE_LOCK_GUARD
 	assert(num_targets <= D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT);
 	assert(depth_id == BAD_RESID || textures.find(depth_id) != textures.end());
 	assert(depth_id == BAD_RESID || textures[depth_id]->getDesc().bindFlags & BIND_DEPTH_STENCIL);
 
-	currentDepthTarget = depth_id != BAD_RESID ? textures[depth_id] : nullptr;
-	ID3D11DepthStencilView* dsv = currentDepthTarget != nullptr ? currentDepthTarget->getDsv() : nullptr;
+	Texture* depthTex = depth_id != BAD_RESID ? textures[depth_id] : nullptr;
+	currentDSV = depthTex != nullptr ? depthTex->getDsv(depth_slice) : nullptr;
 
-	ID3D11RenderTargetView* rtvs[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT]{};
+	currentRTVs.fill(nullptr);
 	for (unsigned int i = 0; i < num_targets; i++)
 	{
 		assert(target_ids[i] == BAD_RESID || textures.find(target_ids[i]) != textures.end());
 		assert(target_ids[i] == BAD_RESID || textures[target_ids[i]]->getDesc().bindFlags & BIND_RENDER_TARGET);
 
-		currentRenderTargets[i] = target_ids[i] != BAD_RESID ? textures[target_ids[i]] : nullptr;
-		rtvs[i] = currentRenderTargets[i] != nullptr ? currentRenderTargets[i]->getRtv() : nullptr;
+		Texture* targetTex = target_ids[i] != BAD_RESID ? textures[target_ids[i]] : nullptr;
+		currentRTVs[i] = targetTex != nullptr ? targetTex->getRtv(target_slices[i]) : nullptr;
 	}
 
 	CONTEXT_LOCK_GUARD
-	context->OMSetRenderTargets(num_targets, rtvs, dsv);
+	context->OMSetRenderTargets(num_targets, currentRTVs.data(), currentDSV);
 }
 
 void Driver::setRenderState(ResId res_id)
@@ -521,14 +522,14 @@ void Driver::clearRenderTargets(const RenderTargetClearParams clear_params)
 	{
 		CONTEXT_LOCK_GUARD
 		for (unsigned int i = 0, mask = clear_params.colorTargetMask;
-			mask && i < currentRenderTargets.size();
+			mask && i < currentRTVs.size();
 			i++, mask >>= mask)
 		{
-			if ((mask & 1) && currentRenderTargets[i] != nullptr)
-				context->ClearRenderTargetView(currentRenderTargets[i]->getRtv(), clear_params.color);
+			if ((mask & 1) && currentRTVs[i] != nullptr)
+				context->ClearRenderTargetView(currentRTVs[i], clear_params.color);
 		}
 	}
-	if ((clear_params.clearFlags & (CLEAR_FLAG_DEPTH | CLEAR_FLAG_STENCIL)) && currentDepthTarget != nullptr)
+	if ((clear_params.clearFlags & (CLEAR_FLAG_DEPTH | CLEAR_FLAG_STENCIL)) && currentDSV != nullptr)
 	{
 		CONTEXT_LOCK_GUARD
 		unsigned int dsvClearFlags = 0;
@@ -536,7 +537,7 @@ void Driver::clearRenderTargets(const RenderTargetClearParams clear_params)
 			dsvClearFlags |= D3D11_CLEAR_DEPTH;
 		if (clear_params.clearFlags & CLEAR_FLAG_STENCIL)
 			dsvClearFlags |= D3D11_CLEAR_STENCIL;
-		context->ClearDepthStencilView(currentDepthTarget->getDsv(), dsvClearFlags, clear_params.depth, clear_params.stencil);
+		context->ClearDepthStencilView(currentDSV, dsvClearFlags, clear_params.depth, clear_params.stencil);
 	}
 }
 

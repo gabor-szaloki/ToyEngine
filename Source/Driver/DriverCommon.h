@@ -2,6 +2,7 @@
 
 #include <float.h>
 #include <string>
+#include <cmath>
 #include "TexFmt.h"
 #include "DriverConsts.h"
 #include "DriverSettings.h"
@@ -17,7 +18,6 @@ struct IntBox // Todo: move outside of Driver
 	int right;
 	int bottom;
 	int back;
-
 };
 
 enum class ShaderStage
@@ -195,3 +195,14 @@ struct RenderTargetClearParams
 		return p;
 	}
 };
+
+inline unsigned int calc_mip_levels(unsigned int tex_width, unsigned int tex_height = 0)
+{
+	unsigned int maxDim = tex_width < tex_height ? tex_height : tex_width;
+	return static_cast<unsigned int>(std::floor(std::log2(maxDim))) + 1;
+}
+
+inline unsigned int calc_subresource(unsigned int mip_slice, unsigned int array_slice, unsigned int mip_levels)
+{
+	return mip_slice + (array_slice * mip_levels);
+}

@@ -12,7 +12,7 @@ static D3D11_TEXTURE2D_DESC convert_desc(const TextureDesc& desc)
 	td.Width = desc.width;
 	td.Height = desc.height;
 	td.MipLevels = desc.mips;
-	td.ArraySize = 1;
+	td.ArraySize = (desc.miscFlags & RESOURCE_MISC_TEXTURECUBE) ? 6 : 1;
 	td.Format = (DXGI_FORMAT)desc.format;
 	td.SampleDesc.Count = 1;
 	td.SampleDesc.Quality = 0;
@@ -107,13 +107,25 @@ void Texture::createViews()
 {
 	HRESULT hr;
 
+	const bool isCubemap = desc.miscFlags & RESOURCE_MISC_TEXTURECUBE;
+
 	if (desc.bindFlags & BIND_SHADER_RESOURCE)
 	{
 		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc{};
 		srvDesc.Format = (DXGI_FORMAT)(desc.srvFormatOverride != TexFmt::INVALID ? desc.srvFormatOverride : desc.format);
-		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-		srvDesc.Texture2D.MipLevels = desc.mips == 0 ? -1 : desc.mips;
-		srvDesc.Texture2D.MostDetailedMip = 0;
+
+		if (isCubemap)
+		{
+			srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
+			srvDesc.TextureCube.MipLevels = desc.mips == 0 ? -1 : desc.mips;
+			srvDesc.TextureCube.MostDetailedMip = 0;
+		}
+		else
+		{
+			srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+			srvDesc.Texture2D.MipLevels = desc.mips == 0 ? -1 : desc.mips;
+			srvDesc.Texture2D.MostDetailedMip = 0;
+		}
 
 		hr = Driver::get().getDevice().CreateShaderResourceView(resource, &srvDesc, &srv);
 		assert(SUCCEEDED(hr));
@@ -122,28 +134,83 @@ void Texture::createViews()
 	{
 		D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
 		uavDesc.Format = (DXGI_FORMAT)(desc.uavFormatOverride != TexFmt::INVALID ? desc.uavFormatOverride : desc.format);
-		uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
-		uavDesc.Texture2D.MipSlice = 0;
+
+		if (isCubemap)
+		{
+			uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2DARRAY;
+			uavDesc.Texture2DArray.MipSlice = 0;
+			uavDesc.Texture2DArray.FirstArraySlice = 0;
+			uavDesc.Texture2DArray.ArraySize = 6;
+		}
+		else
+		{
+			uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
+			uavDesc.Texture2D.MipSlice = 0;
+		}
+
 		hr = Driver::get().getDevice().CreateUnorderedAccessView(resource, &uavDesc, &uav);
 		assert(SUCCEEDED(hr));
+
 	}
 	if (desc.bindFlags & BIND_RENDER_TARGET)
 	{
 		D3D11_RENDER_TARGET_VIEW_DESC rtvDesc{};
 		rtvDesc.Format = (DXGI_FORMAT)(desc.rtvFormatOverride != TexFmt::INVALID ? desc.rtvFormatOverride : desc.format);
-		rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-		rtvDesc.Texture2D.MipSlice = 0;
-		hr = Driver::get().getDevice().CreateRenderTargetView(resource, &rtvDesc, &rtv);
-		assert(SUCCEEDED(hr));
+
+		if (isCubemap)
+		{
+			rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+			rtvDesc.Texture2DArray.MipSlice = 0;
+			rtvDesc.Texture2DArray.ArraySize = 1;
+			for (int i = 0; i < 6; i++)
+			{
+				rtvDesc.Texture2DArray.FirstArraySlice = i;
+				ID3D11RenderTargetView* rtv;
+				hr = Driver::get().getDevice().CreateRenderTargetView(resource, &rtvDesc, &rtv);
+				assert(SUCCEEDED(hr));
+				rtvs.push_back(rtv);
+			}
+		}
+		else
+		{
+			rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+			rtvDesc.Texture2D.MipSlice = 0;
+			ID3D11RenderTargetView* rtv;
+			hr = Driver::get().getDevice().CreateRenderTargetView(resource, &rtvDesc, &rtv);
+			assert(SUCCEEDED(hr));
+			rtvs.push_back(rtv);
+		}
+
 	}
 	if (desc.bindFlags & BIND_DEPTH_STENCIL)
 	{
 		D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
 		dsvDesc.Format = (DXGI_FORMAT)(desc.dsvFormatOverride != TexFmt::INVALID ? desc.dsvFormatOverride : desc.format);
-		dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-		dsvDesc.Texture2D.MipSlice = 0;
-		hr = Driver::get().getDevice().CreateDepthStencilView(resource, &dsvDesc, &dsv);
-		assert(SUCCEEDED(hr));
+
+		if (isCubemap)
+		{
+			dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
+			dsvDesc.Texture2DArray.MipSlice = 0;
+			dsvDesc.Texture2DArray.ArraySize = 1;
+			for (int i = 0; i < 6; i++)
+			{
+				dsvDesc.Texture2DArray.FirstArraySlice = i;
+				ID3D11DepthStencilView* dsv;
+				hr = Driver::get().getDevice().CreateDepthStencilView(resource, &dsvDesc, &dsv);
+				assert(SUCCEEDED(hr));
+				dsvs.push_back(dsv);
+			}
+		}
+		else
+		{
+			dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+			dsvDesc.Texture2D.MipSlice = 0;
+			ID3D11DepthStencilView* dsv;
+			hr = Driver::get().getDevice().CreateDepthStencilView(resource, &dsvDesc, &dsv);
+			assert(SUCCEEDED(hr));
+			dsvs.push_back(dsv);
+		}
+
 	}
 }
 
@@ -152,6 +219,10 @@ void Texture::releaseAll()
 	SAFE_RELEASE(resource);
 	SAFE_RELEASE(srv);
 	SAFE_RELEASE(uav);
-	SAFE_RELEASE(rtv);
-	SAFE_RELEASE(dsv);
+	for (auto rtv : rtvs)
+		SAFE_RELEASE(rtv);
+	rtvs.clear();
+	for (auto dsv : dsvs)
+		SAFE_RELEASE(dsv);
+	dsvs.clear();
 }

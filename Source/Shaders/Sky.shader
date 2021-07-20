@@ -20,6 +20,10 @@ cbuffer SkyConstantBuffer : register(b3)
 #define _SunAlpha _SkyIntensity_SunIntensity_SunAlpha_SunBeta.z
 #define _SunBeta _SkyIntensity_SunIntensity_SunAlpha_SunBeta.w
 
+Texture2D _PanoramicEnvironmentMap : register(t0);
+TextureCube _BakedSkyCubeMap : register(t1);
+SamplerState _LinearSampler : register(s0);
+
 // warning X3571 : pow(f, e) will not work for negative f, use abs(f) or conditionally handle negative values if you expect them
 #pragma warning(disable:3571)
 
@@ -35,8 +39,31 @@ float3 get_sky_color(float3 view_dir)
 	return cSky * _SkyIntensity + cSun * _SunIntensity;
 }
 
-float4 SkyPS(DefaultPostFxVsOutput i) : SV_TARGET
+float4 SkyBakeProceduralPS(DefaultPostFxVsOutput i) : SV_TARGET
 {
 	float3 viewDir = normalize(i.viewVec);
 	return float4(get_sky_color(viewDir), 1);
+}
+
+float2 get_panoramic_uv(float3 view_vec)
+{
+	float2 uv = float2(atan2(view_vec.x, view_vec.z), asin(-view_vec.y));
+	uv *= float2(0.1591, 0.3183);
+	uv += 0.5;
+	return uv;
+}
+
+float4 SkyBakeFromPanoramicTexturePS(DefaultPostFxVsOutput i) : SV_TARGET
+{
+	float3 viewDir = normalize(i.viewVec);
+	float2 uv = get_panoramic_uv(viewDir);
+	float3 panoramicSample = _PanoramicEnvironmentMap.Sample(_LinearSampler, uv).rgb;
+	return float4(panoramicSample, 1);
+}
+
+float4 SkyRenderPS(DefaultPostFxVsOutput i) : SV_TARGET
+{
+	float3 viewDir = normalize(i.viewVec);
+	float3 cubeSample = _BakedSkyCubeMap.Sample(_LinearSampler, viewDir).rgb;
+	return float4(cubeSample, 1);
 }

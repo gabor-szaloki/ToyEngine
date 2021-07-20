@@ -29,7 +29,6 @@
     <ClCompile Include="Source\3rdParty\ImGui\implot.cpp" />
     <ClCompile Include="Source\3rdParty\ImGui\implot_demo.cpp" />
     <ClCompile Include="Source\3rdParty\ImGui\implot_items.cpp" />
-    <ClCompile Include="Source\3rdParty\LodePNG\lodepng.cpp" />
     <ClCompile Include="Source\3rdParty\tinyobjloader\tiny_obj_loader.cc" />
     <ClCompile Include="Source\Common.cpp" />
     <ClCompile Include="Source\Driver\D3D11\Buffer.cpp" />
@@ -347,7 +346,6 @@
     <ClInclude Include="Source\3rdParty\ImGui\imstb_rectpack.h" />
     <ClInclude Include="Source\3rdParty\ImGui\imstb_textedit.h" />
     <ClInclude Include="Source\3rdParty\ImGui\imstb_truetype.h" />
-    <ClInclude Include="Source\3rdParty\LodePNG\lodepng.h" />
     <ClInclude Include="Source\3rdParty\mini\ini.h" />
     <ClInclude Include="Source\3rdParty\OBJ_Loader\OBJ_Loader.h" />
     <ClInclude Include="Source\3rdParty\plog\Appenders\AndroidAppender.h" />
@@ -370,6 +368,7 @@
     <ClInclude Include="Source\3rdParty\plog\Severity.h" />
     <ClInclude Include="Source\3rdParty\plog\Util.h" />
     <ClInclude Include="Source\3rdParty\plog\WinApi.h" />
+    <ClInclude Include="Source\3rdParty\stb\stb_image.h" />
     <ClInclude Include="Source\3rdParty\tinyobjloader\tiny_obj_loader.h" />
     <ClInclude Include="Source\Common.h" />
     <ClInclude Include="Source\Driver\D3D11\Buffer.h" />

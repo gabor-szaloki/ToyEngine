@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <Driver/ITexture.h>
 #include "Driver.h"
 
@@ -23,8 +25,8 @@ namespace drv_d3d11
 		ID3D11Texture2D* getResource() const { return resource; }
 		ID3D11ShaderResourceView* getSrv() const { return srv; }
 		ID3D11UnorderedAccessView* getUav() const { return uav; }
-		ID3D11RenderTargetView* getRtv() const { return rtv; }
-		ID3D11DepthStencilView* getDsv() const { return dsv; }
+		ID3D11RenderTargetView* getRtv(unsigned int slice = 0) const { return rtvs[slice]; }
+		ID3D11DepthStencilView* getDsv(unsigned int slice = 0) const { return dsvs[slice]; }
 
 	private:
 		void createViews();
@@ -35,8 +37,8 @@ namespace drv_d3d11
 		ID3D11Texture2D* resource;
 		ID3D11ShaderResourceView* srv;
 		ID3D11UnorderedAccessView* uav;
-		ID3D11RenderTargetView* rtv;
-		ID3D11DepthStencilView* dsv;
+		std::vector<ID3D11RenderTargetView*> rtvs;
+		std::vector<ID3D11DepthStencilView*> dsvs;
 
 		bool isStub_ = false;
 	};

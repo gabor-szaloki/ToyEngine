@@ -2,7 +2,8 @@
 
 #include <filesystem>
 
-#include <3rdParty/LodePNG/lodepng.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <3rdParty/stb/stb_image.h>
 #include <3rdParty/tinyobjloader/tiny_obj_loader.h>
 #pragma warning(disable:4244) // warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 #include <3rdParty/OBJ_Loader/OBJ_Loader.h>
@@ -46,31 +47,46 @@ AssetManager::~AssetManager()
 	}
 }
 
-ITexture* AssetManager::loadTextureFromPng(const std::string& path, bool srgb, LoadExecutionMode lem)
+ITexture* AssetManager::loadTexture(const std::string& path, bool srgb, bool need_mips, bool hdr, std::function<void(ITexture*, bool)> callback, LoadExecutionMode lem)
 {
 	ITexture* texture = drv->createTextureStub();
 
-	auto load = [path, srgb, texture]
+	auto load = [path, srgb, need_mips, hdr, callback, texture]
 	{
-		PLOG_INFO << "Loading texture from file: " << path;
+		PLOG_DEBUG << "Loading texture from file: " << path;
 
-		std::vector<unsigned char> pngData;
-		unsigned int width, height;
-		unsigned int error = lodepng::decode(pngData, width, height, path);
-		if (error != 0)
+		int width, height, channels;
+		const int requiredChannels = 4; // TODO: handle different number of channels
+		void* data;
+		if (hdr)
+			data = stbi_loadf(path.c_str(), &width, &height, &channels, requiredChannels);
+		else
+			data = stbi_load(path.c_str(), &width, &height, &channels, requiredChannels);
+		if (data == nullptr)
 		{
 			PLOG_ERROR << "Error loading texture." << std::endl
 				<< "\tFile: " << path << std::endl
-				<< "\tError: " << lodepng_error_text(error);
+				<< "\tError: " << stbi_failure_reason();
+			callback(texture, false);
 			return;
 		}
 
-		TextureDesc tDesc(path, width, height, srgb ? TexFmt::R8G8B8A8_UNORM_SRGB : TexFmt::R8G8B8A8_UNORM, 0);
-		tDesc.bindFlags = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET;
-		tDesc.miscFlags = RESOURCE_MISC_GENERATE_MIPS;
+		TexFmt fmt = hdr ? TexFmt::R32G32B32A32_FLOAT : (srgb ? TexFmt::R8G8B8A8_UNORM_SRGB : TexFmt::R8G8B8A8_UNORM);
+		TextureDesc tDesc(path, width, height, fmt, need_mips ? 0 : 1);
+		tDesc.bindFlags = BIND_SHADER_RESOURCE;
+		if (need_mips)
+		{
+			tDesc.bindFlags |= BIND_RENDER_TARGET;
+			tDesc.miscFlags = RESOURCE_MISC_GENERATE_MIPS;
+		}
 		texture->recreate(tDesc);
-		texture->updateData(0, nullptr, (void*)pngData.data());
-		texture->generateMips();
+		texture->updateData(0, nullptr, data);
+		if (need_mips)
+			texture->generateMips();
+
+		stbi_image_free(data);
+
+		callback(texture, true);
 	};
 
 	if (lem == LoadExecutionMode::ASYNC && ASYNC_LOADING_ENABLED)
@@ -91,17 +107,27 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 
 	auto load = [paths, material, flip_normal_green, baseTexture, normalRoughMetalTexture]
 	{
-		auto loadTex = [&](const std::string& path, std::vector<unsigned char>& data, unsigned int& width, unsigned int& height)
+		auto loadTex = [&](const std::string& path, std::vector<unsigned char>& out_data, int& width, int& height)
 		{
 			PLOG_DEBUG << "Loading texture from file: " << path;
-			unsigned int error = lodepng::decode(data, width, height, path);
-			if (error != 0)
+			
+			int channels;
+			const int requiredChannels = 4;
+			unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, requiredChannels); // TODO: handle different number of channels
+
+			if (data == nullptr)
 			{
 				PLOG_ERROR << "Error loading texture." << std::endl
 					<< "\tFile: " << path << std::endl
-					<< "\tError: " << lodepng_error_text(error);
+					<< "\tError: " << stbi_failure_reason();
 				return false;
 			}
+
+			// TODO: optimize by using data loaded by stbi directly and avoid copying it into a vector
+			out_data.assign(data, data + width * height * requiredChannels);
+
+			stbi_image_free(data);
+			
 			return true;
 		};
 
@@ -116,7 +142,7 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 			unsigned int albedoOpacityWidth = 0, albedoOpacityHeight = 0;
 
 			std::vector<unsigned char> albedoData;
-			unsigned int albedoWidth = 0, albedoHeight = 0;
+			int albedoWidth = 0, albedoHeight = 0;
 			if (hasAlbedo)
 			{
 				if (!loadTex(paths.albedo, albedoData, albedoWidth, albedoHeight))
@@ -126,7 +152,7 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 			}
 
 			std::vector<unsigned char> opacityData;
-			unsigned int opacityWidth = 0, opacityHeight = 0;
+			int opacityWidth = 0, opacityHeight = 0;
 			if (hasSeparateOpacity)
 			{
 				if (!loadTex(paths.opacity, opacityData, opacityWidth, opacityHeight))
@@ -182,7 +208,7 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 		unsigned int normalRoughMetalWidth = 0, normalRoughMetalHeight = 0;
 
 		std::vector<unsigned char> normalData;
-		unsigned int normalWidth = 0, normalHeight = 0;
+		int normalWidth = 0, normalHeight = 0;
 		if (hasNormal)
 		{
 			if (!loadTex(paths.normal, normalData, normalWidth, normalHeight))
@@ -192,7 +218,7 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 		}
 
 		std::vector<unsigned char> roughnessData;
-		unsigned int roughnessWidth = 0, roughnessHeight = 0;
+		int roughnessWidth = 0, roughnessHeight = 0;
 		if (hasRoughness)
 		{
 			if (!loadTex(paths.roughness, roughnessData, roughnessWidth, roughnessHeight))
@@ -209,7 +235,7 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 		}
 
 		std::vector<unsigned char> metalnessData;
-		unsigned int metalnessWidth = 0, metalnessHeight = 0;
+		int metalnessWidth = 0, metalnessHeight = 0;
 		if (hasMetalness)
 		{
 			if (!loadTex(paths.metalness, metalnessData, metalnessWidth, metalnessHeight))
@@ -454,6 +480,7 @@ bool AssetManager::loadMesh2(const std::string& name, MeshData& out_mesh_data)
 	float importScale = modelsIni[name]["scale"].length() > 0 ? std::stof(modelsIni[name]["scale"]) : 1.0f;
 	bool flipUvX = modelsIni[name]["flipUvX"] == "yes";
 	bool flipUvY = modelsIni[name]["flipUvY"] == "yes";
+	bool flipHandedness = modelsIni[name]["flipHandedness"] == "yes";
 
 	PLOG_INFO << "Loading mesh '" << name << "' from file: " << path.c_str();
 
@@ -531,16 +558,27 @@ bool AssetManager::loadMesh2(const std::string& name, MeshData& out_mesh_data)
 		if (mesh.Indices.size() % 3 != 0)
 			PLOG_WARNING << "Number of indices is not divisible by 3. Only triangles are supported now! Model: '" << name << "', Mesh: '" << mesh.MeshName << "'";
 		out_mesh_data.indexData.resize(startIndex + submesh.numIndices);
-		std::copy(mesh.Indices.begin(), mesh.Indices.end(), out_mesh_data.indexData.begin() + startIndex);
+		if (flipHandedness)
+		{
+			for (int i = 0; i < mesh.Indices.size(); i += 3)
+			{
+				out_mesh_data.indexData[startIndex + i + 0] = mesh.Indices[i + 0];
+				out_mesh_data.indexData[startIndex + i + 1] = mesh.Indices[i + 2];
+				out_mesh_data.indexData[startIndex + i + 2] = mesh.Indices[i + 1];
+			}
+		}
+		else
+			std::copy(mesh.Indices.begin(), mesh.Indices.end(), out_mesh_data.indexData.begin() + startIndex);
 
 		// Handle vertices
+		const float zMultiplier = flipHandedness ? -1.0f : 1.0f;
 		out_mesh_data.vertexData.resize(startVertex + mesh.Vertices.size());
 		for (size_t v = 0; v < mesh.Vertices.size(); v++)
 		{
 			const objl::Vertex& vert = mesh.Vertices[v];
 			StandardVertexData& outVert = out_mesh_data.vertexData[startVertex + v];
-			outVert.position = XMFLOAT3(vert.Position.X * importScale, vert.Position.Y * importScale, vert.Position.Z * importScale);
-			outVert.normal = XMFLOAT3(vert.Normal.X, vert.Normal.Y, vert.Normal.Z);
+			outVert.position = XMFLOAT3(vert.Position.X * importScale, vert.Position.Y * importScale, vert.Position.Z * importScale * zMultiplier);
+			outVert.normal = XMFLOAT3(vert.Normal.X, vert.Normal.Y, vert.Normal.Z * zMultiplier);
 			outVert.uv = XMFLOAT2(
 				flipUvX ? 1.0f - vert.TextureCoordinate.X : vert.TextureCoordinate.X,
 				flipUvY ? 1.0f - vert.TextureCoordinate.Y : vert.TextureCoordinate.Y);
@@ -798,8 +836,8 @@ void AssetManager::initShaders()
 
 void AssetManager::initDefaultAssets()
 {
-	ITexture* stubColor = loadTextureFromPng("Assets/Textures/gray_base.png", true, LoadExecutionMode::SYNC);
-	ITexture* stubNormal = loadTextureFromPng("Assets/Textures/flatnorm_dielectric_halfrough_nrm.png", false, LoadExecutionMode::SYNC);
+	ITexture* stubColor = loadTexture("Assets/Textures/gray_base.png", true, true, false, [](ITexture*,bool){}, LoadExecutionMode::SYNC);
+	ITexture* stubNormal = loadTexture("Assets/Textures/flatnorm_dielectric_halfrough_nrm.png", false, true, false, [](ITexture*,bool){}, LoadExecutionMode::SYNC);
 	engineTextures.push_back(stubColor);
 	engineTextures.push_back(stubNormal);
 	defaultTextures[(int)MaterialTexture::Purpose::COLOR] = stubColor;

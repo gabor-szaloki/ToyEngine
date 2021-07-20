@@ -41,6 +41,7 @@ public:
 	ITexture* getDepthTex() const { return depthTex.get(); }
 	ITexture* getShadowMap() const { return shadowMap.get(); };
 	Camera& getCamera() { return camera; };
+	void setCameraForShaders(const Camera& cam);
 	float getTime() { return time; }
 	Sky& getSky() { return *sky; }
 
@@ -110,6 +111,7 @@ private:
 	std::unique_ptr<Hbao> ssao;
 	float ssaoResolutionScale = 1.0f;
 	std::unique_ptr<Sky> sky;
+	std::unique_ptr<ITexture> panoramicEnvironmentMap;
 	PostFx postFx;
 	float exposure = 2.0f;
 };

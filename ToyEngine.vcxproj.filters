@@ -10,9 +10,6 @@
     <Filter Include="Source\3rdParty">
       <UniqueIdentifier>{5022766f-95a4-415f-9581-921d95ed3bac}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source\3rdParty\LodePNG">
-      <UniqueIdentifier>{edb62074-b541-4481-b658-a6fc58a984bc}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source\3rdParty\glm">
       <UniqueIdentifier>{04bf06f9-eede-4bb7-add7-e70f275bd6f7}</UniqueIdentifier>
     </Filter>
@@ -70,6 +67,9 @@
     <Filter Include="Source\Engine">
       <UniqueIdentifier>{684740d0-ebe4-48fa-b2c2-8b4895a67010}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\3rdParty\stb">
+      <UniqueIdentifier>{75439ee2-cb6b-46ba-a5a7-1aea38a21181}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Common.cpp">
@@ -95,9 +95,6 @@
     </ClCompile>
     <ClCompile Include="Source\3rdParty\ImGui\imgui_widgets.cpp">
       <Filter>Source\3rdParty\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\3rdParty\LodePNG\lodepng.cpp">
-      <Filter>Source\3rdParty\LodePNG</Filter>
     </ClCompile>
     <ClCompile Include="Source\3rdParty\glm\detail\glm.cpp">
       <Filter>Source\3rdParty\glm\detail</Filter>
@@ -202,9 +199,6 @@
     </ClInclude>
     <ClInclude Include="Source\3rdParty\ImGui\imstb_truetype.h">
       <Filter>Source\3rdParty\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\3rdParty\LodePNG\lodepng.h">
-      <Filter>Source\3rdParty\LodePNG</Filter>
     </ClInclude>
     <ClInclude Include="Source\3rdParty\glm\common.hpp">
       <Filter>Source\3rdParty\glm</Filter>
@@ -1228,6 +1222,9 @@
     </ClInclude>
     <ClInclude Include="Source\Driver\D3D11\Sampler.h">
       <Filter>Source\Driver\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\stb\stb_image.h">
+      <Filter>Source\3rdParty\stb</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

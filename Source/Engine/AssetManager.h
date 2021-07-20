@@ -2,6 +2,7 @@
 
 #include <array>
 #include <map>
+#include <functional>
 
 #include <Common.h>
 #include <Util/CaseSensitiveIni.h>
@@ -21,7 +22,7 @@ public:
 	AssetManager();
 	~AssetManager();
 
-	ITexture* loadTextureFromPng(const std::string& path, bool srgb, LoadExecutionMode lem = LoadExecutionMode::ASYNC);
+	ITexture* loadTexture(const std::string& path, bool srgb, bool need_mips = true, bool hdr = false, std::function<void(ITexture*, bool)> callback = [](ITexture*,bool){}, LoadExecutionMode lem = LoadExecutionMode::ASYNC);
 	bool loadTexturesToStandardMaterial(const MaterialTexturePaths& paths, Material* material, bool flip_normal_green, LoadExecutionMode lem = LoadExecutionMode::ASYNC);
 	bool loadMesh(const std::string& name, MeshData& mesh_data);
 	bool loadMesh2(const std::string& name, MeshData& mesh_data);

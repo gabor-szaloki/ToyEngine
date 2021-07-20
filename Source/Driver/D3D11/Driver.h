@@ -56,8 +56,8 @@ namespace drv_d3d11
 		void setTexture(ShaderStage stage, unsigned int slot, ResId res_id) override;
 		void setRwTexture(unsigned int slot, ResId res_id) override;
 		void setSampler(ShaderStage stage, unsigned int slot, ResId res_id) override;
-		void setRenderTarget(ResId target_id, ResId depth_id) override;
-		void setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id) override;
+		void setRenderTarget(ResId target_id, ResId depth_id, unsigned int target_slice = 0, unsigned int depth_slice = 0) override;
+		void setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id, unsigned int* target_slices = nullptr, unsigned int depth_slice = 0) override;
 		void setRenderState(ResId res_id) override;
 		void setShader(ResId res_id, unsigned int variant_index) override;
 		void setView(float x, float y, float w, float h, float z_min, float z_max) override;
@@ -137,8 +137,8 @@ namespace drv_d3d11
 		std::unique_ptr<RenderState> defaultRenderState;
 		std::unique_ptr<ShaderSet> errorShader;
 
-		std::array<Texture*, D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT> currentRenderTargets;
-		Texture* currentDepthTarget = nullptr;
+		std::array<ID3D11RenderTargetView*, D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT> currentRTVs;
+		ID3D11DepthStencilView* currentDSV = nullptr;
 	};
 
 	inline void set_debug_name(ID3D11DeviceChild* child, const std::string& name)

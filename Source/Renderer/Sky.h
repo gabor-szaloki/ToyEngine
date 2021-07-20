@@ -17,15 +17,23 @@ class Sky
 {
 public:
 	Sky();
+	bool isDirty() const { return dirty; }
+	void markDirty() { dirty = true; }
+	void bakeProcedural();
+	void bakeFromPanoramicTexture(const ITexture* panoramic_environment_map);
 	void render();
 	void gui();
 
 private:
 	void setWorldRendererAmbientLighting();
+	void bakeInternal(const ITexture* panoramic_environment_map);
 
 	bool enabled = true;
-	ResIdHolder skyShader;
-	ResIdHolder skyRenderState;
-	SkyCbData cbData;
-	std::unique_ptr<IBuffer> cb;
+	bool dirty = true;
+	ResIdHolder proceduralBakeShader, textureBakeShader, renderShader;
+	SkyCbData bakeCbData;
+	std::unique_ptr<IBuffer> bakeCb;
+	std::unique_ptr<ITexture> bakedCubeMap;
+	ResIdHolder linearSampler;
+	ResIdHolder renderState;
 };

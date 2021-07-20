@@ -33,8 +33,8 @@ public:
 	virtual void setTexture(ShaderStage stage, unsigned int slot, ResId res_id) = 0;
 	virtual void setRwTexture(unsigned int slot, ResId res_id) = 0;
 	virtual void setSampler(ShaderStage stage, unsigned int slot, ResId res_id) = 0;
-	virtual void setRenderTarget(ResId target_id, ResId depth_id) = 0;
-	virtual void setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id) = 0;
+	virtual void setRenderTarget(ResId target_id, ResId depth_id, unsigned int target_slice = 0, unsigned int depth_slice = 0) = 0;
+	virtual void setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id, unsigned int* target_slices = nullptr, unsigned int depth_slice = 0) = 0;
 	virtual void setRenderState(ResId res_id) = 0;
 	virtual void setShader(ResId res_id, unsigned int variant_index) = 0;
 	virtual void setView(float x, float y, float w, float h, float z_min, float z_max) = 0;

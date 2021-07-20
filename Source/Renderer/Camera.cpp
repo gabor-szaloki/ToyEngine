@@ -8,7 +8,7 @@
 
 Camera::Camera()
 {
-	eye = XMVectorSet(0.0f, 0.0f, -5.0f, 0.0f);
+	eye = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 	up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	pitch = yaw = 0.0f;
 	RecalculateViewMatrix();
