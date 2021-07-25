@@ -455,7 +455,8 @@ void Driver::setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId
 		assert(target_ids[i] == BAD_RESID || textures[target_ids[i]]->getDesc().bindFlags & BIND_RENDER_TARGET);
 
 		Texture* targetTex = target_ids[i] != BAD_RESID ? textures[target_ids[i]] : nullptr;
-		currentRTVs[i] = targetTex != nullptr ? targetTex->getRtv(target_slices[i]) : nullptr;
+		unsigned int targetSlice = target_slices != nullptr ? target_slices[i] : 0;
+		currentRTVs[i] = targetTex != nullptr ? targetTex->getRtv(targetSlice) : nullptr;
 	}
 
 	CONTEXT_LOCK_GUARD
