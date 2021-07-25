@@ -44,6 +44,8 @@
     <ClCompile Include="Source\Engine\MeshRenderer.cpp" />
     <ClCompile Include="Source\Program.cpp" />
     <ClCompile Include="Source\Renderer\Camera.cpp" />
+    <ClCompile Include="Source\Renderer\CubeRenderHelper.cpp" />
+    <ClCompile Include="Source\Renderer\EnvironmentLightingSystem.cpp" />
     <ClCompile Include="Source\Renderer\Light.cpp" />
     <ClCompile Include="Source\Renderer\PostFx.cpp" />
     <ClCompile Include="Source\Renderer\Sky.cpp" />
@@ -392,6 +394,8 @@
     <ClInclude Include="Source\Engine\VertexData.h" />
     <ClInclude Include="Source\Renderer\Camera.h" />
     <ClInclude Include="Source\Renderer\ConstantBuffers.h" />
+    <ClInclude Include="Source\Renderer\CubeRenderHelper.h" />
+    <ClInclude Include="Source\Renderer\EnvironmentLightingSystem.h" />
     <ClInclude Include="Source\Renderer\Light.h" />
     <ClInclude Include="Source\Renderer\PostFx.h" />
     <ClInclude Include="Source\Renderer\Sky.h" />
@@ -552,6 +556,7 @@
     <None Include="Source\Shaders\Error.shader" />
     <None Include="Source\Shaders\HBAO.hlsli" />
     <None Include="Source\Shaders\HBAO.shader" />
+    <None Include="Source\Shaders\IrradianceBake.shader" />
     <None Include="Source\Shaders\PostFx.shader" />
     <None Include="Source\Shaders\Sky.shader" />
     <None Include="Source\Shaders\Standard.shader" />

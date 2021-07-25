@@ -21,7 +21,8 @@ public:
 	void markDirty() { dirty = true; }
 	void bakeProcedural();
 	void bakeFromPanoramicTexture(const ITexture* panoramic_environment_map);
-	void render();
+	ITexture* getBakedCube() const { return bakedCubeMap.get(); }
+	void render(const ITexture* sky_cube_override = nullptr);
 	void gui();
 
 private:

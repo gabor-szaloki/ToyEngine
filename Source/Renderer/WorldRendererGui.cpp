@@ -30,6 +30,7 @@ void WorldRenderer::lightingGui()
 	{
 		if (ImGui::BeginTabItem("Ambient"))
 		{
+			ImGui::Checkbox("Show irradiance map", &debugShowIrradianceMap);
 			if (ImGui::CollapsingHeader("Color", ImGuiTreeNodeFlags_DefaultOpen))
 			{
 				ImGui::SliderFloat("Intensity##ambient", &ambientLightIntensity, 0.0f, 2.0f);
@@ -53,6 +54,7 @@ void WorldRenderer::lightingGui()
 		}
 		if (ImGui::BeginTabItem("Sun"))
 		{
+			ImGui::Checkbox("Enabled##Sun", &mainLightEnabled);
 			if (ImGui::CollapsingHeader("Direction and color", ImGuiTreeNodeFlags_DefaultOpen))
 			{
 				float mainLightYaw = mainLight->GetYaw();
@@ -73,7 +75,7 @@ void WorldRenderer::lightingGui()
 
 			if (ImGui::CollapsingHeader("Shadows", ImGuiTreeNodeFlags_DefaultOpen))
 			{
-				ImGui::Checkbox("Enabled", &shadowEnabled);
+				ImGui::Checkbox("Enabled##Shadows", &shadowEnabled);
 
 				constexpr int numSoftShadowModes = 3;
 				enum { SOFT_SHADOWS_OFF, SOFT_SHADOWS_TENT, SOFT_SHADOWS_POISSON };

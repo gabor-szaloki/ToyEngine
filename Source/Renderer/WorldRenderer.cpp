@@ -9,6 +9,7 @@
 #include "Light.h"
 #include "Hbao.h"
 #include "Sky.h"
+#include "EnvironmentLightingSystem.h"
 
 WorldRenderer::WorldRenderer()
 {
@@ -40,6 +41,7 @@ WorldRenderer::WorldRenderer()
 	forwardRsDesc.rasterizerDesc.wireframe = true;
 	forwardWireframeRenderStateId = drv->createRenderState(forwardRsDesc);
 
+	linearWrapSampler = drv->createSampler(SamplerDesc(FILTER_MIN_MAG_MIP_LINEAR));
 	linearClampSampler = drv->createSampler(SamplerDesc(FILTER_MIN_MAG_MIP_LINEAR, TexAddr::CLAMP));
 	shadowSampler = drv->createSampler(SamplerDesc(FILTER_COMPARISON_MIN_MAG_MIP_LINEAR, TexAddr::BORDER, ComparisonFunc::LESS_EQUAL));
 
@@ -56,6 +58,7 @@ void WorldRenderer::init()
 {
 	initResolutionDependentResources();
 	sky = std::make_unique<Sky>();
+	enviLightSystem = std::make_unique<EnvironmentLightingSystem>();
 }
 
 void WorldRenderer::onResize(int display_width, int display_height)
@@ -121,7 +124,14 @@ void WorldRenderer::render()
 		}
 		else
 			sky->bakeProcedural();
+
+		drv->setTexture(ShaderStage::PS, 10, BAD_RESID);
+		enviLightSystem->bake(sky->getBakedCube());
 	}
+
+	// Set resources for lighting
+	drv->setTexture(ShaderStage::PS, 10, enviLightSystem->getIrradianceCube()->getId());
+	drv->setSampler(ShaderStage::PS, 10, linearWrapSampler);
 
 	XMVECTOR shadowCameraPos;
 	XMMATRIX lightViewMatrix;
@@ -138,7 +148,7 @@ void WorldRenderer::render()
 
 	performForwardPass();
 
-	sky->render();
+	sky->render(debugShowIrradianceMap ? enviLightSystem->getIrradianceCube() : nullptr);
 
 	drv->setRenderTarget(drv->getBackbufferTexture()->getId(), BAD_RESID);
 	drv->setTexture(ShaderStage::PS, 0, hdrTarget->getId());
@@ -271,7 +281,7 @@ void WorldRenderer::setupFrame(XMVECTOR& out_shadow_camera_pos, XMMATRIX& out_li
 	PerFrameConstantBufferData perFrameCbData;
 	perFrameCbData.ambientLightBottomColor = get_final_light_color(ambientLightBottomColor, ambientLightIntensity);
 	perFrameCbData.ambientLightTopColor = get_final_light_color(ambientLightTopColor, ambientLightIntensity);
-	perFrameCbData.mainLightColor = get_final_light_color(mainLight->GetColor(), mainLight->GetIntensity());
+	perFrameCbData.mainLightColor = get_final_light_color(mainLight->GetColor(), mainLightEnabled ? mainLight->GetIntensity() : 0.f);
 	const float shadowResolution = (float)shadowMap->getDesc().width;
 	XMMATRIX mainLightRotationMatrix = XMMatrixRotationRollPitchYaw(mainLight->GetPitch(), mainLight->GetYaw(), 0.0f);
 	out_shadow_camera_pos = calculate_shadow_camera_pos(camera, mainLightRotationMatrix, shadowDistance, shadowResolution);

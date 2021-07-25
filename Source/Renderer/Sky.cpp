@@ -9,6 +9,7 @@
 #include <Driver/ITexture.h>
 #include <Engine/AssetManager.h>
 #include "WorldRenderer.h"
+#include "CubeRenderHelper.h"
 
 Sky::Sky()
 {
@@ -57,7 +58,7 @@ void Sky::bakeFromPanoramicTexture(const ITexture* panoramic_environment_map)
 	bakeInternal(panoramic_environment_map);
 }
 
-void Sky::render()
+void Sky::render(const ITexture* sky_cube_override)
 {
 	if (!enabled)
 		return;
@@ -65,7 +66,8 @@ void Sky::render()
 	PROFILE_SCOPE("SkyRender");
 	drv->setShader(renderShader, 0);
 	drv->setRenderState(renderState);
-	drv->setTexture(ShaderStage::PS, 1, bakedCubeMap->getId());
+	ResId skyCubeId = sky_cube_override != nullptr ? sky_cube_override->getId() : bakedCubeMap->getId();
+	drv->setTexture(ShaderStage::PS, 1, skyCubeId);
 	drv->setSampler(ShaderStage::PS, 0, linearSampler);
 	drv->draw(3, 0);
 
@@ -118,56 +120,18 @@ void Sky::bakeInternal(const ITexture* panoramic_environment_map)
 	bool procedural = panoramic_environment_map == nullptr;
 	drv->setInputLayout(am->getDefaultInputLayout());
 	drv->setShader(procedural ? proceduralBakeShader : textureBakeShader, 0);
-	drv->setConstantBuffer(ShaderStage::PS, 3, bakeCb->getId()); // TODO: move to baking
+	drv->setConstantBuffer(ShaderStage::PS, 3, bakeCb->getId());
 	if (!procedural)
 	{
 		drv->setTexture(ShaderStage::PS, 0, panoramic_environment_map->getId());
 		drv->setSampler(ShaderStage::PS, 0, linearSampler);
 	}
 
-	Camera cam;
-	float cubeFaceWidth = bakedCubeMap->getDesc().width;
-	cam.SetViewParams(XMVectorZero(), XMVectorSet(0, 1, 0, 0), 0, 0);
-	cam.SetProjectionParams(cubeFaceWidth, cubeFaceWidth, XM_PIDIV2, 0.1f, 100.f);
-	drv->setView(0, 0, cubeFaceWidth, cubeFaceWidth, 0, 1);
+	CubeRenderHelper cubeRenderHelper;
+	cubeRenderHelper.beginRender(bakedCubeMap.get());
+	cubeRenderHelper.renderAllFaces();
+	cubeRenderHelper.finishRender();
 
-	// +X
-	cam.SetRotation(0, XM_PIDIV2);
-	wr->setCameraForShaders(cam);
-	drv->setRenderTarget(bakedCubeMap->getId(), BAD_RESID, 0);
-	drv->draw(3, 0);
-
-	// -X
-	cam.SetRotation(0, -XM_PIDIV2);
-	wr->setCameraForShaders(cam);
-	drv->setRenderTarget(bakedCubeMap->getId(), BAD_RESID, 1);
-	drv->draw(3, 0);
-
-	// +Y
-	cam.SetRotation(-XM_PIDIV2, 0);
-	wr->setCameraForShaders(cam);
-	drv->setRenderTarget(bakedCubeMap->getId(), BAD_RESID, 2);
-	drv->draw(3, 0);
-
-	// -Y
-	cam.SetRotation(XM_PIDIV2, 0);
-	wr->setCameraForShaders(cam);
-	drv->setRenderTarget(bakedCubeMap->getId(), BAD_RESID, 3);
-	drv->draw(3, 0);
-
-	// +Z
-	cam.SetRotation(0, 0);
-	wr->setCameraForShaders(cam);
-	drv->setRenderTarget(bakedCubeMap->getId(), BAD_RESID, 4);
-	drv->draw(3, 0);
-
-	// -Z
-	cam.SetRotation(0, XM_PI);
-	wr->setCameraForShaders(cam);
-	drv->setRenderTarget(bakedCubeMap->getId(), BAD_RESID, 5);
-	drv->draw(3, 0);
-
-	drv->setRenderTarget(BAD_RESID, BAD_RESID);
 	if (!procedural)
 	{
 		drv->setTexture(ShaderStage::PS, 0, BAD_RESID);

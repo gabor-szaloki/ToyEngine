@@ -19,6 +19,7 @@ class Light;
 class MeshRenderer;
 class Hbao;
 class Sky;
+class EnvironmentLightingSystem;
 
 struct MeshData;
 
@@ -70,6 +71,7 @@ public:
 	XMFLOAT4 ambientLightBottomColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	XMFLOAT4 ambientLightTopColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	std::unique_ptr<Light> mainLight;
+	bool mainLightEnabled = true;
 	bool shadowEnabled = true;
 	int shadowDepthBias = 0;
 	float shadowSlopeScaledDepthBias = 0.0f;
@@ -96,7 +98,7 @@ private:
 
 	std::unique_ptr<ITexture> hdrTarget;
 	std::unique_ptr<ITexture> depthTex;
-	ResIdHolder linearClampSampler = BAD_RESID;
+	ResIdHolder linearClampSampler = BAD_RESID, linearWrapSampler = BAD_RESID;
 	ResIdHolder depthPrepassRenderStateId = BAD_RESID;
 	ResIdHolder depthPrepassWireframeRenderStateId = BAD_RESID;
 	ResIdHolder forwardRenderStateId = BAD_RESID;
@@ -113,6 +115,8 @@ private:
 	float ssaoResolutionScale = 1.0f;
 	std::unique_ptr<Sky> sky;
 	std::unique_ptr<ITexture> panoramicEnvironmentMap;
+	std::unique_ptr<EnvironmentLightingSystem> enviLightSystem;
+	bool debugShowIrradianceMap = false;
 	PostFx postFx;
 	float exposure = 2.0f;
 };

@@ -171,6 +171,12 @@
     <ClCompile Include="Source\Driver\D3D11\Sampler.cpp">
       <Filter>Source\Driver\D3D11</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Renderer\EnvironmentLightingSystem.cpp">
+      <Filter>Source\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\CubeRenderHelper.cpp">
+      <Filter>Source\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common.h">
@@ -1226,6 +1232,12 @@
     <ClInclude Include="Source\3rdParty\stb\stb_image.h">
       <Filter>Source\3rdParty\stb</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Renderer\EnvironmentLightingSystem.h">
+      <Filter>Source\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\CubeRenderHelper.h">
+      <Filter>Source\Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Source\3rdParty\glm\CMakeLists.txt">
@@ -1690,6 +1702,9 @@
       <Filter>Source\Shaders</Filter>
     </None>
     <None Include="Source\Shaders\Random.hlsl">
+      <Filter>Source\Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\IrradianceBake.shader">
       <Filter>Source\Shaders</Filter>
     </None>
   </ItemGroup>
