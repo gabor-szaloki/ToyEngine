@@ -143,10 +143,10 @@ void MeshRenderer::gui()
 		for (int i = 0; i < submeshes.size(); i++)
 		{
 			SubmeshData& submesh = submeshes[i];
-			buf = submesh.name + "##" + name;
+			buf = submesh.name + "##" + std::to_string(i) + name;
 			if (ImGui::CollapsingHeader(buf.c_str()))
 			{
-				buf = "Enabled##" + name + submesh.name;
+				buf = "Enabled##" + std::to_string(i) + name + submesh.name;
 				ImGui::Checkbox(buf.c_str(), &submesh.enabled);
 				ImGui::Text("material:    %s", submesh.material != nullptr ? submesh.material->name.c_str() : "-");
 				ImGui::Text("startIndex:  %d", submesh.startIndex);
