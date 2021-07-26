@@ -40,7 +40,7 @@ void WorldRenderer::lightingGui()
 				enviLightSystem->setEnvironmentRadianceCutoff(radianceCutoff);
 			ImGui::Checkbox("Recalculate environment lighting every frame", &debugRecalculateEnvironmentLightingEveryFrame);
 
-			if (ImGui::CollapsingHeader("Procedural", ImGuiTreeNodeFlags_DefaultOpen))
+			if (ImGui::CollapsingHeader("Fallback colors", ImGuiTreeNodeFlags_DefaultOpen))
 			{
 				ImGui::SliderFloat("Intensity##ambient", &ambientLightIntensity, 0.0f, 2.0f);
 				ImGui::ColorEdit3("Bottom color", reinterpret_cast<float*>(&ambientLightBottomColor));
