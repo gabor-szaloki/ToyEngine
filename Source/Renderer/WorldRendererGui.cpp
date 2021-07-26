@@ -40,14 +40,6 @@ void WorldRenderer::lightingGui()
 				enviLightSystem->setEnvironmentRadianceCutoff(radianceCutoff);
 			ImGui::Checkbox("Recalculate environment lighting every frame", &debugRecalculateEnvironmentLightingEveryFrame);
 
-			if (ImGui::CollapsingHeader("Fallback colors", ImGuiTreeNodeFlags_DefaultOpen))
-			{
-				ImGui::SliderFloat("Intensity##ambient", &ambientLightIntensity, 0.0f, 2.0f);
-				ImGui::ColorEdit3("Bottom color", reinterpret_cast<float*>(&ambientLightBottomColor));
-				ImGui::ColorEdit3Srgb("Bottom color (SRGB)", reinterpret_cast<float*>(&ambientLightBottomColor));
-				ImGui::ColorEdit3("Top color", reinterpret_cast<float*>(&ambientLightTopColor));
-				ImGui::ColorEdit3Srgb("Top color (SRGB)", reinterpret_cast<float*>(&ambientLightTopColor));
-			}
 			if (ImGui::CollapsingHeader("SSAO", ImGuiTreeNodeFlags_DefaultOpen))
 			{
 				float oldSsaoResolutionScale = ssaoResolutionScale;

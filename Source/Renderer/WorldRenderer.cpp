@@ -173,13 +173,6 @@ void WorldRenderer::render()
 	drv->setSampler(ShaderStage::PS, 0, BAD_RESID);
 }
 
-void WorldRenderer::setAmbientLighting(const XMFLOAT4& bottom_color, const XMFLOAT4& top_color, float intensity)
-{
-	ambientLightBottomColor = bottom_color;
-	ambientLightTopColor = top_color;
-	ambientLightIntensity = intensity;
-}
-
 void WorldRenderer::setEnvironment(ITexture* panoramic_environment_map, float radiance_cutoff)
 {
 	panoramicEnvironmentMap.reset(panoramic_environment_map);
@@ -294,8 +287,6 @@ XMVECTOR calculate_shadow_camera_pos(const Camera& camera, const XMMATRIX& light
 void WorldRenderer::setupFrame(XMVECTOR& out_shadow_camera_pos, XMMATRIX& out_light_view_matrix, XMMATRIX& out_light_proj_matrix)
 {
 	PerFrameConstantBufferData perFrameCbData;
-	perFrameCbData.ambientLightBottomColor = get_final_light_color(ambientLightBottomColor, ambientLightIntensity);
-	perFrameCbData.ambientLightTopColor = get_final_light_color(ambientLightTopColor, ambientLightIntensity);
 	perFrameCbData.mainLightColor = get_final_light_color(mainLight->GetColor(), mainLightEnabled ? mainLight->GetIntensity() : 0.f);
 	const float shadowResolution = (float)shadowMap->getDesc().width;
 	XMMATRIX mainLightRotationMatrix = XMMatrixRotationRollPitchYaw(mainLight->GetPitch(), mainLight->GetYaw(), 0.0f);

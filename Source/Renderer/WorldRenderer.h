@@ -35,7 +35,6 @@ public:
 	void render();
 
 	void toggleWireframe() { showWireframe = !showWireframe; }
-	void setAmbientLighting(const XMFLOAT4& bottom_color, const XMFLOAT4& top_color, float intensity);
 	void setEnvironment(ITexture* panoramic_environment_map, float radiance_cutoff = -1.0); // <0 radiance cutoff means no cutoff
 	unsigned int getShadowResolution();
 	void setShadowResolution(unsigned int shadow_resolution);
@@ -67,9 +66,6 @@ public:
 
 	bool showWireframe = false;
 
-	float ambientLightIntensity = 1.0f;
-	XMFLOAT4 ambientLightBottomColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	XMFLOAT4 ambientLightTopColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	std::unique_ptr<Light> mainLight;
 	bool mainLightEnabled = true;
 	bool shadowEnabled = true;

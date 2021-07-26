@@ -49,8 +49,6 @@ Sky::Sky()
 	bakedCubeMap.reset(drv->createTexture(bakedCubeMapDesc));
 
 	linearSampler = drv->createSampler(SamplerDesc(FILTER_MIN_MAG_MIP_LINEAR));
-
-	setWorldRendererAmbientLighting();
 }
 
 void Sky::bakeProcedural()
@@ -95,6 +93,12 @@ void Sky::gui()
 {
 	ImGui::Checkbox("Enabled", &enabled);
 
+	if (isBakedFromTexture)
+	{
+		ImGui::TextUnformatted("Sky is baked from texture");
+		return;
+	}
+
 	bool changed = false;
 
 	changed |= ImGui::ColorEdit3("Top color", &bakeCbData.topColor_Exponent.x);
@@ -110,25 +114,11 @@ void Sky::gui()
 	changed |= ImGui::DragFloat("Sun alpha", &bakeCbData.skyIntensity_SunIntensity_SunAlpha_SunBeta.z);
 	changed |= ImGui::DragFloat("Sun beta", &bakeCbData.skyIntensity_SunIntensity_SunAlpha_SunBeta.w);
 
-	static bool applyToAmbientLighting = true;
-	changed |= ImGui::Checkbox("Apply changes to ambient lighting", &applyToAmbientLighting);
-
 	if (changed)
 	{
 		bakeCb->updateData(&bakeCbData);
-		if (applyToAmbientLighting)
-			setWorldRendererAmbientLighting();
+		markDirty();
 	}
-}
-
-void Sky::setWorldRendererAmbientLighting()
-{
-	XMFLOAT4 bottomColor = bakeCbData.bottomColor_Exponent;
-	bottomColor.w = 1.f;
-	XMFLOAT4 topColor = bakeCbData.topColor_Exponent;
-	topColor.w = 1.f;
-	float skyIntensity = bakeCbData.skyIntensity_SunIntensity_SunAlpha_SunBeta.x;
-	wr->setAmbientLighting(bottomColor, topColor, skyIntensity);
 }
 
 void Sky::bakeInternal(const ITexture* panoramic_environment_map)
@@ -157,6 +147,7 @@ void Sky::bakeInternal(const ITexture* panoramic_environment_map)
 	bakedCubeMap->generateMips();
 
 	dirty = false;
+	isBakedFromTexture = !procedural;
 }
 
 REGISTER_IMGUI_WINDOW("Sky parameters", [] { wr->getSky().gui(); });

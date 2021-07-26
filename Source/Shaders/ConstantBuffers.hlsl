@@ -3,8 +3,6 @@
 
 cbuffer PerFrameConstantBuffer : register(b0)
 {
-	float4 _AmbientLightBottomColor;
-	float4 _AmbientLightTopColor;
 	float4 _MainLightColor;
 	float4 _MainLightDirection;
 	float4x4 _MainLightShadowMatrix;
