@@ -719,7 +719,7 @@ void AssetManager::loadScene(const std::string& scene_file)
 					texturePaths.roughness = materialIni["roughness_tex"];
 					texturePaths.metalness = materialIni["metalness_tex"];
 
-					loadTexturesToStandardMaterial(texturePaths, material, false);
+					loadTexturesToStandardMaterial(texturePaths, material, materialIni["flipNormalGreen"] == "yes");
 
 					PerMaterialConstantBufferData materialCbData;
 					materialCbData.materialColor = materialIni.has("color") ? str_to_XMFLOAT4(materialIni["color"]) : XMFLOAT4(1, 1, 1, 1);
