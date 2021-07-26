@@ -28,6 +28,7 @@ Texture::Texture(const TextureDesc* desc_, ID3D11Texture2D* tex) : resource(tex)
 	if (desc_ != nullptr)
 	{
 		desc = *desc_;
+		numMips = desc.calcMipLevels();
 
 		if (resource == nullptr)
 		{
@@ -93,6 +94,7 @@ void Texture::recreate(const TextureDesc& desc_)
 	releaseAll();
 
 	desc = desc_;
+	numMips = desc.calcMipLevels();
 	D3D11_TEXTURE2D_DESC td = convert_desc(desc);
 	HRESULT hr = Driver::get().getDevice().CreateTexture2D(&td, nullptr, &resource);
 	assert(SUCCEEDED(hr));
@@ -101,6 +103,18 @@ void Texture::recreate(const TextureDesc& desc_)
 	createViews();
 
 	isStub_ = false;
+}
+
+ID3D11RenderTargetView* drv_d3d11::Texture::getRtv(unsigned int slice, unsigned int mip) const
+{
+	unsigned int subresourceIndex = calc_subresource(mip, slice, numMips);
+	return rtvs[subresourceIndex];
+}
+
+ID3D11DepthStencilView* drv_d3d11::Texture::getDsv(unsigned int slice, unsigned int mip) const
+{
+	unsigned int subresourceIndex = calc_subresource(mip, slice, numMips);
+	return dsvs[subresourceIndex];
 }
 
 void Texture::createViews()
@@ -160,25 +174,31 @@ void Texture::createViews()
 		if (isCubemap)
 		{
 			rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
-			rtvDesc.Texture2DArray.MipSlice = 0;
 			rtvDesc.Texture2DArray.ArraySize = 1;
 			for (int i = 0; i < 6; i++)
 			{
 				rtvDesc.Texture2DArray.FirstArraySlice = i;
-				ID3D11RenderTargetView* rtv;
-				hr = Driver::get().getDevice().CreateRenderTargetView(resource, &rtvDesc, &rtv);
-				assert(SUCCEEDED(hr));
-				rtvs.push_back(rtv);
+				for (unsigned int mip = 0; mip < numMips; mip++)
+				{
+					rtvDesc.Texture2DArray.MipSlice = mip;
+					ID3D11RenderTargetView* rtv;
+					hr = Driver::get().getDevice().CreateRenderTargetView(resource, &rtvDesc, &rtv);
+					assert(SUCCEEDED(hr));
+					rtvs.push_back(rtv);
+				}
 			}
 		}
 		else
 		{
 			rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-			rtvDesc.Texture2D.MipSlice = 0;
-			ID3D11RenderTargetView* rtv;
-			hr = Driver::get().getDevice().CreateRenderTargetView(resource, &rtvDesc, &rtv);
-			assert(SUCCEEDED(hr));
-			rtvs.push_back(rtv);
+			for (unsigned int mip = 0; mip < numMips; mip++)
+			{
+				rtvDesc.Texture2D.MipSlice = mip;
+				ID3D11RenderTargetView* rtv;
+				hr = Driver::get().getDevice().CreateRenderTargetView(resource, &rtvDesc, &rtv);
+				assert(SUCCEEDED(hr));
+				rtvs.push_back(rtv);
+			}
 		}
 
 	}
@@ -190,25 +210,31 @@ void Texture::createViews()
 		if (isCubemap)
 		{
 			dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
-			dsvDesc.Texture2DArray.MipSlice = 0;
 			dsvDesc.Texture2DArray.ArraySize = 1;
 			for (int i = 0; i < 6; i++)
 			{
 				dsvDesc.Texture2DArray.FirstArraySlice = i;
-				ID3D11DepthStencilView* dsv;
-				hr = Driver::get().getDevice().CreateDepthStencilView(resource, &dsvDesc, &dsv);
-				assert(SUCCEEDED(hr));
-				dsvs.push_back(dsv);
+				for (unsigned int mip = 0; mip < numMips; mip++)
+				{
+					dsvDesc.Texture2DArray.MipSlice = mip;
+					ID3D11DepthStencilView* dsv;
+					hr = Driver::get().getDevice().CreateDepthStencilView(resource, &dsvDesc, &dsv);
+					assert(SUCCEEDED(hr));
+					dsvs.push_back(dsv);
+				}
 			}
 		}
 		else
 		{
 			dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-			dsvDesc.Texture2D.MipSlice = 0;
-			ID3D11DepthStencilView* dsv;
-			hr = Driver::get().getDevice().CreateDepthStencilView(resource, &dsvDesc, &dsv);
-			assert(SUCCEEDED(hr));
-			dsvs.push_back(dsv);
+			for (unsigned int mip = 0; mip < numMips; mip++)
+			{
+				dsvDesc.Texture2D.MipSlice = mip;
+				ID3D11DepthStencilView* dsv;
+				hr = Driver::get().getDevice().CreateDepthStencilView(resource, &dsvDesc, &dsv);
+				assert(SUCCEEDED(hr));
+				dsvs.push_back(dsv);
+			}
 		}
 
 	}

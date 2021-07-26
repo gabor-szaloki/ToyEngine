@@ -1704,7 +1704,10 @@
     <None Include="Source\Shaders\Random.hlsl">
       <Filter>Source\Shaders</Filter>
     </None>
-    <None Include="Source\Shaders\IrradianceBake.shader">
+    <None Include="Source\Shaders\EnvironmentLighting.shader">
+      <Filter>Source\Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\Hammersley.hlsl">
       <Filter>Source\Shaders</Filter>
     </None>
   </ItemGroup>

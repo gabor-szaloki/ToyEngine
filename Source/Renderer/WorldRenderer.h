@@ -117,6 +117,8 @@ private:
 	std::unique_ptr<ITexture> panoramicEnvironmentMap;
 	std::unique_ptr<EnvironmentLightingSystem> enviLightSystem;
 	bool debugShowIrradianceMap = false;
+	bool debugShowSpecularMap = false;
+	float debugSpecularMapLod = 0.f;
 	PostFx postFx;
-	float exposure = 2.0f;
+	float exposure = 1.0f;
 };

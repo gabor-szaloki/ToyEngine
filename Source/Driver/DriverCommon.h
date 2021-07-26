@@ -10,6 +10,17 @@
 typedef int ResId;
 constexpr ResId BAD_RESID = -1;
 
+inline unsigned int calc_mip_levels(unsigned int tex_width, unsigned int tex_height = 0)
+{
+	unsigned int maxDim = tex_width < tex_height ? tex_height : tex_width;
+	return static_cast<unsigned int>(std::floor(std::log2(maxDim))) + 1;
+}
+
+inline unsigned int calc_subresource(unsigned int mip_slice, unsigned int array_slice, unsigned int mip_levels)
+{
+	return mip_slice + (array_slice * mip_levels);
+}
+
 struct IntBox // Todo: move outside of Driver
 {
 	int left;
@@ -76,6 +87,8 @@ struct TextureDesc
 		unsigned int bind_flags = 0, unsigned int cpu_access_flags = 0, unsigned int misc_flags = 0) :
 		name(name_), width(width_), height(height_), format(format_), mips(mips_), usageFlags(usage_flags),
 		bindFlags(bind_flags), cpuAccessFlags(cpu_access_flags), miscFlags(misc_flags) {}
+
+	unsigned int calcMipLevels() { return mips > 0 ? mips : calc_mip_levels(width, height); }
 };
 
 struct BufferDesc
@@ -195,14 +208,3 @@ struct RenderTargetClearParams
 		return p;
 	}
 };
-
-inline unsigned int calc_mip_levels(unsigned int tex_width, unsigned int tex_height = 0)
-{
-	unsigned int maxDim = tex_width < tex_height ? tex_height : tex_width;
-	return static_cast<unsigned int>(std::floor(std::log2(maxDim))) + 1;
-}
-
-inline unsigned int calc_subresource(unsigned int mip_slice, unsigned int array_slice, unsigned int mip_levels)
-{
-	return mip_slice + (array_slice * mip_levels);
-}

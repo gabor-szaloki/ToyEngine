@@ -20,6 +20,13 @@ cbuffer SkyConstantBuffer : register(b3)
 #define _SunAlpha _SkyIntensity_SunIntensity_SunAlpha_SunBeta.z
 #define _SunBeta _SkyIntensity_SunIntensity_SunAlpha_SunBeta.w
 
+cbuffer SkyConstantBuffer : register(b4)
+{
+	float4 _Mip___;
+}
+
+#define _Mip _Mip___.x
+
 Texture2D _PanoramicEnvironmentMap : register(t0);
 TextureCube _BakedSkyCubeMap : register(t1);
 SamplerState _LinearSampler : register(s0);
@@ -64,6 +71,6 @@ float4 SkyBakeFromPanoramicTexturePS(DefaultPostFxVsOutput i) : SV_TARGET
 float4 SkyRenderPS(DefaultPostFxVsOutput i) : SV_TARGET
 {
 	float3 viewDir = normalize(i.viewVec);
-	float3 cubeSample = _BakedSkyCubeMap.Sample(_LinearSampler, viewDir).rgb;
+	float3 cubeSample = _BakedSkyCubeMap.SampleLevel(_LinearSampler, viewDir, _Mip).rgb;
 	return float4(cubeSample, 1);
 }

@@ -556,7 +556,7 @@
     <None Include="Source\Shaders\Error.shader" />
     <None Include="Source\Shaders\HBAO.hlsli" />
     <None Include="Source\Shaders\HBAO.shader" />
-    <None Include="Source\Shaders\IrradianceBake.shader" />
+    <None Include="Source\Shaders\EnvironmentLighting.shader" />
     <None Include="Source\Shaders\PostFx.shader" />
     <None Include="Source\Shaders\Sky.shader" />
     <None Include="Source\Shaders\Standard.shader" />
@@ -598,6 +598,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\Shaders\Random.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Source\Shaders\Hammersley.hlsl">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>

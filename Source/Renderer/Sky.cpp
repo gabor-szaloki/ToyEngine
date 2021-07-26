@@ -13,12 +13,16 @@
 
 Sky::Sky()
 {
-	ShaderSetDesc skyShaderDesc("Sky", "Source/Shaders/Sky.shader");
+	ShaderSetDesc skyShaderDesc("SkyBakeProcedural", "Source/Shaders/Sky.shader");
 	skyShaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "DefaultPostFxVsFunc";
 	skyShaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "SkyBakeProceduralPS";
 	proceduralBakeShader = drv->createShaderSet(skyShaderDesc);
+
+	skyShaderDesc.name = "SkyBakeFromPanoramicTexture";
 	skyShaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "SkyBakeFromPanoramicTexturePS";
 	textureBakeShader = drv->createShaderSet(skyShaderDesc);
+
+	skyShaderDesc.name = "SkyRender";
 	skyShaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "SkyRenderPS";
 	renderShader = drv->createShaderSet(skyShaderDesc);
 
@@ -33,6 +37,11 @@ Sky::Sky()
 	cbDesc.elementByteSize = sizeof(bakeCbData);
 	bakeCb.reset(drv->createBuffer(cbDesc));
 	bakeCb->updateData(&bakeCbData);
+
+	cbDesc.name = "SkyRenderCb";
+	cbDesc.elementByteSize = sizeof(renderCbData);
+	renderCb.reset(drv->createBuffer(cbDesc));
+	renderCb->updateData(&renderCbData);
 
 	TextureDesc bakedCubeMapDesc("SkyBakedCubeMap", 2048, 2048, TexFmt::R32G32B32A32_FLOAT, 0); // TODO: reduce bit depth
 	bakedCubeMapDesc.bindFlags = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET;
@@ -58,17 +67,24 @@ void Sky::bakeFromPanoramicTexture(const ITexture* panoramic_environment_map)
 	bakeInternal(panoramic_environment_map);
 }
 
-void Sky::render(const ITexture* sky_cube_override)
+void Sky::render(const ITexture* sky_cube_override, float mip_override)
 {
 	if (!enabled)
 		return;
 
 	PROFILE_SCOPE("SkyRender");
+
 	drv->setShader(renderShader, 0);
 	drv->setRenderState(renderState);
+
+	renderCbData.mip.x = mip_override;
+	renderCb->updateData(&renderCbData);
+	drv->setConstantBuffer(ShaderStage::PS, 4, renderCb->getId());
+
 	ResId skyCubeId = sky_cube_override != nullptr ? sky_cube_override->getId() : bakedCubeMap->getId();
 	drv->setTexture(ShaderStage::PS, 1, skyCubeId);
 	drv->setSampler(ShaderStage::PS, 0, linearSampler);
+
 	drv->draw(3, 0);
 
 	drv->setTexture(ShaderStage::PS, 1, BAD_RESID);

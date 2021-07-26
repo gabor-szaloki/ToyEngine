@@ -126,12 +126,17 @@ void WorldRenderer::render()
 			sky->bakeProcedural();
 
 		drv->setTexture(ShaderStage::PS, 10, BAD_RESID);
+		drv->setTexture(ShaderStage::PS, 11, BAD_RESID);
+		drv->setTexture(ShaderStage::PS, 12, BAD_RESID);
+
 		enviLightSystem->bake(sky->getBakedCube());
 	}
 
 	// Set resources for lighting
 	drv->setTexture(ShaderStage::PS, 10, enviLightSystem->getIrradianceCube()->getId());
-	drv->setSampler(ShaderStage::PS, 10, linearWrapSampler);
+	drv->setTexture(ShaderStage::PS, 11, enviLightSystem->getSpecularCube()->getId());
+	drv->setTexture(ShaderStage::PS, 12, enviLightSystem->getBrdfLut()->getId());
+	drv->setSampler(ShaderStage::PS, 10, linearClampSampler);
 
 	XMVECTOR shadowCameraPos;
 	XMMATRIX lightViewMatrix;
@@ -148,7 +153,12 @@ void WorldRenderer::render()
 
 	performForwardPass();
 
-	sky->render(debugShowIrradianceMap ? enviLightSystem->getIrradianceCube() : nullptr);
+	if (debugShowSpecularMap)
+		sky->render(enviLightSystem->getSpecularCube(), debugSpecularMapLod);
+	else if (debugShowIrradianceMap)
+		sky->render(enviLightSystem->getIrradianceCube());
+	else
+		sky->render();
 
 	drv->setRenderTarget(drv->getBackbufferTexture()->getId(), BAD_RESID);
 	drv->setTexture(ShaderStage::PS, 0, hdrTarget->getId());

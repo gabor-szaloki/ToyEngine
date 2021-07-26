@@ -31,6 +31,9 @@ void WorldRenderer::lightingGui()
 		if (ImGui::BeginTabItem("Ambient"))
 		{
 			ImGui::Checkbox("Show irradiance map", &debugShowIrradianceMap);
+			ImGui::Checkbox("Show specular  map", &debugShowSpecularMap);
+			if (debugShowSpecularMap)
+				ImGui::SliderFloat("Specular lod", &debugSpecularMapLod, 0, 5);
 			if (ImGui::CollapsingHeader("Color", ImGuiTreeNodeFlags_DefaultOpen))
 			{
 				ImGui::SliderFloat("Intensity##ambient", &ambientLightIntensity, 0.0f, 2.0f);

@@ -56,8 +56,10 @@ namespace drv_d3d11
 		void setTexture(ShaderStage stage, unsigned int slot, ResId res_id) override;
 		void setRwTexture(unsigned int slot, ResId res_id) override;
 		void setSampler(ShaderStage stage, unsigned int slot, ResId res_id) override;
-		void setRenderTarget(ResId target_id, ResId depth_id, unsigned int target_slice = 0, unsigned int depth_slice = 0) override;
-		void setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id, unsigned int* target_slices = nullptr, unsigned int depth_slice = 0) override;
+		void setRenderTarget(ResId target_id, ResId depth_id,
+			unsigned int target_slice = 0, unsigned int depth_slice = 0, unsigned int target_mip = 0, unsigned int depth_mip = 0) override;
+		void setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id,
+			unsigned int* target_slices = nullptr, unsigned int depth_slice = 0, unsigned int* target_mips = nullptr, unsigned int depth_mip = 0) override;
 		void setRenderState(ResId res_id) override;
 		void setShader(ResId res_id, unsigned int variant_index) override;
 		void setView(float x, float y, float w, float h, float z_min, float z_max) override;

@@ -5,6 +5,8 @@
 #include "Surface.hlsl"
 
 TextureCube _IrradianceMap : register(t10);
+TextureCube _SpecularMap : register(t11);
+Texture2D _BrdfLut : register(t12);
 SamplerState _LinearSampler : register(s10);
 
 float3 GGX_Specular(float3 normal, float3 lightVector, float3 viewVector, float perceptualRoughness, float3 F0, out float3 kS)
@@ -60,11 +62,16 @@ float3 Lighting(SurfaceOutput s, float3 pointToEye, float mainLightShadowAttenua
 
 	float3 indirectLighting;
 	{
-		/*
 		// Specular contribution
-		float3 kS = FresnelSchlickRoughness(max(dot(s.normal, viewVector), 0.0), F0, s.roughness * s.roughness);
-		float3 ambientColor = lerp(_AmbientLightBottomColor.rgb, _AmbientLightTopColor.rgb, s.normal.y * 0.5 + 0.5);
-		float3 specular = 0; // TODO: proper PBR indirect specular
+		float roughness = s.roughness * s.roughness; // calculate roughness to be used in PBR from perceptual roughness stored in surface
+		float nDotV = max(dot(s.normal, viewVector), 0.0);
+		float3 F = FresnelSchlickRoughness(nDotV, F0, roughness);
+		float3 kS = F;
+		float3 reflectionVector = reflect(-viewVector, s.normal);
+		const float MAX_REFLECTION_LOD = 4.0;
+		float3 prefilteredColor = _SpecularMap.SampleLevel(_LinearSampler, reflectionVector, roughness * MAX_REFLECTION_LOD).rgb;
+		float2 envBRDF = _BrdfLut.Sample(_LinearSampler, float2(nDotV, roughness)).rg;
+		float3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
 
 		// Diffuse contribution
 		float3 kD = (1 - kS) * (1 - s.metalness);
@@ -72,11 +79,6 @@ float3 Lighting(SurfaceOutput s, float3 pointToEye, float mainLightShadowAttenua
 		float3 diffuse = kD * irradiance * s.albedo;
 
 		indirectLighting = (diffuse + specular) * ao;
-		*/
-
-		float3 ambientColor = lerp(_AmbientLightBottomColor.rgb, _AmbientLightTopColor.rgb, s.normal.y * 0.5 + 0.5);
-		float3 ambient = s.albedo * ambientColor * 0.5;
-		indirectLighting = ambient * ao;
 	}
 
 	return directLighting + indirectLighting;

@@ -25,14 +25,15 @@ namespace drv_d3d11
 		ID3D11Texture2D* getResource() const { return resource; }
 		ID3D11ShaderResourceView* getSrv() const { return srv; }
 		ID3D11UnorderedAccessView* getUav() const { return uav; }
-		ID3D11RenderTargetView* getRtv(unsigned int slice = 0) const { return rtvs[slice]; }
-		ID3D11DepthStencilView* getDsv(unsigned int slice = 0) const { return dsvs[slice]; }
+		ID3D11RenderTargetView* getRtv(unsigned int slice = 0, unsigned int mip = 0) const;
+		ID3D11DepthStencilView* getDsv(unsigned int slice = 0, unsigned int mip = 0) const;
 
 	private:
 		void createViews();
 		void releaseAll();
 
 		TextureDesc desc;
+		unsigned int numMips = 0;
 		ResId id = BAD_RESID;
 		ID3D11Texture2D* resource;
 		ID3D11ShaderResourceView* srv;

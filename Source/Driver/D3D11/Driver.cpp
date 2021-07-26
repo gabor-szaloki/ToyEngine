@@ -419,7 +419,8 @@ void Driver::setSampler(ShaderStage stage, unsigned int slot, ResId res_id)
 	}
 }
 
-void Driver::setRenderTarget(ResId target_id, ResId depth_id, unsigned int target_slice, unsigned int depth_slice)
+void Driver::setRenderTarget(ResId target_id, ResId depth_id,
+	unsigned int target_slice, unsigned int depth_slice, unsigned int target_mip, unsigned int depth_mip)
 {
 	RESOURCE_LOCK_GUARD
 	assert(target_id == BAD_RESID || textures.find(target_id) != textures.end());
@@ -429,16 +430,17 @@ void Driver::setRenderTarget(ResId target_id, ResId depth_id, unsigned int targe
 
 	currentRTVs.fill(nullptr);
 	Texture* targetTex = target_id != BAD_RESID ? textures[target_id] : nullptr;
-	currentRTVs[0] = targetTex != nullptr ? targetTex->getRtv(target_slice) : nullptr;
+	currentRTVs[0] = targetTex != nullptr ? targetTex->getRtv(target_slice, target_mip) : nullptr;
 
 	Texture *depthTex = depth_id != BAD_RESID ? textures[depth_id] : nullptr;
-	currentDSV = depthTex != nullptr ? depthTex->getDsv(depth_slice) : nullptr;
+	currentDSV = depthTex != nullptr ? depthTex->getDsv(depth_slice, depth_mip) : nullptr;
 	
 	CONTEXT_LOCK_GUARD
 	context->OMSetRenderTargets(1, currentRTVs.data(), currentDSV);
 }
 
-void Driver::setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id, unsigned int* target_slices, unsigned int depth_slice)
+void Driver::setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id,
+	unsigned int* target_slices, unsigned int depth_slice, unsigned int* target_mips, unsigned int depth_mip)
 {
 	RESOURCE_LOCK_GUARD
 	assert(num_targets <= D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT);
@@ -446,7 +448,7 @@ void Driver::setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId
 	assert(depth_id == BAD_RESID || textures[depth_id]->getDesc().bindFlags & BIND_DEPTH_STENCIL);
 
 	Texture* depthTex = depth_id != BAD_RESID ? textures[depth_id] : nullptr;
-	currentDSV = depthTex != nullptr ? depthTex->getDsv(depth_slice) : nullptr;
+	currentDSV = depthTex != nullptr ? depthTex->getDsv(depth_slice, depth_mip) : nullptr;
 
 	currentRTVs.fill(nullptr);
 	for (unsigned int i = 0; i < num_targets; i++)
@@ -456,7 +458,8 @@ void Driver::setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId
 
 		Texture* targetTex = target_ids[i] != BAD_RESID ? textures[target_ids[i]] : nullptr;
 		unsigned int targetSlice = target_slices != nullptr ? target_slices[i] : 0;
-		currentRTVs[i] = targetTex != nullptr ? targetTex->getRtv(targetSlice) : nullptr;
+		unsigned int targetMip = target_mips != nullptr ? target_mips[i] : 0;
+		currentRTVs[i] = targetTex != nullptr ? targetTex->getRtv(targetSlice, targetMip) : nullptr;
 	}
 
 	CONTEXT_LOCK_GUARD
