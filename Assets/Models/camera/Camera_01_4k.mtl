@@ -1,0 +1,54 @@
+# Blender MTL File: 'Camera_01_4k.blend'
+# Material Count: 4
+
+newmtl Camera_01_body
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump textures\\Camera_01_body_nor_gl_4k.png
+map_Kd textures\\Camera_01_body_diff_4k.png
+map_Ns textures\\Camera_01_body_roughness_4k.png
+refl textures\\Camera_01_body_metallic_4k.png
+
+newmtl Camera_01_lens
+Ns 900.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+
+newmtl Camera_01_lens_body
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump textures\\Camera_01_lens_body_nor_gl_4k.png
+map_Kd textures\\Camera_01_lens_body_diff_4k.png
+map_Ns textures\\Camera_01_lens_body_roughness_4k.png
+refl textures\\Camera_01_lens_body_metallic_4k.png
+
+newmtl Camera_01_strap
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump textures\\Camera_01_strap_nor_gl_4k.png
+map_Kd textures\\Camera_01_strap_diff_4k.png
+map_Ns textures\\Camera_01_strap_roughness_4k.png
+refl textures\\Camera_01_strap_metallic_4k.png
