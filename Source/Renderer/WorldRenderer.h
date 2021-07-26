@@ -36,7 +36,7 @@ public:
 
 	void toggleWireframe() { showWireframe = !showWireframe; }
 	void setAmbientLighting(const XMFLOAT4& bottom_color, const XMFLOAT4& top_color, float intensity);
-	void setEnvironment(ITexture* panoramic_environment_map);
+	void setEnvironment(ITexture* panoramic_environment_map, float radiance_cutoff = -1.0); // <0 radiance cutoff means no cutoff
 	unsigned int getShadowResolution();
 	void setShadowResolution(unsigned int shadow_resolution);
 	void setShadowBias(int depth_bias, float slope_scaled_depth_bias);
@@ -119,6 +119,7 @@ private:
 	bool debugShowIrradianceMap = false;
 	bool debugShowSpecularMap = false;
 	float debugSpecularMapLod = 0.f;
+	bool debugRecalculateEnvironmentLightingEveryFrame = false;
 	PostFx postFx;
 	float exposure = 1.0f;
 };

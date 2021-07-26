@@ -125,6 +125,10 @@ void WorldRenderer::render()
 		else
 			sky->bakeProcedural();
 
+		enviLightSystem->markDirty();
+	}
+	if (enviLightSystem->isDirty() || debugRecalculateEnvironmentLightingEveryFrame)
+	{
 		drv->setTexture(ShaderStage::PS, 10, BAD_RESID);
 		drv->setTexture(ShaderStage::PS, 11, BAD_RESID);
 		drv->setTexture(ShaderStage::PS, 12, BAD_RESID);
@@ -176,10 +180,11 @@ void WorldRenderer::setAmbientLighting(const XMFLOAT4& bottom_color, const XMFLO
 	ambientLightIntensity = intensity;
 }
 
-void WorldRenderer::setEnvironment(ITexture* panoramic_environment_map)
+void WorldRenderer::setEnvironment(ITexture* panoramic_environment_map, float radiance_cutoff)
 {
 	panoramicEnvironmentMap.reset(panoramic_environment_map);
 	sky->markDirty();
+	enviLightSystem->setEnvironmentRadianceCutoff(radiance_cutoff);
 }
 
 unsigned int WorldRenderer::getShadowResolution()

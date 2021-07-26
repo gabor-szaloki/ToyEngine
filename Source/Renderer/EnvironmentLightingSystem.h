@@ -12,6 +12,10 @@ class EnvironmentLightingSystem
 {
 public:
 	EnvironmentLightingSystem();
+	bool isDirty() const { return dirty; }
+	void markDirty() { dirty = true; }
+	float getEnvironmentRadianceCutoff() const;
+	void setEnvironmentRadianceCutoff(float radiance_cutoff);
 	void bake(const ITexture* envi_cube);
 	ITexture* getIrradianceCube() const { return irradianceCube.get(); };
 	ITexture* getSpecularCube() const { return specularCube.get(); };
@@ -24,6 +28,7 @@ private:
 		XMFLOAT4 _SourceCubeWidth_InvSourceCubeWidth_Roughness_RadianceCutoff;
 	} bakeCbData;
 
+	bool dirty = true;
 	std::unique_ptr<ITexture> irradianceCube, specularCube, brdfLut;
 	std::unique_ptr<IBuffer> bakeCb;
 	ResIdHolder irradianceBakeShader, specularBakeShader, integrateBrdfShader;

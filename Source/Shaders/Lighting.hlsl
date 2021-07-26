@@ -9,9 +9,8 @@ TextureCube _SpecularMap : register(t11);
 Texture2D _BrdfLut : register(t12);
 SamplerState _LinearSampler : register(s10);
 
-float3 GGX_Specular(float3 normal, float3 lightVector, float3 viewVector, float perceptualRoughness, float3 F0, out float3 kS)
+float3 GGX_Specular(float3 normal, float3 lightVector, float3 viewVector, float roughness, float3 F0, out float3 kS)
 {
-	float roughness = perceptualRoughness * perceptualRoughness;
 	float3 halfVector = normalize(lightVector + viewVector);
 
 	// Distribution
@@ -44,12 +43,14 @@ float3 Lighting(SurfaceOutput s, float3 pointToEye, float mainLightShadowAttenua
 	float3 viewVector = normalize(pointToEye);
 
 	float3 F0 = lerp(0.04, s.albedo, s.metalness); // Color at normal incidence
+	float perceptualRoughness = s.roughness;
+	float roughness = perceptualRoughness * perceptualRoughness; // calculate roughness to be used in PBR from perceptual roughness stored in surface
 
 	float3 directLighting;
 	{
 		// Specular contribution
 		float3 kS = 0;
-		float3 specular = GGX_Specular(s.normal, lightVector, viewVector, s.roughness, F0, kS);
+		float3 specular = GGX_Specular(s.normal, lightVector, viewVector, roughness, F0, kS);
 
 		// Diffuse contribution
 		float3 kD = (1 - kS) * (1 - s.metalness);
@@ -63,7 +64,6 @@ float3 Lighting(SurfaceOutput s, float3 pointToEye, float mainLightShadowAttenua
 	float3 indirectLighting;
 	{
 		// Specular contribution
-		float roughness = s.roughness * s.roughness; // calculate roughness to be used in PBR from perceptual roughness stored in surface
 		float nDotV = max(dot(s.normal, viewVector), 0.0);
 		float3 F = FresnelSchlickRoughness(nDotV, F0, roughness);
 		float3 kS = F;

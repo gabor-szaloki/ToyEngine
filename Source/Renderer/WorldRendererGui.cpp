@@ -8,6 +8,7 @@
 #include <Engine/AssetManager.h>
 
 #include "WorldRenderer.h"
+#include "EnvironmentLightingSystem.h"
 #include "Light.h"
 #include "Hbao.h"
 
@@ -34,7 +35,12 @@ void WorldRenderer::lightingGui()
 			ImGui::Checkbox("Show specular  map", &debugShowSpecularMap);
 			if (debugShowSpecularMap)
 				ImGui::SliderFloat("Specular lod", &debugSpecularMapLod, 0, 5);
-			if (ImGui::CollapsingHeader("Color", ImGuiTreeNodeFlags_DefaultOpen))
+			float radianceCutoff = enviLightSystem->getEnvironmentRadianceCutoff();
+			if (ImGui::DragFloat("Environment radiance cutoff", &radianceCutoff))
+				enviLightSystem->setEnvironmentRadianceCutoff(radianceCutoff);
+			ImGui::Checkbox("Recalculate environment lighting every frame", &debugRecalculateEnvironmentLightingEveryFrame);
+
+			if (ImGui::CollapsingHeader("Procedural", ImGuiTreeNodeFlags_DefaultOpen))
 			{
 				ImGui::SliderFloat("Intensity##ambient", &ambientLightIntensity, 0.0f, 2.0f);
 				ImGui::ColorEdit3("Bottom color", reinterpret_cast<float*>(&ambientLightBottomColor));
@@ -68,7 +74,7 @@ void WorldRenderer::lightingGui()
 					mainLight->SetYaw(mainLightYaw);
 				if (ImGui::SliderAngle("Pitch", &mainLightPitch, 0.0f, 90.0f))
 					mainLight->SetPitch(mainLightPitch);
-				if (ImGui::SliderFloat("Intensity##main", &mainLightIntensity, 0.0f, 2.0f))
+				if (ImGui::DragFloat("Intensity##main", &mainLightIntensity))
 					mainLight->SetIntensity(mainLightIntensity);
 				if (ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&mainLightColor)))
 					mainLight->SetColor(mainLightColor);

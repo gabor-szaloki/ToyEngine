@@ -13,6 +13,7 @@
 #include <Driver/IBuffer.h>
 #include <Util/ThreadPool.h>
 #include <Renderer/WorldRenderer.h>
+#include <Renderer/Light.h>
 #include <Renderer/ConstantBuffers.h>
 
 #include "Material.h"
@@ -673,6 +674,9 @@ XMVECTOR str_to_XMVECTOR(std::string s)
 
 void AssetManager::loadScene(const std::string& scene_file)
 {
+	wr->mainLight->SetRotation(-XM_PI / 3, XM_PI / 3);
+	wr->mainLight->SetColor(XMFLOAT4(1, 1, 1, 1));
+	wr->mainLight->SetIntensity(0);
 	wr->setEnvironment(nullptr);
 
 	currentSceneIniFile = std::make_unique<mINI::INIFile>(scene_file);
@@ -754,15 +758,31 @@ void AssetManager::loadScene(const std::string& scene_file)
 				wr->getCamera().SetRotation(rotVec.m128_f32[0], rotVec.m128_f32[1]);
 			}
 		}
+		else if (elemProperties["type"] == "sun")
+		{
+			if (elemProperties.has("rotation"))
+			{
+				XMFLOAT4 sunRotationEuler = str_to_XMFLOAT4(elemProperties["rotation"]);
+				wr->mainLight->SetRotation(to_rad(sunRotationEuler.y), to_rad(sunRotationEuler.x));
+			}
+			if (elemProperties.has("color"))
+			{
+				XMFLOAT4 sunColor = str_to_XMFLOAT4(elemProperties["color"]);
+				wr->mainLight->SetColor(sunColor);
+			}
+			if (elemProperties.has("intensity"))
+				wr->mainLight->SetIntensity(std::stof(elemProperties["intensity"].c_str()));
+		}
 		else if (elemProperties["type"] == "environment")
 		{
+			float radianceCutoff = elemProperties.has("radiance_cutoff") ? std::stof(elemProperties["radiance_cutoff"]) : -1;
 			if (elemProperties.has("panoramic_environment_map"))
 			{
 				am->loadTexture(elemProperties["panoramic_environment_map"], false, true, true,
-					[&](ITexture* tex, bool success)
+					[&, radianceCutoff](ITexture* tex, bool success)
 					{
 						if (success)
-							wr->setEnvironment(tex);
+							wr->setEnvironment(tex, radianceCutoff);
 						else
 							delete tex;
 					});

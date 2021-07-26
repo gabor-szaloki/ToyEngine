@@ -33,7 +33,7 @@ EnvironmentLightingSystem::EnvironmentLightingSystem()
 	brdfLut.reset(drv->createTexture(brdfLutDesc));
 	isBrdfLutBaked = false;
 
-	bakeCbData._SourceCubeWidth_InvSourceCubeWidth_Roughness_RadianceCutoff = XMFLOAT4(2048.f, 1.f / 2048.f, 0.f, 5);
+	bakeCbData._SourceCubeWidth_InvSourceCubeWidth_Roughness_RadianceCutoff = XMFLOAT4(2048.f, 1.f / 2048.f, 0.f, 99999.f);
 
 	BufferDesc bakeCbDesc;
 	bakeCbDesc.bindFlags = BIND_CONSTANT_BUFFER;
@@ -46,6 +46,17 @@ EnvironmentLightingSystem::EnvironmentLightingSystem()
 	linearSampler = drv->createSampler(SamplerDesc(FILTER_MIN_MAG_MIP_LINEAR));
 }
 
+float EnvironmentLightingSystem::getEnvironmentRadianceCutoff() const
+{
+	return bakeCbData._SourceCubeWidth_InvSourceCubeWidth_Roughness_RadianceCutoff.w;
+}
+
+void EnvironmentLightingSystem::setEnvironmentRadianceCutoff(float radiance_cutoff)
+{
+	bakeCbData._SourceCubeWidth_InvSourceCubeWidth_Roughness_RadianceCutoff.w = radiance_cutoff < 0 ? 99999.f : radiance_cutoff;
+	markDirty();
+}
+
 void EnvironmentLightingSystem::bake(const ITexture* envi_cube)
 {
 	PROFILE_SCOPE("EnvironmentLightingSystemBake");
@@ -53,6 +64,7 @@ void EnvironmentLightingSystem::bake(const ITexture* envi_cube)
 	drv->setTexture(ShaderStage::PS, 0, envi_cube->getId());
 	drv->setSampler(ShaderStage::PS, 0, linearSampler);
 	drv->setConstantBuffer(ShaderStage::PS, 3, bakeCb->getId());
+	bakeCb->updateData(&bakeCbData);
 
 	{
 		PROFILE_SCOPE("Irradiance");
@@ -106,4 +118,6 @@ void EnvironmentLightingSystem::bake(const ITexture* envi_cube)
 	drv->setRenderTarget(BAD_RESID, BAD_RESID);
 	drv->setTexture(ShaderStage::PS, 0, BAD_RESID);
 	drv->setSampler(ShaderStage::PS, 0, BAD_RESID);
+
+	dirty = false;
 }
