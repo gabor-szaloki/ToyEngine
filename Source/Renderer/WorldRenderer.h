@@ -114,8 +114,10 @@ private:
 	std::unique_ptr<EnvironmentLightingSystem> enviLightSystem;
 	bool debugShowIrradianceMap = false;
 	bool debugShowSpecularMap = false;
+	bool debugShowPureImageBasedLighting = false;
 	float debugSpecularMapLod = 0.f;
 	bool debugRecalculateEnvironmentLightingEveryFrame = false;
+	float environmentRadianceCutoff = -1;
 	PostFx postFx;
 	float exposure = 1.0f;
 };

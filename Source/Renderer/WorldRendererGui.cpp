@@ -35,9 +35,10 @@ void WorldRenderer::lightingGui()
 			ImGui::Checkbox("Show specular  map", &debugShowSpecularMap);
 			if (debugShowSpecularMap)
 				ImGui::SliderFloat("Specular lod", &debugSpecularMapLod, 0, EnvironmentLightingSystem::SPECULAR_CUBE_MIPS - 1);
-			float radianceCutoff = enviLightSystem->getEnvironmentRadianceCutoff();
-			if (ImGui::DragFloat("Environment radiance cutoff", &radianceCutoff))
-				enviLightSystem->setEnvironmentRadianceCutoff(radianceCutoff);
+			if (ImGui::DragFloat("Environment radiance cutoff", &environmentRadianceCutoff))
+				enviLightSystem->markDirty();
+			if (ImGui::Checkbox("Show pure image-based lighting", &debugShowPureImageBasedLighting))
+				enviLightSystem->markDirty();
 			ImGui::Checkbox("Recalculate environment lighting every frame", &debugRecalculateEnvironmentLightingEveryFrame);
 
 			if (ImGui::CollapsingHeader("SSAO", ImGuiTreeNodeFlags_DefaultOpen))

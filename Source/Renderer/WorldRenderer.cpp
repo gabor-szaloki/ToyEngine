@@ -133,6 +133,7 @@ void WorldRenderer::render()
 		drv->setTexture(ShaderStage::PS, 11, BAD_RESID);
 		drv->setTexture(ShaderStage::PS, 12, BAD_RESID);
 
+		enviLightSystem->setEnvironmentRadianceCutoff(debugShowPureImageBasedLighting ? -1 : environmentRadianceCutoff);
 		enviLightSystem->bake(sky->getBakedCube());
 	}
 
@@ -177,7 +178,8 @@ void WorldRenderer::setEnvironment(ITexture* panoramic_environment_map, float ra
 {
 	panoramicEnvironmentMap.reset(panoramic_environment_map);
 	sky->markDirty();
-	enviLightSystem->setEnvironmentRadianceCutoff(radiance_cutoff);
+	environmentRadianceCutoff = radiance_cutoff;
+	enviLightSystem->markDirty();
 }
 
 unsigned int WorldRenderer::getShadowResolution()
@@ -287,7 +289,7 @@ XMVECTOR calculate_shadow_camera_pos(const Camera& camera, const XMMATRIX& light
 void WorldRenderer::setupFrame(XMVECTOR& out_shadow_camera_pos, XMMATRIX& out_light_view_matrix, XMMATRIX& out_light_proj_matrix)
 {
 	PerFrameConstantBufferData perFrameCbData;
-	perFrameCbData.mainLightColor = get_final_light_color(mainLight->GetColor(), mainLightEnabled ? mainLight->GetIntensity() : 0.f);
+	perFrameCbData.mainLightColor = get_final_light_color(mainLight->GetColor(), (mainLightEnabled && !debugShowPureImageBasedLighting) ? mainLight->GetIntensity() : 0.f);
 	const float shadowResolution = (float)shadowMap->getDesc().width;
 	XMMATRIX mainLightRotationMatrix = XMMatrixRotationRollPitchYaw(mainLight->GetPitch(), mainLight->GetYaw(), 0.0f);
 	out_shadow_camera_pos = calculate_shadow_camera_pos(camera, mainLightRotationMatrix, shadowDistance, shadowResolution);
