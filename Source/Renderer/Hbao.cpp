@@ -85,9 +85,7 @@ void Hbao::perform()
 
 	if (!tweak.enabled)
 	{
-		ResId targets[] = { hbaoTex[0]->getId(), hbaoTex[1]->getId() };
-		drv->setRenderTargets(2, targets, BAD_RESID);
-		drv->clearRenderTargets(RenderTargetClearParams::clear_color(1, 1, 1, 1));
+		clear();
 		return;
 	}
 
@@ -148,6 +146,14 @@ void Hbao::perform()
 	drv->setView(originalViewport);
 }
 
+void Hbao::clear()
+{
+	ResId targets[] = { hbaoTex[0]->getId(), hbaoTex[1]->getId() };
+	drv->setRenderTargets(2, targets, BAD_RESID);
+	drv->clearRenderTargets(RenderTargetClearParams::clear_color(1, 1, 1, 1));
+	drv->setRenderTarget(BAD_RESID, BAD_RESID);
+}
+
 void Hbao::gui(float &resolution_scale)
 {
 	bool cbChanged = false;
@@ -172,7 +178,7 @@ ITexture* Hbao::getResultTex()
 
 void Hbao::updateCb()
 {
-	const Camera& cam = wr->getCamera();
+	const Camera& cam = wr->getSceneCamera();
 	XMFLOAT2 resf((float)resolution.x, (float)resolution.y);
 
 	float r = tweak.radius;

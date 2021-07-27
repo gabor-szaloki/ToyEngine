@@ -754,11 +754,11 @@ void AssetManager::loadScene(const std::string& scene_file)
 		else if (elemProperties["type"] == "camera")
 		{
 			if (elemProperties.has("position"))
-				wr->getCamera().SetEye(str_to_XMVECTOR(elemProperties["position"]));
+				wr->getSceneCamera().SetEye(str_to_XMVECTOR(elemProperties["position"]));
 			if (elemProperties.has("rotation"))
 			{
 				XMVECTOR rotVec = str_to_XMVECTOR(elemProperties["rotation"]) * DEG_TO_RAD;
-				wr->getCamera().SetRotation(rotVec.m128_f32[0], rotVec.m128_f32[1]);
+				wr->getSceneCamera().SetRotation(rotVec.m128_f32[0], rotVec.m128_f32[1]);
 			}
 		}
 		else if (elemProperties["type"] == "sun")

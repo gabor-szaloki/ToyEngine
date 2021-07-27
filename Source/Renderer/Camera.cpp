@@ -100,7 +100,7 @@ void Camera::gui()
 		RecalculateProjectionMatrix();
 	}
 }
-REGISTER_IMGUI_WINDOW("Camera", []() { wr->getCamera().gui(); });
+REGISTER_IMGUI_WINDOW("Camera", []() { wr->getSceneCamera().gui(); });
 
 void Camera::RecalculateViewMatrix()
 {

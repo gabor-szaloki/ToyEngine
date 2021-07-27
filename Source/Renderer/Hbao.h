@@ -18,6 +18,7 @@ class Hbao
 public:
 	Hbao(XMINT2 resolution_);
 	void perform();
+	void clear();
 	void gui(float& resolution_scale);
 	ITexture* getResultTex();
 

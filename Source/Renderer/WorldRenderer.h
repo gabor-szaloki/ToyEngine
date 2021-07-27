@@ -32,7 +32,10 @@ public:
 
 	void onResize(int display_width, int display_height);
 	void update(float delta_time);
+	void beforeRender();
 	void render();
+	void render(const Camera& camera, ITexture& hdr_color_target, ITexture* tonemapped_color_target, ITexture& depth_target,
+		unsigned int hdr_color_slice, unsigned int tonemapped_color_slice, unsigned int depth_slice, bool ssao_enabled);
 
 	void toggleWireframe() { showWireframe = !showWireframe; }
 	void setEnvironment(ITexture* panoramic_environment_map, float radiance_cutoff = -1.0); // <0 radiance cutoff means no cutoff
@@ -41,7 +44,7 @@ public:
 	void setShadowBias(int depth_bias, float slope_scaled_depth_bias);
 	ITexture* getDepthTex() const { return depthTex.get(); }
 	ITexture* getShadowMap() const { return shadowMap.get(); };
-	Camera& getCamera() { return camera; };
+	Camera& getSceneCamera() { return sceneCamera; };
 	void setCameraForShaders(const Camera& cam);
 	float getTime() { return time; }
 	Sky& getSky() { return *sky; }
@@ -62,7 +65,7 @@ public:
 		int deltaYaw = 0;
 		int deltaPitch = 0;
 	};
-	CameraInputState cameraInputState;
+	CameraInputState sceneCameraInputState;
 
 	bool showWireframe = false;
 
@@ -79,18 +82,18 @@ private:
 	void initResolutionDependentResources();
 	void closeResolutionDependentResources();
 
-	void setupFrame(XMVECTOR& out_shadow_camera_pos, XMMATRIX& out_light_view_matrix, XMMATRIX& out_light_proj_matrix);
+	void setupFrame(const Camera& camera, XMVECTOR& out_shadow_camera_pos, XMMATRIX& out_light_view_matrix, XMMATRIX& out_light_proj_matrix);
 	void setupShadowPass(const XMVECTOR& shadow_camera_pos, const XMMATRIX& light_view_matrix, const XMMATRIX& light_proj_matrix);
-	void setupDepthAndForwardPasses();
+	void setupDepthAndForwardPasses(const Camera& camera, ITexture& hdr_color_target, ITexture& depth_target);
 	void performShadowPass();
-	void performDepthPrepass();
-	void performForwardPass();
+	void performDepthPrepass(ITexture& depth_target);
+	void performForwardPass(ITexture& hdr_color_target, ITexture& depth_target);
 
 	float time;
 
-	Camera camera;
-	float cameraMoveSpeed = 5.0f;
-	float cameraTurnSpeed = 0.002f;
+	Camera sceneCamera;
+	float sceneCameraMoveSpeed = 5.0f;
+	float sceneCameraTurnSpeed = 0.002f;
 
 	std::unique_ptr<ITexture> hdrTarget;
 	std::unique_ptr<ITexture> depthTex;

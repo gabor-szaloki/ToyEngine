@@ -150,6 +150,7 @@ static void update()
 
 static void render()
 {
+	wr->beforeRender();
 	wr->render();
 	if (autoimgui::is_active)
 		ImGui::Render();
@@ -215,7 +216,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		rightMouseButtonHeldDown = false;
 		ReleaseCapture();
 		ShowCursor(true);
-		wr->cameraInputState = {};
+		wr->sceneCameraInputState = {};
 		break;
 	case WM_RBUTTONDOWN:
 	{
@@ -230,8 +231,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		{
 			POINT mousePos;
 			GetCursorPos(&mousePos);
-			wr->cameraInputState.deltaYaw += mousePos.x - lastMousePos.x;
-			wr->cameraInputState.deltaPitch += mousePos.y - lastMousePos.y;
+			wr->sceneCameraInputState.deltaYaw += mousePos.x - lastMousePos.x;
+			wr->sceneCameraInputState.deltaPitch += mousePos.y - lastMousePos.y;
 			SetCursorPos(lastMousePos.x, lastMousePos.y);
 		}
 		break;
@@ -239,25 +240,25 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		switch (wParam)
 		{
 		case 0x57: // W
-			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingForward = false;
+			if (rightMouseButtonHeldDown) wr->sceneCameraInputState.isMovingForward = false;
 			break;
 		case 0x53: // S
-			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingBackward = false;
+			if (rightMouseButtonHeldDown) wr->sceneCameraInputState.isMovingBackward = false;
 			break;
 		case 0x44: // D
-			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingRight = false;
+			if (rightMouseButtonHeldDown) wr->sceneCameraInputState.isMovingRight = false;
 			break;
 		case 0x41: // A
-			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingLeft = false;
+			if (rightMouseButtonHeldDown) wr->sceneCameraInputState.isMovingLeft = false;
 			break;
 		case 0x45: // E
-			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingUp = false;
+			if (rightMouseButtonHeldDown) wr->sceneCameraInputState.isMovingUp = false;
 			break;
 		case 0x51: // Q
-			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingDown = false;
+			if (rightMouseButtonHeldDown) wr->sceneCameraInputState.isMovingDown = false;
 			break;
 		case VK_SHIFT:
-			if (rightMouseButtonHeldDown) wr->cameraInputState.isSpeeding = false;
+			if (rightMouseButtonHeldDown) wr->sceneCameraInputState.isSpeeding = false;
 			break;
 		case VK_CONTROL:
 			ctrl = false;
@@ -268,29 +269,29 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		switch (wParam)
 		{
 		case 0x57: // W
-			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingForward = true;
+			if (rightMouseButtonHeldDown) wr->sceneCameraInputState.isMovingForward = true;
 			break;
 		case 0x53: // S
-			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingBackward = true;
+			if (rightMouseButtonHeldDown) wr->sceneCameraInputState.isMovingBackward = true;
 			break;
 		case 0x44: // D
-			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingRight = true;
+			if (rightMouseButtonHeldDown) wr->sceneCameraInputState.isMovingRight = true;
 			break;
 		case 0x41: // A
-			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingLeft = true;
+			if (rightMouseButtonHeldDown) wr->sceneCameraInputState.isMovingLeft = true;
 			break;
 		case 0x45: // E
-			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingUp = true;
+			if (rightMouseButtonHeldDown) wr->sceneCameraInputState.isMovingUp = true;
 			break;
 		case 0x51: // Q
-			if (rightMouseButtonHeldDown) wr->cameraInputState.isMovingDown = true;
+			if (rightMouseButtonHeldDown) wr->sceneCameraInputState.isMovingDown = true;
 			break;
 		case 0x52: // R
 			if (ctrl)
 				drv->recompileShaders();
 			break;
 		case VK_SHIFT:
-			if (rightMouseButtonHeldDown) wr->cameraInputState.isSpeeding = true;
+			if (rightMouseButtonHeldDown) wr->sceneCameraInputState.isSpeeding = true;
 			break;
 		case VK_F2:
 			autoimgui::is_active = !autoimgui::is_active;
