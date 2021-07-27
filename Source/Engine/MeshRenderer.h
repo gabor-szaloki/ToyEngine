@@ -49,6 +49,7 @@ public:
 	void setRotation(float pitch, float yaw, float roll) { setRotation(XMFLOAT3(pitch, yaw, roll)); }
 	void setScale(float scale) { transform.scale = scale; transformMatrix = transform.getMatrix(); }
 	const XMMATRIX& getTransformMatrix() const { return transformMatrix; }
+	void setUvScale(float uv_scale) { uvScale = uv_scale; }
 
 	std::string name;
 
@@ -58,6 +59,7 @@ private:
 	int lastSubmeshToRender = 0;
 	Transform transform;
 	XMMATRIX transformMatrix = XMMatrixIdentity();
+	float uvScale = 1;
 
 	Material* material = nullptr;
 	ResId inputLayoutId = BAD_RESID;

@@ -74,10 +74,12 @@ void MeshRenderer::render(RenderPass render_pass)
 
 	PerObjectConstantBufferData perObjectCbData;
 	perObjectCbData.world = tmToUse;
+	perObjectCbData.objectParams0 = XMFLOAT4(uvScale, 0, 0, 0);
 	cb->updateData(&perObjectCbData);
 
 	material->set(render_pass);
 	drv->setConstantBuffer(ShaderStage::VS, 2, cb->getId());
+	drv->setConstantBuffer(ShaderStage::PS, 2, cb->getId());
 
 	drv->setInputLayout(ilToUse);
 	drv->setIndexBuffer(ibToUse->getId());

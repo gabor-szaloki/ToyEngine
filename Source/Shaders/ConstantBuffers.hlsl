@@ -28,12 +28,22 @@ cbuffer PerCameraConstantBuffer : register(b1)
 cbuffer PerObjectConstantBuffer : register(b2)
 {
 	float4x4 _World;
+	float4 _ObjectParams0;
 }
+
+#define _ObjectUvScale _ObjectParams0.x
 
 cbuffer PerMaterialConstantBuffer : register(b3)
 {
 	float4 _MaterialColor;
-	float4 _MaterialParams; // x: metalness scale, y: metalness bias, z: roughness scale, w: roughness bias
+	float4 _MaterialParams0;
+	float4 _MaterialParams1;
 }
+
+#define _MaterialMetalnessScale _MaterialParams0.x
+#define _MaterialMetalnessBias _MaterialParams0.y
+#define _MaterialRoughnessScale _MaterialParams0.z
+#define _MaterialRoughnessBias _MaterialParams0.w
+#define _MaterialUvScale _MaterialParams1.x
 
 #endif

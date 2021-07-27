@@ -33,10 +33,10 @@ SurfaceOutput Surface(float3 pointToEye, float3 normal, float2 uv, float4 vertCo
 	s.normal = perturb_normal(normal, float3(normalRoughMetal.xy, 0), pointToEye, uv);
 
 	// Metalness
-	s.metalness = normalRoughMetal.z * _MaterialParams.x + _MaterialParams.y;
+	s.metalness = normalRoughMetal.z * _MaterialMetalnessScale + _MaterialMetalnessBias;
 
 	// Roughness
-	s.roughness = normalRoughMetal.w * _MaterialParams.z + _MaterialParams.w;
+	s.roughness = normalRoughMetal.w * _MaterialRoughnessScale + _MaterialRoughnessBias;
 
 	return s;
 }

@@ -26,7 +26,8 @@ Material::Material(const std::string& name_, const std::array<ResId, (int)Render
 
 	PerMaterialConstantBufferData cbData;
 	cbData.materialColor = XMFLOAT4(1, 1, 1, 1);
-	cbData.materialParams = XMFLOAT4(1, 0, 1, 0);
+	cbData.materialParams0 = XMFLOAT4(1, 0, 1, 0);
+	cbData.materialParams1 = XMFLOAT4(1, 0, 0, 0);
 	setConstants(cbData);
 }
 
@@ -72,6 +73,7 @@ void Material::setKeyword(const std::string& keyword, bool enable)
 void Material::set(RenderPass render_pass)
 {
 	drv->setShader(shaders[(int)render_pass], currentVariants[(int)render_pass]);
+	drv->setConstantBuffer(ShaderStage::VS, 3, cb->getId());
 	drv->setConstantBuffer(ShaderStage::PS, 3, cb->getId());
 	for (int stage = 0; stage < (int)ShaderStage::GRAPHICS_STAGE_COUNT; stage++)
 	{

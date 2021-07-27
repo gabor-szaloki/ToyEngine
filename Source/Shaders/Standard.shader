@@ -61,7 +61,7 @@ VSOutputStandardForward StandardForwardVS(VSInputStandard v)
 
 	o.normal = normalize(mul(_World, float4(v.normal, 0)).xyz);
 	o.color = v.color;
-	o.uv = v.uv;
+	o.uv = v.uv * _MaterialUvScale * _ObjectUvScale;
 	o.worldPos = worldPos.xyz;
 	o.shadowCoords = mul(_MainLightShadowMatrix, worldPos);
 

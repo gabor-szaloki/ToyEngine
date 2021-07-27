@@ -723,10 +723,11 @@ void AssetManager::loadScene(const std::string& scene_file)
 
 					PerMaterialConstantBufferData materialCbData;
 					materialCbData.materialColor = materialIni.has("color") ? str_to_XMFLOAT4(materialIni["color"]) : XMFLOAT4(1, 1, 1, 1);
-					materialCbData.materialParams.x = materialIni.has("metalness_scale") ? std::stof(materialIni["metalness_scale"]) : 1;
-					materialCbData.materialParams.y = materialIni.has("metalness_bias") ? std::stof(materialIni["metalness_bias"]) : 0;
-					materialCbData.materialParams.z = materialIni.has("roughness_scale") ? std::stof(materialIni["roughness_scale"]) : 1;
-					materialCbData.materialParams.w = materialIni.has("roughness_bias") ? std::stof(materialIni["roughness_bias"]) : 0;
+					materialCbData.materialParams0.x = materialIni.has("metalness_scale") ? std::stof(materialIni["metalness_scale"]) : 1;
+					materialCbData.materialParams0.y = materialIni.has("metalness_bias") ? std::stof(materialIni["metalness_bias"]) : 0;
+					materialCbData.materialParams0.z = materialIni.has("roughness_scale") ? std::stof(materialIni["roughness_scale"]) : 1;
+					materialCbData.materialParams0.w = materialIni.has("roughness_bias") ? std::stof(materialIni["roughness_bias"]) : 0;
+					materialCbData.materialParams1.x = materialIni.has("uv_scale") ? std::stof(materialIni["uv_scale"]) : 1;
 					material->setConstants(materialCbData);
 
 					for (const std::vector<MaterialTexture>& stageTextures : material->getTextures())
@@ -745,8 +746,10 @@ void AssetManager::loadScene(const std::string& scene_file)
 			Transform tr;
 			tr.position = str_to_XMVECTOR(elemProperties["position"]);
 			tr.rotation = str_to_XMVECTOR(elemProperties["rotation"]) * DEG_TO_RAD;
-			tr.scale = elemProperties["scale"].length() > 0 ? std::stof(elemProperties["scale"]) : 1.0f;
+			tr.scale = elemProperties.has("scale") ? std::stof(elemProperties["scale"]) : 1.0f;
 			mr->setTransform(tr);
+
+			mr->setUvScale(elemProperties.has("uv_scale") ? std::stof(elemProperties["uv_scale"]) : 1.0f);
 		}
 		else if (elemProperties["type"] == "camera")
 		{

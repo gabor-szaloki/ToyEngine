@@ -29,10 +29,12 @@ struct PerCameraConstantBufferData
 struct PerObjectConstantBufferData
 {
 	XMMATRIX world;
+	XMFLOAT4 objectParams0;
 };
 
 struct PerMaterialConstantBufferData
 {
 	XMFLOAT4 materialColor;
-	XMFLOAT4 materialParams;
+	XMFLOAT4 materialParams0;
+	XMFLOAT4 materialParams1;
 };
