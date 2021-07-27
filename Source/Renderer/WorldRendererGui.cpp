@@ -34,7 +34,7 @@ void WorldRenderer::lightingGui()
 			ImGui::Checkbox("Show irradiance map", &debugShowIrradianceMap);
 			ImGui::Checkbox("Show specular  map", &debugShowSpecularMap);
 			if (debugShowSpecularMap)
-				ImGui::SliderFloat("Specular lod", &debugSpecularMapLod, 0, 5);
+				ImGui::SliderFloat("Specular lod", &debugSpecularMapLod, 0, EnvironmentLightingSystem::SPECULAR_CUBE_MIPS - 1);
 			float radianceCutoff = enviLightSystem->getEnvironmentRadianceCutoff();
 			if (ImGui::DragFloat("Environment radiance cutoff", &radianceCutoff))
 				enviLightSystem->setEnvironmentRadianceCutoff(radianceCutoff);
