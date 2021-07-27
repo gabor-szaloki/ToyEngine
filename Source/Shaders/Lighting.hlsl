@@ -17,7 +17,7 @@ float3 GGX_Specular(float3 normal, float3 lightVector, float3 viewVector, float 
 	float D = NormalDistributionGGXTR(normal, halfVector, roughness);
 
 	// Calculate Fresnel
-	// Note: instead of nDotV, we pass hDotV as cosTheta to Fresnel, because halfway vector represents the microsurface normal that reflects
+	// Note: Instead of nDotV, we pass hDotV as cosTheta to Fresnel, because halfway vector represents the microsurface normal that reflects
 	//       light in the view direction. If microsurface normal would face in any other directions, it wouldn't pass the NDF test. This is
 	//       explained in detail in the following comment: http://disq.us/p/1etzl77 under this article: https://learnopengl.com/PBR/Lighting
 	float cosTheta = saturate(dot(halfVector, viewVector));
@@ -63,14 +63,17 @@ float3 Lighting(SurfaceOutput s, float3 pointToEye, float mainLightShadowAttenua
 
 	float3 indirectLighting;
 	{
-		// Specular contribution
 		float nDotV = max(dot(s.normal, viewVector), 0.0);
 		float3 F = FresnelSchlickRoughness(nDotV, F0, roughness);
 		float3 kS = F;
+
+		// Specular contribution
+		// Note: We adress prebaked textures with perceptualRoughness, becuase input roughness is also treated as such during the baking process.
+		//       Using roughness here would mean that we square preceptualRoughness twice.
 		float3 reflectionVector = reflect(-viewVector, s.normal);
 		const float MAX_REFLECTION_LOD = 4.0;
-		float3 prefilteredColor = _SpecularMap.SampleLevel(_LinearSampler, reflectionVector, roughness * MAX_REFLECTION_LOD).rgb;
-		float2 envBRDF = _BrdfLut.Sample(_LinearSampler, float2(nDotV, roughness)).rg;
+		float3 prefilteredColor = _SpecularMap.SampleLevel(_LinearSampler, reflectionVector, perceptualRoughness * MAX_REFLECTION_LOD).rgb;
+		float2 envBRDF = _BrdfLut.Sample(_LinearSampler, float2(nDotV, perceptualRoughness)).rg;
 		float3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
 
 		// Diffuse contribution
