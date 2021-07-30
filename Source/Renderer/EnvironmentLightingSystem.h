@@ -4,6 +4,7 @@
 
 #include <Common.h>
 #include <Util/ResIdHolder.h>
+#include "EnvironmentProbe.h"
 
 class ITexture;
 class IBuffer;
@@ -12,27 +13,21 @@ class EnvironmentLightingSystem
 {
 public:
 	EnvironmentLightingSystem();
+	void bake(const ITexture* envi_cube);
 	bool isDirty() const { return dirty; }
 	void markDirty() { dirty = true; }
-	float getEnvironmentRadianceCutoff() const;
-	void setEnvironmentRadianceCutoff(float radiance_cutoff);
-	void bake(const ITexture* envi_cube);
-	ITexture* getIrradianceCube() const { return irradianceCube.get(); };
-	ITexture* getSpecularCube() const { return specularCube.get(); };
+	float getEnvironmentRadianceCutoff() const { return radianceCutoff; }
+	void setEnvironmentRadianceCutoff(float radiance_cutoff) { radianceCutoff = radiance_cutoff; markDirty(); }
+	ITexture* getIrradianceCube() const { return skyProbe.getIrradianceCube(); };
+	ITexture* getSpecularCube() const { return skyProbe.getSpecularCube(); };
 	ITexture* getBrdfLut() const { return brdfLut.get(); };
-	static const unsigned int SPECULAR_CUBE_MIPS = 5;
 
 private:
-	struct SpecularBakeCbData
-	{
-		XMFLOAT4 _SourceCubeWidth_InvSourceCubeWidth_Roughness_RadianceCutoff;
-	} bakeCbData;
-
-	bool dirty = true;
-	std::unique_ptr<ITexture> irradianceCube, specularCube, brdfLut;
-	std::unique_ptr<IBuffer> bakeCb;
+	EnvironmentProbe skyProbe;
+	std::unique_ptr<ITexture> brdfLut;
 	ResIdHolder irradianceBakeShader, specularBakeShader, integrateBrdfShader;
 	ResIdHolder linearSampler;
-	bool isBrdfLutBaked;
+	bool dirty = true;
+	float radianceCutoff = -1;
 };
 

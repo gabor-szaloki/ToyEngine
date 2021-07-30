@@ -177,6 +177,9 @@
     <ClCompile Include="Source\Renderer\CubeRenderHelper.cpp">
       <Filter>Source\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Renderer\EnvironmentProbe.cpp">
+      <Filter>Source\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common.h">
@@ -1236,6 +1239,9 @@
       <Filter>Source\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Source\Renderer\CubeRenderHelper.h">
+      <Filter>Source\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\EnvironmentProbe.h">
       <Filter>Source\Renderer</Filter>
     </ClInclude>
   </ItemGroup>

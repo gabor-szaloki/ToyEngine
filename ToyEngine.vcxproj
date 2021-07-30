@@ -46,6 +46,7 @@
     <ClCompile Include="Source\Renderer\Camera.cpp" />
     <ClCompile Include="Source\Renderer\CubeRenderHelper.cpp" />
     <ClCompile Include="Source\Renderer\EnvironmentLightingSystem.cpp" />
+    <ClCompile Include="Source\Renderer\EnvironmentProbe.cpp" />
     <ClCompile Include="Source\Renderer\Light.cpp" />
     <ClCompile Include="Source\Renderer\PostFx.cpp" />
     <ClCompile Include="Source\Renderer\Sky.cpp" />
@@ -396,6 +397,7 @@
     <ClInclude Include="Source\Renderer\ConstantBuffers.h" />
     <ClInclude Include="Source\Renderer\CubeRenderHelper.h" />
     <ClInclude Include="Source\Renderer\EnvironmentLightingSystem.h" />
+    <ClInclude Include="Source\Renderer\EnvironmentProbe.h" />
     <ClInclude Include="Source\Renderer\Light.h" />
     <ClInclude Include="Source\Renderer\PostFx.h" />
     <ClInclude Include="Source\Renderer\Sky.h" />
