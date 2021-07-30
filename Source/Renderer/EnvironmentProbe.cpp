@@ -3,9 +3,10 @@
 #include <Driver/IDriver.h>
 #include <Driver/ITexture.h>
 #include <Driver/IBuffer.h>
+#include "WorldRenderer.h"
 #include "CubeRenderHelper.h"
 
-EnvironmentProbe::EnvironmentProbe()
+EnvironmentProbe::EnvironmentProbe(const XMVECTOR& pos) : position(pos)
 {
 	TextureDesc irradianceCubeDesc("IrradianceCube", 32, 32, TexFmt::R16G16B16A16_FLOAT);
 	irradianceCubeDesc.bindFlags = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET;
@@ -28,6 +29,27 @@ EnvironmentProbe::EnvironmentProbe()
 	bakeCb->updateData(&bakeCbData);
 }
 
+void EnvironmentProbe::renderEnvironmentCube(ITexture* cube_target)
+{
+	std::unique_ptr<ITexture> depthTex;
+	unsigned int cubeFaceWidth = cube_target->getDesc().width;
+	TextureDesc depthTexDesc("EnviCubeRenderDepth", cubeFaceWidth, cubeFaceWidth,
+		TexFmt::R24G8_TYPELESS, 1, ResourceUsage::DEFAULT, BIND_DEPTH_STENCIL | BIND_SHADER_RESOURCE);
+	depthTexDesc.srvFormatOverride = TexFmt::R24_UNORM_X8_TYPELESS;
+	depthTexDesc.dsvFormatOverride = TexFmt::D24_UNORM_S8_UINT;
+	depthTex.reset(drv->createTexture(depthTexDesc));
+
+	CubeRenderHelper cubeRenderHelper;
+	cubeRenderHelper.beginRender(position, cube_target);
+	for (int i = 0; i < 6; i++)
+	{
+		cubeRenderHelper.setupCamera((CubeFace)i);
+		wr->render(cubeRenderHelper.getCamera(), *cube_target, nullptr, *depthTex.get(), i, 0, 0, false);
+	}
+
+	drv->setRenderTarget(BAD_RESID, BAD_RESID);
+}
+
 void EnvironmentProbe::bake(const EnvironmentBakeResources& bake_resources, const ITexture* envi_cube, float radiance_cutoff)
 {
 	PROFILE_SCOPE("EnvironmentProbe_Bake");
@@ -45,7 +67,7 @@ void EnvironmentProbe::bake(const EnvironmentBakeResources& bake_resources, cons
 		drv->setShader(bake_resources.irradianceBakeShader, 0);
 
 		CubeRenderHelper cubeRenderHelper;
-		cubeRenderHelper.beginRender(irradianceCube.get());
+		cubeRenderHelper.beginRender(XMVectorZero(), irradianceCube.get());
 		cubeRenderHelper.renderAllFaces();
 		cubeRenderHelper.finishRender();
 	}
@@ -70,7 +92,7 @@ void EnvironmentProbe::bake(const EnvironmentBakeResources& bake_resources, cons
 			bakeCbData._SourceCubeWidth_InvSourceCubeWidth_Roughness_RadianceCutoff.z = (float)mip / (SPECULAR_CUBE_MIPS - 1);
 			bakeCb->updateData(&bakeCbData);
 
-			cubeRenderHelper.beginRender(specularCube.get(), mip);
+			cubeRenderHelper.beginRender(XMVectorZero(), specularCube.get(), mip);
 			cubeRenderHelper.renderAllFaces();
 			cubeRenderHelper.finishRender();
 		}

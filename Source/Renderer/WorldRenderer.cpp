@@ -162,15 +162,15 @@ void WorldRenderer::render(const Camera& camera, ITexture& hdr_color_target, ITe
 	setupShadowPass(shadowCameraPos, lightViewMatrix, lightProjectionMatrix);
 	performShadowPass();
 
-	setupDepthAndForwardPasses(camera, hdr_color_target, depth_target);
-	performDepthPrepass(depth_target);
+	setupDepthAndForwardPasses(camera, hdr_color_target, depth_target, hdr_color_slice, depth_slice);
+	performDepthPrepass(depth_target, depth_slice);
 
 	if (ssao_enabled)
 		ssao->perform();
 	else
 		ssao->clear();
 
-	performForwardPass(hdr_color_target, depth_target);
+	performForwardPass(hdr_color_target, depth_target, hdr_color_slice, depth_slice);
 
 	if (debugShowSpecularMap)
 		sky->render(enviLightSystem->getSpecularCube(), debugSpecularMapLod);
@@ -181,7 +181,7 @@ void WorldRenderer::render(const Camera& camera, ITexture& hdr_color_target, ITe
 
 	if (tonemapped_color_target != nullptr)
 	{
-		drv->setRenderTarget(tonemapped_color_target->getId(), BAD_RESID);
+		drv->setRenderTarget(tonemapped_color_target->getId(), BAD_RESID, tonemapped_color_slice);
 		drv->setTexture(ShaderStage::PS, 0, hdr_color_target.getId());
 		drv->setSampler(ShaderStage::PS, 0, linearClampSampler);
 
@@ -192,12 +192,30 @@ void WorldRenderer::render(const Camera& camera, ITexture& hdr_color_target, ITe
 	}
 }
 
-void WorldRenderer::setEnvironment(ITexture* panoramic_environment_map, float radiance_cutoff)
+void WorldRenderer::setEnvironment(ITexture* panoramic_environment_map, float radiance_cutoff, bool world_probe_enabled, const XMVECTOR& world_probe_pos)
 {
 	panoramicEnvironmentMap.reset(panoramic_environment_map);
 	sky->markDirty();
 	environmentRadianceCutoff = radiance_cutoff;
+	enviLightSystem->setWorldProbe(world_probe_enabled, world_probe_pos);
 	enviLightSystem->markDirty();
+}
+
+void WorldRenderer::resetEnvironment()
+{
+	setEnvironment(nullptr, -1, false, XMVectorZero());
+}
+
+void WorldRenderer::onMeshLoaded()
+{
+	if (enviLightSystem->hasWorldProbe())
+		enviLightSystem->markDirty();
+}
+
+void WorldRenderer::onMaterialTexturesLoaded()
+{
+	if (enviLightSystem->hasWorldProbe())
+		enviLightSystem->markDirty();
 }
 
 unsigned int WorldRenderer::getShadowResolution()
@@ -349,14 +367,14 @@ void WorldRenderer::setupShadowPass(const XMVECTOR& shadow_camera_pos, const XMM
 	drv->clearRenderTargets(clearParams);
 }
 
-void WorldRenderer::setupDepthAndForwardPasses(const Camera& camera, ITexture& hdr_color_target, ITexture& depth_target)
+void WorldRenderer::setupDepthAndForwardPasses(const Camera& camera, ITexture& hdr_color_target, ITexture& depth_target, unsigned int hdr_color_slice, unsigned int depth_slice)
 {
 	// Main camera
 	setCameraForShaders(camera);
 
 	// Clear targets
 	const TextureDesc& targetDesc = hdr_color_target.getDesc();
-	drv->setRenderTarget(hdr_color_target.getId(), depth_target.getId());
+	drv->setRenderTarget(hdr_color_target.getId(), depth_target.getId(), hdr_color_slice, depth_slice);
 	drv->setView(0, 0, (float)targetDesc.width, (float)targetDesc.height, 0, 1);
 	drv->clearRenderTargets(RenderTargetClearParams::clear_all(0.0f, 0.2f, 0.4f, 1.0f, 1.0f));
 }
@@ -372,23 +390,23 @@ void WorldRenderer::performShadowPass()
 		mr->render(RenderPass::DEPTH);
 }
 
-void WorldRenderer::performDepthPrepass(ITexture& depth_target)
+void WorldRenderer::performDepthPrepass(ITexture& depth_target, unsigned int depth_slice)
 {
 	PROFILE_SCOPE("DepthPrepass");
 
 	drv->setRenderState(showWireframe ? depthPrepassWireframeRenderStateId : depthPrepassRenderStateId);
-	drv->setRenderTarget(BAD_RESID, depth_target.getId());
+	drv->setRenderTarget(BAD_RESID, depth_target.getId(), 0, depth_slice);
 
 	for (MeshRenderer* mr : am->getSceneMeshRenderers())
 		mr->render(RenderPass::DEPTH);
 }
 
-void WorldRenderer::performForwardPass(ITexture& hdr_color_target, ITexture& depth_target)
+void WorldRenderer::performForwardPass(ITexture& hdr_color_target, ITexture& depth_target, unsigned int hdr_color_slice, unsigned int depth_slice)
 {
 	PROFILE_SCOPE("ForwardPass");
 
 	drv->setRenderState(showWireframe ? forwardWireframeRenderStateId : forwardRenderStateId);
-	drv->setRenderTarget(hdr_color_target.getId(), depth_target.getId());
+	drv->setRenderTarget(hdr_color_target.getId(), depth_target.getId(), hdr_color_slice, depth_slice);
 
 	drv->setTexture(ShaderStage::PS, 2, shadowMap->getId());
 	drv->setSampler(ShaderStage::PS, 2, shadowSampler);

@@ -18,12 +18,15 @@ public:
 	void markDirty() { dirty = true; }
 	float getEnvironmentRadianceCutoff() const { return radianceCutoff; }
 	void setEnvironmentRadianceCutoff(float radiance_cutoff) { radianceCutoff = radiance_cutoff; markDirty(); }
-	ITexture* getIrradianceCube() const { return skyProbe.getIrradianceCube(); };
-	ITexture* getSpecularCube() const { return skyProbe.getSpecularCube(); };
+	void setWorldProbe(bool enabled, const XMVECTOR& pos = XMVectorZero());
+	bool hasWorldProbe() const { return worldProbe.get() != nullptr; }
+	ITexture* getIrradianceCube() const;
+	ITexture* getSpecularCube() const;
 	ITexture* getBrdfLut() const { return brdfLut.get(); };
 
 private:
 	EnvironmentProbe skyProbe;
+	std::unique_ptr<EnvironmentProbe> worldProbe;
 	std::unique_ptr<ITexture> brdfLut;
 	ResIdHolder irradianceBakeShader, specularBakeShader, integrateBrdfShader;
 	ResIdHolder linearSampler;

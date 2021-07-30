@@ -134,7 +134,7 @@ void Sky::bakeInternal(const ITexture* panoramic_environment_map)
 	}
 
 	CubeRenderHelper cubeRenderHelper;
-	cubeRenderHelper.beginRender(bakedCubeMap.get());
+	cubeRenderHelper.beginRender(XMVectorZero(), bakedCubeMap.get());
 	cubeRenderHelper.renderAllFaces();
 	cubeRenderHelper.finishRender();
 

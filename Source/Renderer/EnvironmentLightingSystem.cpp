@@ -5,7 +5,7 @@
 #include <Driver/IBuffer.h>
 #include "CubeRenderHelper.h"
 
-EnvironmentLightingSystem::EnvironmentLightingSystem()
+EnvironmentLightingSystem::EnvironmentLightingSystem() : skyProbe(XMVectorZero())
 {
 	ShaderSetDesc bakeShaderDesc("IrradianceBake", "Source/Shaders/EnvironmentLighting.shader");
 	bakeShaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "DefaultPostFxVsFunc";
@@ -42,5 +42,32 @@ void EnvironmentLightingSystem::bake(const ITexture* envi_cube)
 	EnvironmentBakeResources bakeResources{ irradianceBakeShader, specularBakeShader, linearSampler };
 	skyProbe.bake(bakeResources, envi_cube, radianceCutoff);
 
+	if (worldProbe)
+	{
+		TextureDesc worldEnviCubeDesc("SpecularCube", 128, 128, TexFmt::R16G16B16A16_FLOAT, 1);
+		worldEnviCubeDesc.bindFlags = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET;
+		worldEnviCubeDesc.miscFlags = RESOURCE_MISC_TEXTURECUBE;
+		std::unique_ptr<ITexture> worldEnviCube;
+		worldEnviCube.reset(drv->createTexture(worldEnviCubeDesc));
+
+		worldProbe->renderEnvironmentCube(worldEnviCube.get());
+		worldProbe->bake(bakeResources, worldEnviCube.get(), radianceCutoff);
+	}
+
 	dirty = false;
+}
+
+void EnvironmentLightingSystem::setWorldProbe(bool enabled, const XMVECTOR& pos)
+{
+	worldProbe.reset(enabled ? new EnvironmentProbe(pos) : nullptr);
+}
+
+ITexture* EnvironmentLightingSystem::getIrradianceCube() const
+{
+	return (worldProbe.get() != nullptr && !dirty) ? worldProbe->getIrradianceCube() : skyProbe.getIrradianceCube();
+}
+
+ITexture* EnvironmentLightingSystem::getSpecularCube() const
+{
+	return (worldProbe.get() != nullptr && !dirty) ? worldProbe->getSpecularCube() : skyProbe.getSpecularCube();
 }

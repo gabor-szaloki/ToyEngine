@@ -9,7 +9,9 @@ enum class CubeFace { POSITIVE_X, NEGATIVE_X, POSITIVE_Y, NEGATIVE_Y, POSITIVE_Z
 class CubeRenderHelper
 {
 public:
-	void beginRender(ITexture* cube_target, unsigned int mip = 0);
+	void beginRender(const XMVECTOR& camera_pos, ITexture* cube_target, unsigned int mip = 0);
+	void setupCamera(CubeFace cube_face);
+	const Camera& getCamera() const { return cam; };
 	void renderFace(CubeFace cube_face);
 	void renderAllFaces();
 	void finishRender();

@@ -38,7 +38,10 @@ public:
 		unsigned int hdr_color_slice, unsigned int tonemapped_color_slice, unsigned int depth_slice, bool ssao_enabled);
 
 	void toggleWireframe() { showWireframe = !showWireframe; }
-	void setEnvironment(ITexture* panoramic_environment_map, float radiance_cutoff = -1.0); // <0 radiance cutoff means no cutoff
+	void setEnvironment(ITexture* panoramic_environment_map, float radiance_cutoff, bool world_probe_enabled, const XMVECTOR& world_probe_pos); // <0 radiance cutoff means no cutoff
+	void resetEnvironment();
+	void onMeshLoaded();
+	void onMaterialTexturesLoaded();
 	unsigned int getShadowResolution();
 	void setShadowResolution(unsigned int shadow_resolution);
 	void setShadowBias(int depth_bias, float slope_scaled_depth_bias);
@@ -84,10 +87,10 @@ private:
 
 	void setupFrame(const Camera& camera, XMVECTOR& out_shadow_camera_pos, XMMATRIX& out_light_view_matrix, XMMATRIX& out_light_proj_matrix);
 	void setupShadowPass(const XMVECTOR& shadow_camera_pos, const XMMATRIX& light_view_matrix, const XMMATRIX& light_proj_matrix);
-	void setupDepthAndForwardPasses(const Camera& camera, ITexture& hdr_color_target, ITexture& depth_target);
+	void setupDepthAndForwardPasses(const Camera& camera, ITexture& hdr_color_target, ITexture& depth_target, unsigned int hdr_color_slice, unsigned int depth_slice);
 	void performShadowPass();
-	void performDepthPrepass(ITexture& depth_target);
-	void performForwardPass(ITexture& hdr_color_target, ITexture& depth_target);
+	void performDepthPrepass(ITexture& depth_target, unsigned int depth_slice);
+	void performForwardPass(ITexture& hdr_color_target, ITexture& depth_target, unsigned int hdr_color_slice, unsigned int depth_slice);
 
 	float time;
 

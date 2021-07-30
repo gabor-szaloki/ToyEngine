@@ -18,7 +18,8 @@ struct EnvironmentBakeResources
 class EnvironmentProbe
 {
 public:
-	EnvironmentProbe();
+	EnvironmentProbe(const XMVECTOR& pos);
+	void renderEnvironmentCube(ITexture* cube_target);
 	void bake(const EnvironmentBakeResources& bake_resources, const ITexture* envi_cube, float radiance_cutoff);
 	ITexture* getIrradianceCube() const { return irradianceCube.get(); };
 	ITexture* getSpecularCube() const { return specularCube.get(); };
@@ -32,5 +33,6 @@ private:
 
 	std::unique_ptr<ITexture> irradianceCube, specularCube;
 	std::unique_ptr<IBuffer> bakeCb;
+	XMVECTOR position;
 };
 

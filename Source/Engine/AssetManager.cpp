@@ -286,6 +286,8 @@ bool AssetManager::loadTexturesToStandardMaterial(const MaterialTexturePaths& pa
 		normalRoughMetalTexture->recreate(normalRoughMetalTexDesc);
 		normalRoughMetalTexture->updateData(0, nullptr, (void*)normalRoughMetalData.data());
 		normalRoughMetalTexture->generateMips();
+
+		wr->onMaterialTexturesLoaded();
 	};
 
 	if (lem == LoadExecutionMode::ASYNC && ASYNC_LOADING_ENABLED)
@@ -627,6 +629,7 @@ bool AssetManager::loadMeshToMeshRenderer(const std::string& name, MeshRenderer&
 				return false;
 		}
 		mesh_renderer.load(*meshData);
+		wr->onMeshLoaded();
 		return true;
 	};
 
@@ -677,7 +680,7 @@ void AssetManager::loadScene(const std::string& scene_file)
 	wr->mainLight->SetRotation(-XM_PI / 3, XM_PI / 3);
 	wr->mainLight->SetColor(XMFLOAT4(1, 1, 1, 1));
 	wr->mainLight->SetIntensity(0);
-	wr->setEnvironment(nullptr);
+	wr->resetEnvironment();
 
 	currentSceneIniFile = std::make_unique<mINI::INIFile>(scene_file);
 	if (!currentSceneIniFile->read(currentSceneIni))
@@ -779,13 +782,15 @@ void AssetManager::loadScene(const std::string& scene_file)
 		else if (elemProperties["type"] == "environment")
 		{
 			float radianceCutoff = elemProperties.has("radiance_cutoff") ? std::stof(elemProperties["radiance_cutoff"]) : -1;
+			bool worldProbeEnabled = elemProperties.has("probe");
+			XMVECTOR worldProbePos = worldProbeEnabled ? str_to_XMVECTOR(elemProperties["probe"]) : XMVectorZero();
 			if (elemProperties.has("panoramic_environment_map"))
 			{
 				am->loadTexture(elemProperties["panoramic_environment_map"], false, true, true,
-					[&, radianceCutoff](ITexture* tex, bool success)
+					[&, radianceCutoff, worldProbeEnabled, worldProbePos](ITexture* tex, bool success)
 					{
 						if (success)
-							wr->setEnvironment(tex, radianceCutoff);
+							wr->setEnvironment(tex, radianceCutoff, worldProbeEnabled, worldProbePos);
 						else
 							delete tex;
 					});
