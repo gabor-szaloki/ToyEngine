@@ -11,9 +11,15 @@ My attempt at a minimalistic graphics playground built from scratch with D3D11
 - Support for different scenes
 - HDR + Tonemapping
 - PBR direct lighting
-- PBR indirect lighting (image-based diffuse + specular)
-- Soft shadows (2 types: simple sampling tent, variable penumbra poisson)
-- Super simple procedural sky (top color, horizon color and bottom color) ...for now
+- PBR indirect lighting
+  - Image-based diffuse + specular
+  - Based on sky or rendered environment map
+- Soft shadows
+  - 2 techniques
+    1. Simple sampling tent
+    2. Poisson disk sampling with variable penumbra
+- Super simple procedural sky ...for now
+  - Top color, horizon color and bottom color
 - HBAO
 
 ## Screenshots
