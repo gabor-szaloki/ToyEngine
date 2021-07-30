@@ -7,6 +7,9 @@
 
 EnvironmentLightingSystem::EnvironmentLightingSystem() : skyProbe(XMVectorZero())
 {
+	currentIrradianceCube = skyProbe.getIrradianceCube();
+	currentSpecularCube = skyProbe.getSpecularCube();
+
 	ShaderSetDesc bakeShaderDesc("IrradianceBake", "Source/Shaders/EnvironmentLighting.shader");
 	bakeShaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "DefaultPostFxVsFunc";
 	bakeShaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "IrradianceBakePS";
@@ -50,24 +53,31 @@ void EnvironmentLightingSystem::bake(const ITexture* envi_cube)
 		std::unique_ptr<ITexture> worldEnviCube;
 		worldEnviCube.reset(drv->createTexture(worldEnviCubeDesc));
 
+		// Temp probe so indirect lighting in world probe won't be just sky
+		EnvironmentProbe tempProbe(worldProbe->getPosition());
+		tempProbe.renderEnvironmentCube(worldEnviCube.get());
+		tempProbe.bake(bakeResources, worldEnviCube.get(), radianceCutoff);
+		currentIrradianceCube = tempProbe.getIrradianceCube();
+		currentSpecularCube = tempProbe.getSpecularCube();
+
 		worldProbe->renderEnvironmentCube(worldEnviCube.get());
 		worldProbe->bake(bakeResources, worldEnviCube.get(), radianceCutoff);
+		currentIrradianceCube = worldProbe->getIrradianceCube();
+		currentSpecularCube = worldProbe->getSpecularCube();
 	}
 
 	dirty = false;
 }
 
+void EnvironmentLightingSystem::markDirty()
+{
+	dirty = true;
+	currentIrradianceCube = skyProbe.getIrradianceCube();
+	currentSpecularCube = skyProbe.getSpecularCube();
+}
+
 void EnvironmentLightingSystem::setWorldProbe(bool enabled, const XMVECTOR& pos)
 {
 	worldProbe.reset(enabled ? new EnvironmentProbe(pos) : nullptr);
-}
-
-ITexture* EnvironmentLightingSystem::getIrradianceCube() const
-{
-	return (worldProbe.get() != nullptr && !dirty) ? worldProbe->getIrradianceCube() : skyProbe.getIrradianceCube();
-}
-
-ITexture* EnvironmentLightingSystem::getSpecularCube() const
-{
-	return (worldProbe.get() != nullptr && !dirty) ? worldProbe->getSpecularCube() : skyProbe.getSpecularCube();
+	markDirty();
 }

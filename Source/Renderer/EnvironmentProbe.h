@@ -23,6 +23,7 @@ public:
 	void bake(const EnvironmentBakeResources& bake_resources, const ITexture* envi_cube, float radiance_cutoff);
 	ITexture* getIrradianceCube() const { return irradianceCube.get(); };
 	ITexture* getSpecularCube() const { return specularCube.get(); };
+	const XMVECTOR& getPosition() const { return position; }
 	static const unsigned int SPECULAR_CUBE_MIPS = 5;
 
 private:

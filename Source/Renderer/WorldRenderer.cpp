@@ -198,7 +198,6 @@ void WorldRenderer::setEnvironment(ITexture* panoramic_environment_map, float ra
 	sky->markDirty();
 	environmentRadianceCutoff = radiance_cutoff;
 	enviLightSystem->setWorldProbe(world_probe_enabled, world_probe_pos);
-	enviLightSystem->markDirty();
 }
 
 void WorldRenderer::resetEnvironment()
