@@ -1,29 +1,29 @@
-#include "ClothSim.h"
+#include "SlimeSim.h"
 
 #include <Driver/IDriver.h>
 #include <Driver/ITexture.h>
 
-ClothSim::ClothSim(int display_width, int display_height)
+SlimeSim::SlimeSim(int display_width, int display_height)
 {
 	initResolutionDependentResources(display_width, display_height);
 
-	ComputeShaderDesc simShaderDesc("ClothSimComputeShader", "Source/Shaders/Experiments/ClothSim.shader", "ClothSimCS");
+	ComputeShaderDesc simShaderDesc("SlimeSimComputeShader", "Source/Shaders/Experiments/SlimeSim.shader", "SlimeSimCS");
 	simShader = drv->createComputeShader(simShaderDesc);
 }
 
-void ClothSim::onResize(int display_width, int display_height)
+void SlimeSim::onResize(int display_width, int display_height)
 {
 	closeResolutionDependentResources();
 	initResolutionDependentResources(display_width, display_height);
 }
 
-void ClothSim::update(float delta_time)
+void SlimeSim::update(float delta_time)
 {
 }
 
-void ClothSim::render(ITexture& target)
+void SlimeSim::render(ITexture& target)
 {
-	PROFILE_SCOPE("ClothSim");
+	PROFILE_SCOPE("SlimeSim");
 
 	drv->setRwTexture(0, simTarget->getId());
 	drv->setShader(simShader, 0);
@@ -37,17 +37,17 @@ void ClothSim::render(ITexture& target)
 	simTarget->copyResource(target.getId());
 }
 
-void ClothSim::initResolutionDependentResources(int display_width, int display_height)
+void SlimeSim::initResolutionDependentResources(int display_width, int display_height)
 {
 	width = display_width;
 	height = display_height;
 
-	TextureDesc simTargetDesc("clothSimTarget", display_width, display_height);
+	TextureDesc simTargetDesc("slimeSimTarget", display_width, display_height);
 	simTargetDesc.bindFlags = BIND_UNORDERED_ACCESS | BIND_SHADER_RESOURCE;
 	simTarget.reset(drv->createTexture(simTargetDesc));
 }
 
-void ClothSim::closeResolutionDependentResources()
+void SlimeSim::closeResolutionDependentResources()
 {
 	simTarget.reset();
 }

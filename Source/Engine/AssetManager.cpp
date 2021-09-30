@@ -15,7 +15,7 @@
 #include <Renderer/WorldRenderer.h>
 #include <Renderer/Light.h>
 #include <Renderer/ConstantBuffers.h>
-#include <Renderer/Experiments/ClothSim.h>
+#include <Renderer/Experiments/SlimeSim.h>
 
 #include "Material.h"
 #include "MeshRenderer.h"
@@ -799,11 +799,11 @@ void AssetManager::loadScene(const std::string& scene_file)
 					});
 			}
 		}
-		else if (elemProperties["type"] == "cloth_sim_experiment")
+		else if (elemProperties["type"] == "slime_sim_experiment")
 		{
 			int w, h;
 			drv->getDisplaySize(w, h);
-			fe = new ClothSim(w, h);
+			fe = new SlimeSim(w, h);
 		}
 	}
 }

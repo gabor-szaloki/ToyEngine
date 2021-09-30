@@ -186,7 +186,7 @@
     <ClCompile Include="Source\Renderer\EnvironmentProbe.cpp">
       <Filter>Source\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer\Experiments\ClothSim.cpp">
+    <ClCompile Include="Source\Renderer\Experiments\SlimeSim.cpp">
       <Filter>Source\Renderer\Experiments</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1256,7 +1256,7 @@
     <ClInclude Include="Source\Renderer\Experiments\IFullscreenExperiment.h">
       <Filter>Source\Renderer\Experiments</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Renderer\Experiments\ClothSim.h">
+    <ClInclude Include="Source\Renderer\Experiments\SlimeSim.h">
       <Filter>Source\Renderer\Experiments</Filter>
     </ClInclude>
   </ItemGroup>
@@ -1731,7 +1731,7 @@
     <None Include="Source\Shaders\Hammersley.hlsl">
       <Filter>Source\Shaders</Filter>
     </None>
-    <None Include="Source\Shaders\Experiments\ClothSim.shader">
+    <None Include="Source\Shaders\Experiments\SlimeSim.shader">
       <Filter>Source\Shaders\Experiments</Filter>
     </None>
   </ItemGroup>

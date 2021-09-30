@@ -8,10 +8,10 @@
 
 class ITexture;
 
-class ClothSim : public IFullscreenExperiment
+class SlimeSim : public IFullscreenExperiment
 {
 public:
-	ClothSim(int display_width, int display_height);
+	SlimeSim(int display_width, int display_height);
 	virtual void onResize(int display_width, int display_height) override;
 	virtual void update(float delta_time) override;
 	virtual void render(class ITexture& target) override;
