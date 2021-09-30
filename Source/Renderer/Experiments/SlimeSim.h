@@ -20,7 +20,26 @@ private:
 	void initResolutionDependentResources(int display_width, int display_height);
 	void closeResolutionDependentResources();
 
+	struct SlimeSimCbData
+	{
+		unsigned int width;
+		unsigned int height;
+		unsigned int numAgents;
+		float agentMoveSpeed;
+
+		float deltaTime;
+		float pad[3];
+	} cbData;
+
+	struct Agent
+	{
+		XMFLOAT2 position;
+		float angle;
+	};
+
 	int width = 0, height = 0;
-	std::unique_ptr<ITexture> simTarget;
-	ResIdHolder simShader;
+	std::unique_ptr<IBuffer> cb;
+	std::unique_ptr<IBuffer> agentBuffer;
+	std::unique_ptr<ITexture> slimeMap;
+	ResIdHolder slimeSimShader;
 };

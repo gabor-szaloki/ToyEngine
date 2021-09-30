@@ -2,6 +2,7 @@
 
 #define NOMINMAX
 #include <Windows.h>
+#include <stdlib.h>
 #include <3rdParty/imgui/imgui.h>
 #include <3rdParty/imgui/implot.h>
 #include <Driver/IDriver.h>
@@ -29,6 +30,16 @@ char* wcs_to_utf8(const wchar_t* wcs_str, char* utf8_buf, int utf8_buf_len)
 		return NULL;
 	utf8_buf[cnt < utf8_buf_len ? cnt : utf8_buf_len - 1] = L'\0';
 	return utf8_buf;
+}
+
+float random_01()
+{
+	return rand() / float(RAND_MAX);
+}
+
+float random_range(float min, float max)
+{
+	return random_01() * (min - max) + min;
 }
 
 static void driver_settings_window()
