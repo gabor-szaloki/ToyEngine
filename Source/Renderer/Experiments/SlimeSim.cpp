@@ -31,7 +31,7 @@ SlimeSim::SlimeSim(int display_width, int display_height)
 
 	std::vector<Agent> agentsInitialData;
 	agentsInitialData.resize(cbData.numAgents);
-	for (int i = 0; i < cbData.numAgents; i++)
+	for (unsigned int i = 0; i < cbData.numAgents; i++)
 	{
 		agentsInitialData[i].position = XMFLOAT2(random_01() * width, random_01() * height);
 		agentsInitialData[i].angle = random_01() * XM_2PI;
