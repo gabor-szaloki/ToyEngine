@@ -80,6 +80,11 @@ void Texture::updateData(unsigned int dst_subresource, const IntBox* dst_box, co
 	}
 }
 
+void Texture::copyResource(ResId dst_tex_id) const
+{
+	Driver::get().copyTexture(dst_tex_id, id);
+}
+
 void Texture::generateMips()
 {
 	assert(desc.miscFlags & RESOURCE_MISC_GENERATE_MIPS);

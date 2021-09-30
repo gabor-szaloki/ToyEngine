@@ -106,6 +106,8 @@ namespace drv_d3d11
 		ResId registerInputLayout(InputLayout* input_layout);
 		void unregisterInputLayout(ResId id);
 
+		void copyTexture(ResId dst_tex_id, ResId src_tex_id);
+
 	private:
 		bool initResolutionDependentResources(int display_width, int display_height);
 		void closeResolutionDependentResources();

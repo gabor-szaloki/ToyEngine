@@ -3,6 +3,7 @@
 #include <float.h>
 #include <string>
 #include <cmath>
+#include <Common.h>
 #include "TexFmt.h"
 #include "DriverConsts.h"
 #include "DriverSettings.h"
@@ -188,6 +189,11 @@ struct RenderTargetClearParams
 		p.color[2] = color_b;
 		p.color[3] = color_a;
 		return p;
+	}
+
+	static inline RenderTargetClearParams clear_color(XMFLOAT4 color)
+	{
+		return clear_color(color.x, color.y, color.z, color.w);
 	}
 
 	static inline RenderTargetClearParams clear_depth(float depth)

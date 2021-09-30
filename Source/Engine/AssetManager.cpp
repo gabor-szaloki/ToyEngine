@@ -15,6 +15,7 @@
 #include <Renderer/WorldRenderer.h>
 #include <Renderer/Light.h>
 #include <Renderer/ConstantBuffers.h>
+#include <Renderer/Experiments/ClothSim.h>
 
 #include "Material.h"
 #include "MeshRenderer.h"
@@ -677,6 +678,8 @@ XMVECTOR str_to_XMVECTOR(std::string s)
 
 void AssetManager::loadScene(const std::string& scene_file)
 {
+	SAFE_DELETE(fe);
+
 	wr->mainLight->SetRotation(-XM_PI / 3, XM_PI / 3);
 	wr->mainLight->SetColor(XMFLOAT4(1, 1, 1, 1));
 	wr->mainLight->SetIntensity(0);
@@ -795,6 +798,12 @@ void AssetManager::loadScene(const std::string& scene_file)
 							delete tex;
 					});
 			}
+		}
+		else if (elemProperties["type"] == "cloth_sim_experiment")
+		{
+			int w, h;
+			drv->getDisplaySize(w, h);
+			fe = new ClothSim(w, h);
 		}
 	}
 }

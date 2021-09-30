@@ -17,6 +17,7 @@ namespace drv_d3d11
 		const ResId& getId() const override { return id; };
 		void* getViewHandle() const override { return srv; };
 		void updateData(unsigned int dst_subresource, const IntBox* dst_box, const void* src_data) override;
+		virtual void copyResource(ResId dst_tex_id) const override;
 		void generateMips() override;
 		bool isStub() override { return isStub_; }
 		void setStub(bool is_stub) override { isStub_ = is_stub; }

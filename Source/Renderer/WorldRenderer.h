@@ -20,6 +20,7 @@ class MeshRenderer;
 class Hbao;
 class Sky;
 class EnvironmentLightingSystem;
+class IFullscreenExperiment;
 
 struct MeshData;
 

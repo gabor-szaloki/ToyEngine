@@ -11,6 +11,7 @@ IDriver* drv;
 ThreadPool* tp;
 AssetManager* am;
 WorldRenderer* wr;
+IFullscreenExperiment* fe;
 
 wchar_t* utf8_to_wcs(const char* utf8_str, wchar_t* wcs_buf, int wcs_buf_len)
 {
@@ -38,6 +39,7 @@ static void driver_settings_window()
 	changed |= ImGui::SliderInt("Texture filtering anisotropy", (int*)&drvSettings.textureFilteringAnisotropy, 0, 16);
 	changed |= ImGui::Checkbox("V-sync", &drvSettings.vsync);
 	changed |= ImGui::SliderInt("FPS limit", &drvSettings.fpsLimit, 0, 360); // fpsLimit is handled outside of driver
+	changed |= ImGui::InputText("Shader recompile filter", drvSettings.shaderRecompileFilter, ARRAYSIZE(drvSettings.shaderRecompileFilter));
 
 	if (changed)
 		drv->setSettings(drvSettings);

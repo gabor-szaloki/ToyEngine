@@ -47,6 +47,7 @@
     <ClCompile Include="Source\Renderer\CubeRenderHelper.cpp" />
     <ClCompile Include="Source\Renderer\EnvironmentLightingSystem.cpp" />
     <ClCompile Include="Source\Renderer\EnvironmentProbe.cpp" />
+    <ClCompile Include="Source\Renderer\Experiments\ClothSim.cpp" />
     <ClCompile Include="Source\Renderer\Light.cpp" />
     <ClCompile Include="Source\Renderer\PostFx.cpp" />
     <ClCompile Include="Source\Renderer\Sky.cpp" />
@@ -398,6 +399,8 @@
     <ClInclude Include="Source\Renderer\CubeRenderHelper.h" />
     <ClInclude Include="Source\Renderer\EnvironmentLightingSystem.h" />
     <ClInclude Include="Source\Renderer\EnvironmentProbe.h" />
+    <ClInclude Include="Source\Renderer\Experiments\ClothSim.h" />
+    <ClInclude Include="Source\Renderer\Experiments\IFullscreenExperiment.h" />
     <ClInclude Include="Source\Renderer\Light.h" />
     <ClInclude Include="Source\Renderer\PostFx.h" />
     <ClInclude Include="Source\Renderer\Sky.h" />
@@ -556,6 +559,7 @@
       <FileType>Document</FileType>
     </None>
     <None Include="Source\Shaders\Error.shader" />
+    <None Include="Source\Shaders\Experiments\ClothSim.shader" />
     <None Include="Source\Shaders\HBAO.hlsli" />
     <None Include="Source\Shaders\HBAO.shader" />
     <None Include="Source\Shaders\EnvironmentLighting.shader" />

@@ -70,6 +70,12 @@
     <Filter Include="Source\3rdParty\stb">
       <UniqueIdentifier>{75439ee2-cb6b-46ba-a5a7-1aea38a21181}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Renderer\Experiments">
+      <UniqueIdentifier>{b49e6ed3-172c-4f57-b09a-02abab83eff8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Shaders\Experiments">
+      <UniqueIdentifier>{492f3bec-2c0c-4091-9453-c4df18c7e21e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Common.cpp">
@@ -179,6 +185,9 @@
     </ClCompile>
     <ClCompile Include="Source\Renderer\EnvironmentProbe.cpp">
       <Filter>Source\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\Experiments\ClothSim.cpp">
+      <Filter>Source\Renderer\Experiments</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1244,6 +1253,12 @@
     <ClInclude Include="Source\Renderer\EnvironmentProbe.h">
       <Filter>Source\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Renderer\Experiments\IFullscreenExperiment.h">
+      <Filter>Source\Renderer\Experiments</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\Experiments\ClothSim.h">
+      <Filter>Source\Renderer\Experiments</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Source\3rdParty\glm\CMakeLists.txt">
@@ -1715,6 +1730,9 @@
     </None>
     <None Include="Source\Shaders\Hammersley.hlsl">
       <Filter>Source\Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\Experiments\ClothSim.shader">
+      <Filter>Source\Shaders\Experiments</Filter>
     </None>
   </ItemGroup>
 </Project>

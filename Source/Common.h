@@ -10,6 +10,7 @@ extern class IDriver* drv;
 extern class ThreadPool* tp;
 extern class AssetManager* am;
 extern class WorldRenderer* wr;
+extern class IFullscreenExperiment* fe;
 extern void create_driver_d3d11();
 extern void* get_hwnd();
 extern void exit_program();
@@ -25,6 +26,9 @@ char* wcs_to_utf8(const wchar_t* wcs_str, char* utf8_buf, int utf8_buf_len);
 #define DEG_TO_RAD 0.0174532925f;
 inline float to_deg(float rad) { return rad * RAD_TO_DEG; }
 inline float to_rad(float deg) { return deg * DEG_TO_RAD; }
+
+#define SAFE_DELETE(p) { if (p != nullptr) { delete p; p = nullptr; } }
+#define SAFE_DELETE_ARRAY(arr) { if (arr != nullptr) { delete arr; arr = nullptr; } }
 
 enum class RenderPass
 {

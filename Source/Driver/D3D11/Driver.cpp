@@ -605,14 +605,19 @@ void Driver::setSettings(const DriverSettings& new_settings)
 
 void Driver::recompileShaders()
 {
-	bool allCompiledSuccessfully = true;
+	int numShaders = 0, numShadersFailedToCompile = 0;
 	for (auto& [k, v] : shaders)
+	{
+		if (strlen(settings.shaderRecompileFilter) > 0 && strstr(v->getName().c_str(), settings.shaderRecompileFilter) == nullptr)
+			continue;
 		if (!v->recompile())
-			allCompiledSuccessfully = false;
-	if (allCompiledSuccessfully)
-		PLOG_INFO << "Shaders recompiled successfully";
+			numShadersFailedToCompile++;
+		numShaders++;
+	}
+	if (numShadersFailedToCompile <= 0)
+		PLOG_INFO << "Shaders recompiled successfully. Number of shaders: " << numShaders;
 	else
-		PLOG_ERROR << "There were errors during shader recompilation.";
+		PLOG_ERROR << "There were errors during shader recompilation. Number of shaders: " << numShaders << " Number of shaders failed to compile: " << numShadersFailedToCompile;
 }
 
 void Driver::setErrorShaderDesc(const ShaderSetDesc& desc)
@@ -712,6 +717,18 @@ void Driver::unregisterInputLayout(ResId id)
 {
 	RESOURCE_LOCK_GUARD
 	erase_resource(id, inputLayouts);
+}
+
+void Driver::copyTexture(ResId dst_tex_id, ResId src_tex_id)
+{
+	RESOURCE_LOCK_GUARD
+	assert(dst_tex_id != BAD_RESID);
+	assert(textures.find(dst_tex_id) != textures.end());
+	assert(src_tex_id != BAD_RESID);
+	assert(textures.find(src_tex_id) != textures.end());
+
+	CONTEXT_LOCK_GUARD
+	context->CopyResource(textures[dst_tex_id]->getResource(), textures[src_tex_id]->getResource());
 }
 
 bool Driver::initResolutionDependentResources(int display_width, int display_height)

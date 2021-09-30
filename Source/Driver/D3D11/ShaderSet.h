@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 #include "Driver.h"
 
 namespace drv_d3d11
@@ -12,6 +13,7 @@ namespace drv_d3d11
 		ShaderSet(const ComputeShaderDesc& desc_);
 		~ShaderSet();
 		const ResId& getId() const { return id; }
+		const std::string& getName() const { return isCompute() ? computeDesc.name : desc.name; }
 		bool recompile();
 		ID3DBlob* getVsBlob() const { return variants.empty() ? nullptr : variants[0].vsBlob; }
 		bool isCompute() const { return isCompute_; }

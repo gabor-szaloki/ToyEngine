@@ -10,8 +10,10 @@
 #include <3rdParty/plog/Log.h>
 #include <3rdParty/plog/Appenders/RollingFileAppender.h>
 #include <3rdParty/plog/Appenders/DebugOutputAppender.h>
+#include <Driver/ITexture.h>
 #include <Engine/AssetManager.h>
 #include <Renderer/WorldRenderer.h>
+#include <Renderer/Experiments/IFullscreenExperiment.h>
 #include <Util/AutoImGui.h>
 #include <Util/ImGuiLogWindow.h>
 #include <Util/FpsLimiter.h>
@@ -127,6 +129,7 @@ static void shutdown()
 	delete tp; // delete ThreadPool first, so jobs in flight don't end up working on deleted data
 	delete wr;
 	delete am;
+	SAFE_DELETE(fe);
 	drv->shutdown();
 	delete drv;
 	autoimgui::shutdown();
@@ -145,13 +148,24 @@ static void update()
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 	autoimgui::perform();
-	wr->update(deltaTimeInSeconds);
+	if (fe != nullptr)
+		fe->update(deltaTimeInSeconds);
+	else
+		wr->update(deltaTimeInSeconds);
 }
 
 static void render()
 {
-	wr->beforeRender();
-	wr->render();
+	if (fe != nullptr)
+		fe->render(*drv->getBackbufferTexture());
+	else
+	{
+		wr->beforeRender();
+		wr->render();
+	}
+
+	drv->setRenderTarget(drv->getBackbufferTexture()->getId(), BAD_RESID);
+
 	if (autoimgui::is_active)
 		ImGui::Render();
 	else
@@ -343,6 +357,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		w = std::max(8, w);
 		h = std::max(8, h);
 		wr->onResize(w, h);
+		if (fe != nullptr)
+			fe->onResize(w, h);
 		break;
 	}
 	}
