@@ -189,6 +189,9 @@
     <ClCompile Include="Source\Renderer\Experiments\SlimeSim.cpp">
       <Filter>Source\Renderer\Experiments</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Renderer\RenderUtil.cpp">
+      <Filter>Source\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common.h">
@@ -1259,6 +1262,9 @@
     <ClInclude Include="Source\Renderer\Experiments\SlimeSim.h">
       <Filter>Source\Renderer\Experiments</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Renderer\RenderUtil.h">
+      <Filter>Source\Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Source\3rdParty\glm\CMakeLists.txt">
@@ -1733,6 +1739,9 @@
     </None>
     <None Include="Source\Shaders\Experiments\SlimeSim.shader">
       <Filter>Source\Shaders\Experiments</Filter>
+    </None>
+    <None Include="Source\Shaders\Blit.shader">
+      <Filter>Source\Shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

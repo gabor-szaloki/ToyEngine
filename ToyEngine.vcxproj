@@ -50,6 +50,7 @@
     <ClCompile Include="Source\Renderer\Experiments\SlimeSim.cpp" />
     <ClCompile Include="Source\Renderer\Light.cpp" />
     <ClCompile Include="Source\Renderer\PostFx.cpp" />
+    <ClCompile Include="Source\Renderer\RenderUtil.cpp" />
     <ClCompile Include="Source\Renderer\Sky.cpp" />
     <ClCompile Include="Source\Renderer\Hbao.cpp" />
     <ClCompile Include="Source\Renderer\WorldRenderer.cpp" />
@@ -403,6 +404,7 @@
     <ClInclude Include="Source\Renderer\Experiments\IFullscreenExperiment.h" />
     <ClInclude Include="Source\Renderer\Light.h" />
     <ClInclude Include="Source\Renderer\PostFx.h" />
+    <ClInclude Include="Source\Renderer\RenderUtil.h" />
     <ClInclude Include="Source\Renderer\Sky.h" />
     <ClInclude Include="Source\Renderer\Hbao.h" />
     <ClInclude Include="Source\Renderer\WorldRenderer.h" />
@@ -555,6 +557,7 @@
     <None Include="Source\3rdParty\glm\gtx\vector_angle.inl" />
     <None Include="Source\3rdParty\glm\gtx\vector_query.inl" />
     <None Include="Source\3rdParty\glm\gtx\wrap.inl" />
+    <None Include="Source\Shaders\Blit.shader" />
     <None Include="Source\Shaders\BRDF.hlsl">
       <FileType>Document</FileType>
     </None>

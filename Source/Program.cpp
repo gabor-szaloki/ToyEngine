@@ -13,6 +13,7 @@
 #include <Driver/ITexture.h>
 #include <Engine/AssetManager.h>
 #include <Renderer/WorldRenderer.h>
+#include <Renderer/RenderUtil.h>
 #include <Renderer/Experiments/IFullscreenExperiment.h>
 #include <Util/AutoImGui.h>
 #include <Util/ImGuiLogWindow.h>
@@ -113,6 +114,8 @@ static bool init()
 	PLOG_INFO << "Initializing thread pool with " << numWorkerThreads << " threads";
 	tp = new ThreadPool(numWorkerThreads);
 
+	render_util::init();
+
 	am = new AssetManager();
 
 	wr = new WorldRenderer();
@@ -130,6 +133,7 @@ static void shutdown()
 	delete wr;
 	delete am;
 	SAFE_DELETE(fe);
+	render_util::shutdown();
 	drv->shutdown();
 	delete drv;
 	autoimgui::shutdown();
@@ -149,7 +153,10 @@ static void update()
 	ImGui::NewFrame();
 	autoimgui::perform();
 	if (fe != nullptr)
+	{
+		fe->gui();
 		fe->update(deltaTimeInSeconds);
+	}
 	else
 		wr->update(deltaTimeInSeconds);
 }
