@@ -53,7 +53,7 @@ Hbao::Hbao(XMINT2 resolution_) : resolution(resolution_)
 		float rand2 = rand() / float(RAND_MAX);
 
 		// Use random rotation angles in [0,2PI/NUM_DIRECTIONS)
-		float angle = 2.f * M_PI * rand1 / NUM_DIRECTIONS;
+		float angle = 2.f * XM_PI * rand1 / NUM_DIRECTIONS;
 
 		XMFLOAT4 randomTexel;
 		randomTexel.x = cosf(angle);
