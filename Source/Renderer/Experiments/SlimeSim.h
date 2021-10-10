@@ -20,7 +20,7 @@ public:
 private:
 	void initResolutionDependentResources(int display_width, int display_height);
 	void closeResolutionDependentResources();
-	void fillAgentBuffer();
+	void initAgentBuffer();
 	void clear();
 	void reset();
 
@@ -29,11 +29,16 @@ private:
 		unsigned int width;
 		unsigned int height;
 		unsigned int numAgents;
-		float agentMoveSpeed;
-
 		float deltaTime;
+
+		float agentMoveSpeed;
+		float agentTurnSpeed;
 		float evaporateSpeed;
 		float diffuseSpeed;
+
+		float sensorOffsetAngle;
+		float sensorOffsetDistance;
+		int sensorRadius;
 		float pad[1];
 	} cbData;
 
@@ -44,6 +49,9 @@ private:
 	};
 
 	int width = 0, height = 0;
+	int displayWidth = 0, displayHeight = 0;
+	float timeScale = 1.f;
+	float resulutionScale;
 	std::unique_ptr<IBuffer> cb;
 	std::unique_ptr<IBuffer> agentBuffer;
 	std::unique_ptr<ITexture> slimeMaps[2];

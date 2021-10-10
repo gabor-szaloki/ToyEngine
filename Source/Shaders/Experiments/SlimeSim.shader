@@ -8,11 +8,16 @@ cbuffer SlimeSimConstantBuffer : register(b0)
 	uint _Width;
 	uint _Height;
 	uint _NumAgents;
-	float _AgentMoveSpeed;
-
 	float _DeltaTime;
+
+	float _AgentMoveSpeed;
+	float _AgentTurnSpeed;
 	float _EvaporateSpeed;
 	float _DiffuseSpeed;
+
+	float _SensorOffsetAngle;
+	float _SensorOffsetDistance;
+	int _SensorRadius;
 	float pad;
 }
 
@@ -53,6 +58,28 @@ void Clear(uint2 id : SV_DispatchThreadID)
 	_PostProcessedSlimeMap[id] = 0;
 }
 
+float sense(Agent agent, float angleOffset)
+{
+	float sensorAngle = agent.angle + angleOffset;
+	float sinAngle, cosAngle;
+	sincos(sensorAngle, sinAngle, cosAngle);
+	float2 sensorDir = float2(cosAngle, sinAngle);
+	int2 sensorCentre = round(agent.position + sensorDir * _SensorOffsetDistance);
+
+	float sum = 0;
+	for (int offsetX = -_SensorRadius; offsetX <= _SensorRadius; offsetX++)
+	{
+		for (int offsetY = -_SensorRadius; offsetY <= _SensorRadius; offsetY++)
+		{
+			int2 pos = sensorCentre + int2(offsetX, offsetY);
+			if (all(pos >= 0) && all(pos < int2(_Width, _Height)))
+				sum += _SlimeMap[pos].x;
+		}
+	}
+
+	return sum;
+}
+
 [numthreads(64, 1, 1)]
 void Update(uint id : SV_DispatchThreadID)
 {
@@ -62,21 +89,40 @@ void Update(uint id : SV_DispatchThreadID)
 	Agent agent = _Agents[id];
 	float random = hash01(agent.position.y * 4321 + agent.position.x * 6789 + hash(id));
 
+	// Steer based on sensory data
+	float weightForward = sense(agent, 0);
+	float weightLeft = sense(agent, _SensorOffsetAngle);
+	float weightRight = sense(agent, -_SensorOffsetAngle);
+
+	// Continue in same direction, do nothing
+	if (weightForward > weightLeft && weightForward > weightRight) {}
+	// Turn randomly
+	else if (weightForward < weightLeft && weightForward < weightRight)
+		agent.angle += (random - 0.5) * 2 * _AgentTurnSpeed * _DeltaTime;
+	// Turn right
+	else if (weightRight > weightLeft)
+		agent.angle -= random * _AgentTurnSpeed * _DeltaTime;
+	// Turn left
+	else if (weightLeft > weightRight)
+		agent.angle += random * _AgentTurnSpeed * _DeltaTime;
+
 	// Move agent based on direction and speed
-	float2 direction = float2(cos(agent.angle), sin(agent.angle));
-	float2 newPos = agent.position + direction * _AgentMoveSpeed * _DeltaTime;
+	float sinAngle, cosAngle;
+	sincos(agent.angle, sinAngle, cosAngle);
+	float2 direction = float2(cosAngle, sinAngle);
+	agent.position += direction * _AgentMoveSpeed * _DeltaTime;
 
 	// Clamp position to map boundaries, and pick new random move angle if hit boundary
-	if (any(newPos < 0) || any(newPos >= float2(_Width, _Height)))
+	if (any(agent.position < 0) || any(agent.position >= float2(_Width, _Height)))
 	{
-		newPos.x = clamp(newPos.x, 0.0, _Width - 0.01);
-		newPos.y = clamp(newPos.y, 0.0, _Height - 0.01);
-		_Agents[id].angle = random * 2 * PI;
+		agent.position.x = clamp(agent.position.x, 0.0, _Width - 0.01);
+		agent.position.y = clamp(agent.position.y, 0.0, _Height - 0.01);
+		agent.angle = random * 2 * PI;
 	}
 
 	// Set new position and draw trail
-	_Agents[id].position = newPos;
-	_SlimeMap[(int2)newPos] = 1;
+	_Agents[id] = agent;
+	_SlimeMap[(int2)agent.position] = 1;
 }
 
 [numthreads(16, 16, 1)]

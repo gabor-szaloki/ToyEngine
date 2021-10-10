@@ -9,11 +9,17 @@
 
 SlimeSim::SlimeSim(int display_width, int display_height)
 {
-	cbData.numAgents = 300;
-	cbData.agentMoveSpeed = 50.0f;
-	cbData.deltaTime = 0;
-	cbData.evaporateSpeed = 0.15f;
-	cbData.diffuseSpeed = 20.f;
+	resulutionScale = 1.0f;
+
+	cbData.numAgents = 100000;
+	cbData.agentMoveSpeed = 60.0f;
+	cbData.agentTurnSpeed = 30.f;
+	cbData.evaporateSpeed = 0.3f;
+	cbData.diffuseSpeed = 15.f;
+
+	cbData.sensorOffsetAngle = XM_PI / 3.0f;
+	cbData.sensorOffsetDistance = 20;
+	cbData.sensorRadius = 3;
 
 	BufferDesc cbDesc;
 	cbDesc.bindFlags = BIND_CONSTANT_BUFFER;
@@ -35,16 +41,7 @@ SlimeSim::SlimeSim(int display_width, int display_height)
 	postProcessShader = drv->createComputeShader(shaderDesc);
 
 	initResolutionDependentResources(display_width, display_height);
-
-	BufferDesc agentBufferDesc;
-	agentBufferDesc.bindFlags = BIND_UNORDERED_ACCESS;
-	agentBufferDesc.miscFlags = RESOURCE_MISC_BUFFER_STRUCTURED;
-	agentBufferDesc.numElements = cbData.numAgents;
-	agentBufferDesc.name = "SlimeAgentsBuffer";
-	agentBufferDesc.elementByteSize = sizeof(Agent);
-	agentBuffer.reset(drv->createBuffer(agentBufferDesc));
-
-	fillAgentBuffer();
+	initAgentBuffer();
 }
 
 void SlimeSim::onResize(int display_width, int display_height)
@@ -55,7 +52,7 @@ void SlimeSim::onResize(int display_width, int display_height)
 
 void SlimeSim::update(float delta_time)
 {
-	cbData.deltaTime = delta_time;
+	cbData.deltaTime = delta_time * timeScale;
 }
 
 void SlimeSim::render(ITexture& target)
@@ -96,6 +93,20 @@ void SlimeSim::gui()
 {
 	ImGui::Begin("Slime Simulation");
 
+	if (ImGui::SliderFloat("Resolution scale", &resulutionScale, 0.25, 2))
+		onResize(displayWidth, displayHeight);
+	ImGui::SliderFloat("Time scale", &timeScale, 0, 10);
+	int numAgents = (int)cbData.numAgents;
+	ImGui::InputInt("Number of agents", &numAgents);
+	cbData.numAgents = numAgents < 0 ? 0 : numAgents;
+	ImGui::SliderFloat("Agent move speed", &cbData.agentMoveSpeed, 0, 500);
+	ImGui::SliderFloat("Agent turn speed", &cbData.agentTurnSpeed, 0, 100);
+	ImGui::SliderFloat("Evaporate speed", &cbData.evaporateSpeed, 0, 1);
+	ImGui::SliderFloat("Diffuse speed", &cbData.diffuseSpeed, 0, 100);
+	ImGui::SliderAngle("Sensor offset angle", &cbData.sensorOffsetAngle, -90, 90);
+	ImGui::SliderFloat("Sensor offset distance", &cbData.sensorOffsetDistance, 0, 20);
+	ImGui::SliderInt("Sensor radius", &cbData.sensorRadius, 0, 10);
+
 	if (ImGui::Button("Reset"))
 		reset();
 
@@ -104,8 +115,10 @@ void SlimeSim::gui()
 
 void SlimeSim::initResolutionDependentResources(int display_width, int display_height)
 {
-	width = display_width / 4;
-	height = display_height / 4;
+	displayWidth = display_width;
+	displayHeight = displayHeight;
+	width = (int)roundf(display_width * resulutionScale);
+	height = (int)roundf(display_height * resulutionScale);
 	cbData.width = width;
 	cbData.height = height;
 
@@ -124,14 +137,33 @@ void SlimeSim::closeResolutionDependentResources()
 		sm.reset();
 }
 
-void SlimeSim::fillAgentBuffer()
+void SlimeSim::initAgentBuffer()
 {
+	if (agentBuffer == nullptr || agentBuffer->getDesc().numElements != cbData.numAgents)
+	{
+		agentBuffer.reset();
+		BufferDesc agentBufferDesc;
+		agentBufferDesc.bindFlags = BIND_UNORDERED_ACCESS;
+		agentBufferDesc.miscFlags = RESOURCE_MISC_BUFFER_STRUCTURED;
+		agentBufferDesc.numElements = cbData.numAgents;
+		agentBufferDesc.name = "SlimeAgentsBuffer";
+		agentBufferDesc.elementByteSize = sizeof(Agent);
+		agentBuffer.reset(drv->createBuffer(agentBufferDesc));
+	}
+
 	std::vector<Agent> agentsInitialData;
 	agentsInitialData.resize(cbData.numAgents);
 	for (unsigned int i = 0; i < cbData.numAgents; i++)
 	{
-		agentsInitialData[i].position = XMFLOAT2(random_01() * width, random_01() * height);
-		agentsInitialData[i].angle = random_01() * XM_2PI;
+		//agentsInitialData[i].position = XMFLOAT2(random_01() * width, random_01() * height);
+		//agentsInitialData[i].angle = random_01() * XM_2PI;
+
+		float randomAngle = random_01() * XM_2PI;
+		float radius = fminf(width, height) * 0.45f;
+		float distFromCenter = sqrtf(random_01()) * radius;
+		XMFLOAT2 centre = XMFLOAT2(width * 0.5f, height * 0.5f);
+		agentsInitialData[i].position = XMFLOAT2(centre.x + cosf(randomAngle) * distFromCenter, centre.y + sinf(randomAngle) * distFromCenter);
+		agentsInitialData[i].angle = randomAngle + XM_PI;
 	}
 	agentBuffer->updateData(agentsInitialData.data());
 }
@@ -149,5 +181,5 @@ void SlimeSim::clear()
 void SlimeSim::reset()
 {
 	clear();
-	fillAgentBuffer();
+	initAgentBuffer();
 }
