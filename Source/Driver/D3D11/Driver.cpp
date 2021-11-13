@@ -42,8 +42,8 @@ bool Driver::init(void* hwnd, int display_width, int display_height)
 	scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
 	unsigned int creationFlags = 0;
-#if defined(_DEBUG)
-	creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#if defined(TOY_DEBUG)
+	creationFlags |= D3D11_CREATE_DEVICE_DEBUG; // TODO: make this a cmd line param
 #endif
 
 	hr = D3D11CreateDeviceAndSwapChain(

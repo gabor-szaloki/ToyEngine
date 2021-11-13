@@ -43,7 +43,7 @@ struct ProfileScopeHelper
 	~ProfileScopeHelper();
 };
 
-#define PROFILE_MARKERS_ENABLED _DEBUG
+#define PROFILE_MARKERS_ENABLED (TOY_DEBUG || TOY_DEV)
 #if PROFILE_MARKERS_ENABLED
 	#define TOY_PS_CC0(a, b) a##b
 	#define TOY_PS_CC1(a, b) TOY_PS_CC0(a, b)

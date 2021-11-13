@@ -76,7 +76,7 @@ static void init_logging()
 	char timeStampBuf[MAX_PATH];
 	strftime(timeStampBuf, sizeof(timeStampBuf), "%Y_%m_%d_%H_%M_%S", &timeNow);
 	std::string timeStamp(timeStampBuf);
-#if defined(_DEBUG)
+#if defined(TOY_DEBUG)
 	const plog::Severity logSeverity = plog::debug;
 	log_file_path = ".log/" + timeStamp + "_dbg.log";
 #else

@@ -181,7 +181,7 @@ static T* compile_and_create_shader(
 	defines.push_back({ NULL, NULL });
 
 	unsigned int flags1 = 0, flags2 = 0;
-#if defined(_DEBUG)
+#if defined(TOY_DEBUG)
 	flags1 |= D3DCOMPILE_DEBUG;
 #endif
 
