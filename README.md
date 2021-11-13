@@ -10,6 +10,7 @@ My attempt at a minimalistic graphics playground built from scratch with D3D11
 - Minimalistic support for multi-compiling shader variants
 - Support for different scenes
 - Framework for 2D shadertoy-like experiments
+  - Slime mold experiment based on [Sebastian Lague's "Coding Adventure: Ant and Slime Simulations"](https://youtu.be/X-iSQQgOd1A)
 - HDR + Tonemapping
 - PBR direct lighting
 - PBR indirect lighting
