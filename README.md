@@ -8,9 +8,9 @@ My attempt at a minimalistic graphics playground built from scratch with D3D11
 - Profile markers
 - Dear ImGui support for convenient debug tooling
 - Minimalistic support for multi-compiling shader variants
-- Support for different scenes
-- Framework for 2D shadertoy-like experiments
+- Minimalistic framework for 2D shadertoy-like experiments
   - Slime mold experiment based on [Sebastian Lague's "Coding Adventure: Ant and Slime Simulations"](https://youtu.be/X-iSQQgOd1A)
+- Support for different scenes
 - HDR + Tonemapping
 - PBR direct lighting
 - PBR indirect lighting
