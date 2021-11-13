@@ -79,35 +79,18 @@ void WorldRenderer::lightingGui()
 			{
 				ImGui::Checkbox("Enabled##Shadows", &shadowEnabled);
 
-				constexpr int numSoftShadowModes = 3;
-				enum { SOFT_SHADOWS_OFF, SOFT_SHADOWS_TENT, SOFT_SHADOWS_POISSON };
-				static const char* softShadowModeKeywords[numSoftShadowModes] = { "SOFT_SHADOWS_OFF", "SOFT_SHADOWS_TENT", "SOFT_SHADOWS_POISSON" };
-				std::vector<std::string>& globalKeywords = am->getGlobalShaderKeywords();
-				int selectedSoftShadowMode = 0;
-				for (int i = 0; i < numSoftShadowModes; i++)
-				{
-					auto it = std::find(globalKeywords.begin(), globalKeywords.end(), softShadowModeKeywords[i]);
-					if (it != globalKeywords.end())
-					{
-						selectedSoftShadowMode = i;
-						break;
-					}
-				}
 				bool softShadowModeChanged = false;
-				for (int i = 0; i < numSoftShadowModes; i++)
+				int selectedSoftShadowMode = (int)softShadowMode;
+				for (int i = 0; i < NUM_SOFT_SHADOW_MODES; i++)
 				{
-					static const char* softShadowModes[numSoftShadowModes] = { "Off", "Tent", "Poisson" };
-					softShadowModeChanged |= ImGui::RadioButton(softShadowModes[i], &selectedSoftShadowMode, i);
+					softShadowModeChanged |= ImGui::RadioButton(softShadowModeNames[i], &selectedSoftShadowMode, i);
 					ImGui::SameLine();
 				}
 				ImGui::SameLine(ImGui::GetWindowWidth() * 0.65f, 12); // Hack to continue where labels are
 				ImGui::TextUnformatted("Soft shadow mode");
 				if (softShadowModeChanged)
-				{
-					for (int i = 0; i < numSoftShadowModes; i++)
-						am->setGlobalShaderKeyword(softShadowModeKeywords[i], i == selectedSoftShadowMode);
-				}
-				if (selectedSoftShadowMode == SOFT_SHADOWS_POISSON)
+					setSoftShadowMode((SoftShadowMode)selectedSoftShadowMode);
+				if (softShadowMode == SoftShadowMode::POISSON)
 				{
 					ImGui::SliderFloat("Poisson softness", &poissonShadowSoftness, 0, 0.01f, "%.5f");
 					if (ImGui::IsItemHovered())

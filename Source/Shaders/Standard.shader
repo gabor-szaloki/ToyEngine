@@ -1,6 +1,6 @@
 #pragma warning(disable:3568) // warning X3568 : 'multi_compile' : unknown pragma ignored
 #pragma multi_compile ALPHA_TEST_OFF ALPHA_TEST_ON
-#pragma multi_compile SOFT_SHADOWS_OFF SOFT_SHADOWS_TENT SOFT_SHADOWS_POISSON
+#pragma multi_compile SOFT_SHADOWS_OFF SOFT_SHADOWS_TENT SOFT_SHADOWS_VARIANCE SOFT_SHADOWS_POISSON
 
 //--------------------------------------------------------------------------------------
 // Includes

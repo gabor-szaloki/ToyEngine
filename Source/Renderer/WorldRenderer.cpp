@@ -10,6 +10,7 @@
 #include "Hbao.h"
 #include "Sky.h"
 #include "EnvironmentLightingSystem.h"
+#include "VarianceShadowMap.h"
 
 WorldRenderer::WorldRenderer()
 {
@@ -43,11 +44,16 @@ WorldRenderer::WorldRenderer()
 
 	linearWrapSampler = drv->createSampler(SamplerDesc(FILTER_MIN_MAG_MIP_LINEAR));
 	linearClampSampler = drv->createSampler(SamplerDesc(FILTER_MIN_MAG_MIP_LINEAR, TexAddr::CLAMP));
+	linearBorderSampler = drv->createSampler(SamplerDesc(FILTER_MIN_MAG_MIP_LINEAR, TexAddr::BORDER));
 	shadowSampler = drv->createSampler(SamplerDesc(FILTER_COMPARISON_MIN_MAG_MIP_LINEAR, TexAddr::BORDER, ComparisonFunc::LESS_EQUAL));
 
-	am->setGlobalShaderKeyword("SOFT_SHADOWS_TENT", true);
+	setSoftShadowMode(SoftShadowMode::TENT);
 	setShadowResolution(2048);
 	setShadowBias(50000, 1.0f);
+
+	RenderStateDesc shadowRenderStateNoBiasDesc;
+	shadowRenderStateNoBiasDesc.rasterizerDesc.depthClipEnable = false;
+	shadowRenderStateNoBiasId = drv->createRenderState(shadowRenderStateNoBiasDesc);
 }
 
 WorldRenderer::~WorldRenderer()
@@ -161,6 +167,8 @@ void WorldRenderer::render(const Camera& camera, ITexture& hdr_color_target, ITe
 
 	setupShadowPass(shadowCameraPos, lightViewMatrix, lightProjectionMatrix);
 	performShadowPass();
+	if (softShadowMode == SoftShadowMode::VARIANCE)
+		varianceShadowMap->render(shadowMap.get());
 
 	setupDepthAndForwardPasses(camera, hdr_color_target, depth_target, hdr_color_slice, depth_slice);
 	performDepthPrepass(depth_target, depth_slice);
@@ -231,6 +239,9 @@ void WorldRenderer::setShadowResolution(unsigned int shadow_resolution)
 	shadowMapDesc.srvFormatOverride = TexFmt::R32_FLOAT;
 	shadowMapDesc.dsvFormatOverride = TexFmt::D32_FLOAT;
 	shadowMap.reset(drv->createTexture(shadowMapDesc));
+
+	if (varianceShadowMap != nullptr)
+		varianceShadowMap.reset(new VarianceShadowMap(shadow_resolution));
 }
 
 void WorldRenderer::setShadowBias(int depth_bias, float slope_scaled_depth_bias)
@@ -243,6 +254,19 @@ void WorldRenderer::setShadowBias(int depth_bias, float slope_scaled_depth_bias)
 	desc.rasterizerDesc.slopeScaledDepthBias = shadowSlopeScaledDepthBias;
 	desc.rasterizerDesc.depthClipEnable = false;
 	shadowRenderStateId = drv->createRenderState(desc);
+}
+
+void WorldRenderer::setSoftShadowMode(SoftShadowMode soft_shadow_mode)
+{
+	softShadowMode = soft_shadow_mode;
+
+	for (int i = 0; i < NUM_SOFT_SHADOW_MODES; i++)
+		am->setGlobalShaderKeyword(softShadowModeShaderKeywords[i], (SoftShadowMode)i == softShadowMode);
+
+	if (softShadowMode == SoftShadowMode::VARIANCE && varianceShadowMap == nullptr)
+		varianceShadowMap.reset(new VarianceShadowMap(getShadowResolution()));
+	else if (softShadowMode != SoftShadowMode::VARIANCE && varianceShadowMap != nullptr)
+		varianceShadowMap.reset();
 }
 
 static XMFLOAT4 get_projection_params(float zn, float zf, bool persp)
@@ -359,7 +383,7 @@ void WorldRenderer::setupShadowPass(const XMVECTOR& shadow_camera_pos, const XMM
 	drv->setConstantBuffer(ShaderStage::PS, 1, perCameraCb->getId());
 
 	// Setup state and render target
-	drv->setRenderState(shadowRenderStateId);
+	drv->setRenderState(softShadowMode == SoftShadowMode::VARIANCE ? shadowRenderStateNoBiasId : shadowRenderStateId);
 	drv->setRenderTarget(BAD_RESID, shadowMap->getId());
 	drv->setView(0, 0, (float)shadowMap->getDesc().width, (float)shadowMap->getDesc().height, 0, 1);
 	RenderTargetClearParams clearParams(CLEAR_FLAG_DEPTH, 0, 1.0f);
@@ -407,8 +431,8 @@ void WorldRenderer::performForwardPass(ITexture& hdr_color_target, ITexture& dep
 	drv->setRenderState(showWireframe ? forwardWireframeRenderStateId : forwardRenderStateId);
 	drv->setRenderTarget(hdr_color_target.getId(), depth_target.getId(), hdr_color_slice, depth_slice);
 
-	drv->setTexture(ShaderStage::PS, 2, shadowMap->getId());
-	drv->setSampler(ShaderStage::PS, 2, shadowSampler);
+	drv->setTexture(ShaderStage::PS, 2, softShadowMode == SoftShadowMode::VARIANCE ? varianceShadowMap->getTexture()->getId() : shadowMap->getId());
+	drv->setSampler(ShaderStage::PS, 2, softShadowMode == SoftShadowMode::VARIANCE ? linearBorderSampler : shadowSampler);
 	drv->setTexture(ShaderStage::PS, 3, ssao->getResultTex()->getId());
 	drv->setSampler(ShaderStage::PS, 3, linearClampSampler);
 

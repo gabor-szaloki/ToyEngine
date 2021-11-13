@@ -20,9 +20,12 @@ class MeshRenderer;
 class Hbao;
 class Sky;
 class EnvironmentLightingSystem;
+class VarianceShadowMap;
 class IFullscreenExperiment;
 
 struct MeshData;
+
+enum class SoftShadowMode { OFF, TENT, VARIANCE, POISSON };
 
 class WorldRenderer
 {
@@ -46,6 +49,7 @@ public:
 	unsigned int getShadowResolution();
 	void setShadowResolution(unsigned int shadow_resolution);
 	void setShadowBias(int depth_bias, float slope_scaled_depth_bias);
+	void setSoftShadowMode(SoftShadowMode soft_shadow_mode);
 	ITexture* getDepthTex() const { return depthTex.get(); }
 	ITexture* getShadowMap() const { return shadowMap.get(); };
 	Camera& getSceneCamera() { return sceneCamera; };
@@ -101,7 +105,7 @@ private:
 
 	std::unique_ptr<ITexture> hdrTarget;
 	std::unique_ptr<ITexture> depthTex;
-	ResIdHolder linearClampSampler = BAD_RESID, linearWrapSampler = BAD_RESID;
+	ResIdHolder linearClampSampler = BAD_RESID, linearWrapSampler = BAD_RESID, linearBorderSampler = BAD_RESID;
 	ResIdHolder depthPrepassRenderStateId = BAD_RESID;
 	ResIdHolder depthPrepassWireframeRenderStateId = BAD_RESID;
 	ResIdHolder forwardRenderStateId = BAD_RESID;
@@ -109,6 +113,7 @@ private:
 	std::unique_ptr<ITexture> shadowMap;
 	ResIdHolder shadowSampler = BAD_RESID;
 	ResIdHolder shadowRenderStateId = BAD_RESID;
+	ResIdHolder shadowRenderStateNoBiasId = BAD_RESID;
 
 	std::unique_ptr<IBuffer> perFrameCb;
 	std::unique_ptr<IBuffer> perCameraCb;
@@ -116,9 +121,17 @@ private:
 
 	std::unique_ptr<Hbao> ssao;
 	float ssaoResolutionScale = 1.0f;
+
 	std::unique_ptr<Sky> sky;
 	std::unique_ptr<ITexture> panoramicEnvironmentMap;
 	std::unique_ptr<EnvironmentLightingSystem> enviLightSystem;
+
+	static constexpr int NUM_SOFT_SHADOW_MODES = 4;
+	const char* softShadowModeNames[NUM_SOFT_SHADOW_MODES] = { "Off", "Tent", "Variance", "Poisson" };
+	const char* softShadowModeShaderKeywords[NUM_SOFT_SHADOW_MODES] = { "SOFT_SHADOWS_OFF", "SOFT_SHADOWS_TENT", "SOFT_SHADOWS_VARIANCE", "SOFT_SHADOWS_POISSON" };
+	SoftShadowMode softShadowMode = SoftShadowMode::TENT;
+	std::unique_ptr<VarianceShadowMap> varianceShadowMap;
+
 	bool debugShowIrradianceMap = false;
 	bool debugShowSpecularMap = false;
 	bool debugShowPureImageBasedLighting = false;

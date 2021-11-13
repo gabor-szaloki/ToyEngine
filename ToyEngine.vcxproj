@@ -53,6 +53,7 @@
     <ClCompile Include="Source\Renderer\RenderUtil.cpp" />
     <ClCompile Include="Source\Renderer\Sky.cpp" />
     <ClCompile Include="Source\Renderer\Hbao.cpp" />
+    <ClCompile Include="Source\Renderer\VarianceShadowMap.cpp" />
     <ClCompile Include="Source\Renderer\WorldRenderer.cpp" />
     <ClCompile Include="Source\Renderer\WorldRendererGui.cpp" />
     <ClCompile Include="Source\Util\AutoImGui.cpp" />
@@ -407,6 +408,7 @@
     <ClInclude Include="Source\Renderer\RenderUtil.h" />
     <ClInclude Include="Source\Renderer\Sky.h" />
     <ClInclude Include="Source\Renderer\Hbao.h" />
+    <ClInclude Include="Source\Renderer\VarianceShadowMap.h" />
     <ClInclude Include="Source\Renderer\WorldRenderer.h" />
     <ClInclude Include="Source\Util\AutoImGui.h" />
     <ClInclude Include="Source\Util\CaseSensitiveIni.h" />
@@ -569,6 +571,7 @@
     <None Include="Source\Shaders\PostFx.shader" />
     <None Include="Source\Shaders\Sky.shader" />
     <None Include="Source\Shaders\Standard.shader" />
+    <None Include="Source\Shaders\VarianceShadowMap.shader" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\Shaders\Common.hlsl">

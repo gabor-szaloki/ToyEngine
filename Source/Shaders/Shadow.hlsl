@@ -5,8 +5,13 @@
 #include "ConstantBuffers.hlsl"
 #include "ShadowSamplingTent.hlsl"
 
-Texture2D<float> _MainLightShadowmap : register(t2);
-SamplerComparisonState _ShadowCmpSampler : register(s2);
+#if SOFT_SHADOWS_VARIANCE
+	Texture2D<float2> _MainLightVarianceShadowmap : register(t2);
+	SamplerState _LinearBorderSampler : register(s2);
+#else
+	Texture2D<float> _MainLightShadowmap : register(t2);
+	SamplerComparisonState _ShadowCmpSampler : register(s2);
+#endif
 
 #if SOFT_SHADOWS_POISSON
 	#include "Random.hlsl"
@@ -39,7 +44,28 @@ SamplerComparisonState _ShadowCmpSampler : register(s2);
 			return blockerDistance;
 		}
 	#endif
+#elif SOFT_SHADOWS_VARIANCE
+	static const float _VarianceShadowMinVariance = 0.0;
+	static const float _VarianceShadowReduceLightLeakingFactor = 0.0;
 
+	float chebyshev_upper_bound(float2 moments, float t)
+	{
+		// One-tailed inequality valid if t > moments.x
+		float p = (t <= moments.x);
+
+		// Compute variance.
+		float variance = moments.y - moments.x * moments.x;
+		variance = max(variance, _VarianceShadowMinVariance);
+
+		// Compute probabilistic upper bound.
+		float d = t - moments.x;
+		float p_max = variance / (variance + d * d);
+
+		// Reduce light leaking
+		p_max = inverse_lerp(_VarianceShadowReduceLightLeakingFactor, 1, p_max);
+
+		return max(p, p_max);
+	}
 #elif SOFT_SHADOWS_TENT
 	#define SOFT_SHADOW_SAMPLES 9
 	#define SOFT_SHADOW_SAMPLES_FUNC SampleShadow_ComputeSamples_Tent_5x5
@@ -79,7 +105,9 @@ float SampleMainLightShadow(float4 shadow_coords, float2 screen_uv)
 	// Multiply shadow result with (1 + something) to bias self shadowing due to big sampling disk in UV space
 	result = saturate(result * (1 + 1000 * _MainLightShadowParams.w));
 	return result;
-
+#elif SOFT_SHADOWS_VARIANCE
+	float2 moments = _MainLightVarianceShadowmap.Sample(_LinearSampler, shadowmapUv);
+	return chebyshev_upper_bound(moments, pixelDepth);
 #elif SOFT_SHADOWS_TENT
 	float fetchesWeights[SOFT_SHADOW_SAMPLES];
 	float2 fetchesUV[SOFT_SHADOW_SAMPLES];
