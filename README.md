@@ -15,9 +15,10 @@ My attempt at a minimalistic graphics playground built from scratch with D3D11
   - Image-based diffuse + specular
   - Based on sky or rendered environment map
 - Soft shadows
-  - 2 techniques
+  - 3 techniques
     1. Simple sampling tent
-    2. Poisson disk sampling with variable penumbra
+    2. Variance shadowmap
+    3. Poisson disk sampling with variable penumbra
 - Super simple procedural sky ...for now
   - Top color, horizon color and bottom color
 - HBAO
