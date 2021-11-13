@@ -9,6 +9,7 @@ My attempt at a minimalistic graphics playground built from scratch with D3D11
 - Dear ImGui support for convenient debug tooling
 - Minimalistic support for multi-compiling shader variants
 - Support for different scenes
+- Framework for 2D shadertoy-like experiments
 - HDR + Tonemapping
 - PBR direct lighting
 - PBR indirect lighting
@@ -28,3 +29,4 @@ My attempt at a minimalistic graphics playground built from scratch with D3D11
 ![Small scene](Images/DefaultScene.png "Small scene")
 ![PBR test scene](Images/PbrTestScene.png "PBR test scene")
 ![Sponza scene](Images/SponzaScene.png "Sponza scene")
+![Slime mold simulation experiment](Images/SlimeSimulationExperiment.png "Slime mold simulation experiment")
