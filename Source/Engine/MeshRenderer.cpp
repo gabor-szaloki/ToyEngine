@@ -1,5 +1,6 @@
 #include "MeshRenderer.h"
 
+#include <algorithm>
 #include <3rdParty/imgui/imgui.h>
 #include <Util/ImGuiExtensions.h>
 #include <Driver/IBuffer.h>
@@ -123,6 +124,8 @@ void MeshRenderer::gui()
 	{
 		buf = "Submesh range to render##" + name;
 		ImGui::DragIntRange2(buf.c_str(), &firstSubmeshToRender, &lastSubmeshToRender, 1.0f, 0, submeshes.size() - 1);
+		firstSubmeshToRender = std::clamp(firstSubmeshToRender, 0, (int)submeshes.size() - 1);
+		lastSubmeshToRender = std::clamp(lastSubmeshToRender, 0, (int)submeshes.size() - 1);
 		ImGui::Text("First submesh rendered: %s", submeshes[firstSubmeshToRender].name.c_str());
 		ImGui::Text("Last submesh rendered: %s", submeshes[lastSubmeshToRender].name.c_str());
 	}
