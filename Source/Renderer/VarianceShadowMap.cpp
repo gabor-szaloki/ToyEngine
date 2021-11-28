@@ -33,3 +33,11 @@ void VarianceShadowMap::render(ITexture* source_shadow_map)
 
 	drv->draw(3, 0);
 }
+
+void VarianceShadowMap::clear()
+{
+	PROFILE_SCOPE("VarianceShadowMap_Clear");
+	drv->setRenderTarget(texture->getId(), BAD_RESID);
+	drv->clearRenderTargets(RenderTargetClearParams::clear_color(1, 1, 1, 1));
+	drv->setRenderTarget(BAD_RESID, BAD_RESID);
+}

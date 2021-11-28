@@ -72,9 +72,12 @@ void Material::setKeyword(const std::string& keyword, bool enable)
 
 void Material::set(RenderPass render_pass)
 {
+	if (shaders[(int)render_pass] == BAD_RESID)
+		return;
+
 	drv->setShader(shaders[(int)render_pass], currentVariants[(int)render_pass]);
-	drv->setConstantBuffer(ShaderStage::VS, 3, cb->getId());
-	drv->setConstantBuffer(ShaderStage::PS, 3, cb->getId());
+	drv->setConstantBuffer(ShaderStage::VS, PER_MATERIAL_CONSTANT_BUFFER_SLOT, cb->getId());
+	drv->setConstantBuffer(ShaderStage::PS, PER_MATERIAL_CONSTANT_BUFFER_SLOT, cb->getId());
 	for (int stage = 0; stage < (int)ShaderStage::GRAPHICS_STAGE_COUNT; stage++)
 	{
 		for (unsigned int i = 0; i < textures[stage].size(); i++)

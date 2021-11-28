@@ -79,8 +79,8 @@ void MeshRenderer::render(RenderPass render_pass)
 	cb->updateData(&perObjectCbData);
 
 	material->set(render_pass);
-	drv->setConstantBuffer(ShaderStage::VS, 2, cb->getId());
-	drv->setConstantBuffer(ShaderStage::PS, 2, cb->getId());
+	drv->setConstantBuffer(ShaderStage::VS, PER_OBJECT_CONSTANT_BUFFER_SLOT, cb->getId());
+	drv->setConstantBuffer(ShaderStage::PS, PER_OBJECT_CONSTANT_BUFFER_SLOT, cb->getId());
 
 	drv->setInputLayout(ilToUse);
 	drv->setIndexBuffer(ibToUse->getId());

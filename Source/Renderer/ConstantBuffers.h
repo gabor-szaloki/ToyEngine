@@ -2,6 +2,11 @@
 
 #include <Common.h>
 
+static constexpr unsigned int PER_FRAME_CONSTANT_BUFFER_SLOT = 0;
+static constexpr unsigned int PER_CAMERA_CONSTANT_BUFFER_SLOT = 1;
+static constexpr unsigned int PER_OBJECT_CONSTANT_BUFFER_SLOT = 2;
+static constexpr unsigned int PER_MATERIAL_CONSTANT_BUFFER_SLOT = 3;
+
 struct PerFrameConstantBufferData
 {
 	XMFLOAT4 mainLightColor;

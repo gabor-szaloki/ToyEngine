@@ -11,6 +11,7 @@ class VarianceShadowMap
 public:
 	VarianceShadowMap(unsigned int shadow_resolution);
 	void render(ITexture* source_shadow_map);
+	void clear();
 	ITexture* getTexture() const { return texture.get(); }
 
 private:

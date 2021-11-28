@@ -18,11 +18,13 @@ class ThreadPool;
 class Light;
 class MeshRenderer;
 class Hbao;
+class Water;
 class Sky;
 class EnvironmentLightingSystem;
 class VarianceShadowMap;
 class IFullscreenExperiment;
 
+struct Transform;
 struct MeshData;
 
 enum class SoftShadowMode { OFF, TENT, VARIANCE, POISSON };
@@ -46,10 +48,12 @@ public:
 	void resetEnvironment();
 	void onMeshLoaded();
 	void onMaterialTexturesLoaded();
+	void onGlobalShaderKeywordsChanged();
 	unsigned int getShadowResolution();
 	void setShadowResolution(unsigned int shadow_resolution);
 	void setShadowBias(int depth_bias, float slope_scaled_depth_bias);
 	void setSoftShadowMode(SoftShadowMode soft_shadow_mode);
+	void setWater(const Transform* water_transform);
 	ITexture* getDepthTex() const { return depthTex.get(); }
 	ITexture* getShadowMap() const { return shadowMap.get(); };
 	Camera& getSceneCamera() { return sceneCamera; };
@@ -93,9 +97,7 @@ private:
 	void setupFrame(const Camera& camera, XMVECTOR& out_shadow_camera_pos, XMMATRIX& out_light_view_matrix, XMMATRIX& out_light_proj_matrix);
 	void setupShadowPass(const XMVECTOR& shadow_camera_pos, const XMMATRIX& light_view_matrix, const XMMATRIX& light_proj_matrix);
 	void setupDepthAndForwardPasses(const Camera& camera, ITexture& hdr_color_target, ITexture& depth_target, unsigned int hdr_color_slice, unsigned int depth_slice);
-	void performShadowPass();
-	void performDepthPrepass(ITexture& depth_target, unsigned int depth_slice);
-	void performForwardPass(ITexture& hdr_color_target, ITexture& depth_target, unsigned int hdr_color_slice, unsigned int depth_slice);
+	void performRenderPass(RenderPass pass);
 
 	float time;
 
@@ -121,6 +123,8 @@ private:
 
 	std::unique_ptr<Hbao> ssao;
 	float ssaoResolutionScale = 1.0f;
+
+	std::unique_ptr<Water> water;
 
 	std::unique_ptr<Sky> sky;
 	std::unique_ptr<ITexture> panoramicEnvironmentMap;

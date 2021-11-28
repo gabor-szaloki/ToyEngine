@@ -680,6 +680,7 @@ void AssetManager::loadScene(const std::string& scene_file)
 {
 	SAFE_DELETE(fe);
 
+	wr->setWater(nullptr);
 	wr->mainLight->SetRotation(-XM_PI / 3, XM_PI / 3);
 	wr->mainLight->SetColor(XMFLOAT4(1, 1, 1, 1));
 	wr->mainLight->SetIntensity(0);
@@ -756,6 +757,14 @@ void AssetManager::loadScene(const std::string& scene_file)
 			mr->setTransform(tr);
 
 			mr->setUvScale(elemProperties.has("uv_scale") ? std::stof(elemProperties["uv_scale"]) : 1.0f);
+		}
+		else if (elemProperties["type"] == "water")
+		{
+			Transform tr;
+			tr.position = str_to_XMVECTOR(elemProperties["position"]);
+			tr.rotation = str_to_XMVECTOR(elemProperties["rotation"]) * DEG_TO_RAD;
+			tr.scale = elemProperties.has("scale") ? std::stof(elemProperties["scale"]) : 1.0f;
+			wr->setWater(&tr);
 		}
 		else if (elemProperties["type"] == "camera")
 		{
@@ -839,6 +848,9 @@ void AssetManager::setGlobalShaderKeyword(const std::string& keyword, bool enabl
 	if (enable != keywordCurrentlyEnabled)
 		for (Material* mat : sceneMaterials)
 			mat->setKeyword(keyword, enable);
+
+	if (wr != nullptr)
+		wr->onGlobalShaderKeywordsChanged(); // TODO: make this some event that stuff can subscribe to
 }
 
 void AssetManager::initInis()

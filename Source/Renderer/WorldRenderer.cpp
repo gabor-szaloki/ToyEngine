@@ -8,6 +8,7 @@
 #include "ConstantBuffers.h"
 #include "Light.h"
 #include "Hbao.h"
+#include "Water.h"
 #include "Sky.h"
 #include "EnvironmentLightingSystem.h"
 #include "VarianceShadowMap.h"
@@ -166,19 +167,54 @@ void WorldRenderer::render(const Camera& camera, ITexture& hdr_color_target, ITe
 	setupFrame(camera, shadowCameraPos, lightViewMatrix, lightProjectionMatrix);
 
 	setupShadowPass(shadowCameraPos, lightViewMatrix, lightProjectionMatrix);
-	performShadowPass();
+	if (shadowEnabled)
+	{
+		PROFILE_SCOPE("ShadowPass");
+		performRenderPass(RenderPass::DEPTH);
+	}
 	if (softShadowMode == SoftShadowMode::VARIANCE)
-		varianceShadowMap->render(shadowMap.get());
+	{
+		if (shadowEnabled)
+			varianceShadowMap->render(shadowMap.get());
+		else
+			varianceShadowMap->clear();
+	}
 
 	setupDepthAndForwardPasses(camera, hdr_color_target, depth_target, hdr_color_slice, depth_slice);
-	performDepthPrepass(depth_target, depth_slice);
+
+	drv->setRenderState(showWireframe ? depthPrepassWireframeRenderStateId : depthPrepassRenderStateId);
+	drv->setRenderTarget(BAD_RESID, depth_target.getId(), 0, depth_slice);
+
+	{
+		PROFILE_SCOPE("DepthPrepass");
+		performRenderPass(RenderPass::DEPTH);
+	}
 
 	if (ssao_enabled)
 		ssao->perform();
 	else
 		ssao->clear();
 
-	performForwardPass(hdr_color_target, depth_target, hdr_color_slice, depth_slice);
+	drv->setRenderState(showWireframe ? forwardWireframeRenderStateId : forwardRenderStateId);
+	drv->setRenderTarget(hdr_color_target.getId(), depth_target.getId(), hdr_color_slice, depth_slice);
+
+	drv->setTexture(ShaderStage::PS, 2, softShadowMode == SoftShadowMode::VARIANCE ? varianceShadowMap->getTexture()->getId() : shadowMap->getId());
+	drv->setSampler(ShaderStage::PS, 2, softShadowMode == SoftShadowMode::VARIANCE ? linearBorderSampler : shadowSampler);
+	drv->setTexture(ShaderStage::PS, 3, ssao->getResultTex()->getId());
+	drv->setSampler(ShaderStage::PS, 3, linearClampSampler);
+
+	{
+		PROFILE_SCOPE("ForwardPass");
+		performRenderPass(RenderPass::FORWARD);
+	}
+
+	if (water != nullptr)
+		water->render();
+
+	drv->setTexture(ShaderStage::PS, 2, BAD_RESID);
+	drv->setSampler(ShaderStage::PS, 2, BAD_RESID);
+	drv->setTexture(ShaderStage::PS, 3, BAD_RESID);
+	drv->setSampler(ShaderStage::PS, 3, BAD_RESID);
 
 	if (debugShowSpecularMap)
 		sky->render(enviLightSystem->getSpecularCube(), debugSpecularMapLod);
@@ -225,6 +261,12 @@ void WorldRenderer::onMaterialTexturesLoaded()
 		enviLightSystem->markDirty();
 }
 
+void WorldRenderer::onGlobalShaderKeywordsChanged()
+{
+	if (water != nullptr)
+		water->onGlobalShaderKeywordsChanged();
+}
+
 unsigned int WorldRenderer::getShadowResolution()
 {
 	if (shadowMap == nullptr)
@@ -269,6 +311,13 @@ void WorldRenderer::setSoftShadowMode(SoftShadowMode soft_shadow_mode)
 		varianceShadowMap.reset();
 }
 
+void WorldRenderer::setWater(const Transform* water_transform)
+{
+	water.reset();
+	if (water_transform != nullptr)
+		water = std::make_unique<Water>(*water_transform);
+}
+
 static XMFLOAT4 get_projection_params(float zn, float zf, bool persp)
 {
 	return XMFLOAT4(zn * zf, zn - zf, zf, persp ? 1.0f : 0.0f);
@@ -298,8 +347,8 @@ void WorldRenderer::setCameraForShaders(const Camera& cam)
 
 	perCameraCb->updateData(&perCameraCbData);
 
-	drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
-	drv->setConstantBuffer(ShaderStage::PS, 1, perCameraCb->getId());
+	drv->setConstantBuffer(ShaderStage::VS, PER_CAMERA_CONSTANT_BUFFER_SLOT, perCameraCb->getId());
+	drv->setConstantBuffer(ShaderStage::PS, PER_CAMERA_CONSTANT_BUFFER_SLOT, perCameraCb->getId());
 }
 
 void WorldRenderer::initResolutionDependentResources()
@@ -363,8 +412,8 @@ void WorldRenderer::setupFrame(const Camera& camera, XMVECTOR& out_shadow_camera
 	perFrameCbData.timeParams = XMFLOAT4(time, 0, 0, 0);
 	perFrameCb->updateData(&perFrameCbData);
 
-	drv->setConstantBuffer(ShaderStage::VS, 0, perFrameCb->getId());
-	drv->setConstantBuffer(ShaderStage::PS, 0, perFrameCb->getId());
+	drv->setConstantBuffer(ShaderStage::VS, PER_FRAME_CONSTANT_BUFFER_SLOT, perFrameCb->getId());
+	drv->setConstantBuffer(ShaderStage::PS, PER_FRAME_CONSTANT_BUFFER_SLOT, perFrameCb->getId());
 }
 
 void WorldRenderer::setupShadowPass(const XMVECTOR& shadow_camera_pos, const XMMATRIX& light_view_matrix, const XMMATRIX& light_proj_matrix)
@@ -379,8 +428,8 @@ void WorldRenderer::setupShadowPass(const XMVECTOR& shadow_camera_pos, const XMM
 	float shadowResolution = getShadowResolution();
 	perCameraCbData.viewportResolution = XMFLOAT4(shadowResolution, shadowResolution, 1.f / shadowResolution, 1.f / shadowResolution);
 	perCameraCb->updateData(&perCameraCbData);
-	drv->setConstantBuffer(ShaderStage::VS, 1, perCameraCb->getId());
-	drv->setConstantBuffer(ShaderStage::PS, 1, perCameraCb->getId());
+	drv->setConstantBuffer(ShaderStage::VS, PER_CAMERA_CONSTANT_BUFFER_SLOT, perCameraCb->getId());
+	drv->setConstantBuffer(ShaderStage::PS, PER_CAMERA_CONSTANT_BUFFER_SLOT, perCameraCb->getId());
 
 	// Setup state and render target
 	drv->setRenderState(softShadowMode == SoftShadowMode::VARIANCE ? shadowRenderStateNoBiasId : shadowRenderStateId);
@@ -402,45 +451,8 @@ void WorldRenderer::setupDepthAndForwardPasses(const Camera& camera, ITexture& h
 	drv->clearRenderTargets(RenderTargetClearParams::clear_all(0.0f, 0.2f, 0.4f, 1.0f, 1.0f));
 }
 
-void WorldRenderer::performShadowPass()
+void WorldRenderer::performRenderPass(RenderPass pass)
 {
-	PROFILE_SCOPE("ShadowPass");
-
-	if (!shadowEnabled)
-		return;
-
 	for (MeshRenderer* mr : am->getSceneMeshRenderers())
-		mr->render(RenderPass::DEPTH);
-}
-
-void WorldRenderer::performDepthPrepass(ITexture& depth_target, unsigned int depth_slice)
-{
-	PROFILE_SCOPE("DepthPrepass");
-
-	drv->setRenderState(showWireframe ? depthPrepassWireframeRenderStateId : depthPrepassRenderStateId);
-	drv->setRenderTarget(BAD_RESID, depth_target.getId(), 0, depth_slice);
-
-	for (MeshRenderer* mr : am->getSceneMeshRenderers())
-		mr->render(RenderPass::DEPTH);
-}
-
-void WorldRenderer::performForwardPass(ITexture& hdr_color_target, ITexture& depth_target, unsigned int hdr_color_slice, unsigned int depth_slice)
-{
-	PROFILE_SCOPE("ForwardPass");
-
-	drv->setRenderState(showWireframe ? forwardWireframeRenderStateId : forwardRenderStateId);
-	drv->setRenderTarget(hdr_color_target.getId(), depth_target.getId(), hdr_color_slice, depth_slice);
-
-	drv->setTexture(ShaderStage::PS, 2, softShadowMode == SoftShadowMode::VARIANCE ? varianceShadowMap->getTexture()->getId() : shadowMap->getId());
-	drv->setSampler(ShaderStage::PS, 2, softShadowMode == SoftShadowMode::VARIANCE ? linearBorderSampler : shadowSampler);
-	drv->setTexture(ShaderStage::PS, 3, ssao->getResultTex()->getId());
-	drv->setSampler(ShaderStage::PS, 3, linearClampSampler);
-
-	for (MeshRenderer* mr : am->getSceneMeshRenderers())
-		mr->render(RenderPass::FORWARD);
-
-	drv->setTexture(ShaderStage::PS, 2, BAD_RESID);
-	drv->setSampler(ShaderStage::PS, 2, BAD_RESID);
-	drv->setTexture(ShaderStage::PS, 3, BAD_RESID);
-	drv->setSampler(ShaderStage::PS, 3, BAD_RESID);
+		mr->render(pass);
 }
