@@ -6,6 +6,7 @@
 
 # File types
 *.vcxproj.user
+*.sublime-workspace
 *.cap
 
 # Exact files
