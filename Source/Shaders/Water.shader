@@ -10,6 +10,29 @@
 #include "Shadow.hlsl"
 
 //--------------------------------------------------------------------------------------
+// Resources
+//--------------------------------------------------------------------------------------
+
+Texture2D<float4> _NormalMap    : register(t0);
+SamplerState _NormalSampler     : register(s0);
+
+cbuffer WaterConstantBuffer : register(b4)
+{
+	float4x4 _WaterWorldTransform;
+
+	float3 _Albedo;
+	float _Roughness;
+
+	float _NormalStrength1;
+	float _NormalTiling1;
+	float2 _NormalAnimSpeed1;
+
+	float _NormalStrength2;
+	float _NormalTiling2;
+	float2 _NormalAnimSpeed2;
+}
+
+//--------------------------------------------------------------------------------------
 // Input/Output structures
 //--------------------------------------------------------------------------------------
 
@@ -17,7 +40,7 @@ struct VSOutputStandardForward
 {
 	float4 position : SV_POSITION;
 	float3 normal : NORMAL;
-	float2 uv : TEXCOORD0;
+	float4 normalUVs : TEXCOORD0;
 	float3 worldPos : TEXCOORD1;
 	float4 shadowCoords : TEXCOORD2;
 };
@@ -46,26 +69,36 @@ VSOutputStandardForward WaterVS(uint vertex_id : SV_VertexID)
 
 	float4 objPos = get_horizontal_quad_vertex_pos(vertex_id);
 
-	float4 worldPos = mul(_World, objPos);
+	float4 worldPos = mul(_WaterWorldTransform, objPos);
 	o.position = mul(_ViewProjection, worldPos);
 
 	o.normal = normalize(mul(_World, float4(0, 1, 0, 0)).xyz);
-	o.uv = worldPos.xz;
+
+	o.normalUVs.xy = (worldPos.xz + _NormalAnimSpeed1 * _TimeParams.x) * _NormalTiling1;
+	o.normalUVs.zw = (worldPos.xz + _NormalAnimSpeed2 * _TimeParams.x) * _NormalTiling2;
+
 	o.worldPos = worldPos.xyz;
 	o.shadowCoords = mul(_MainLightShadowMatrix, worldPos);
 
 	return o;
 }
 
-SurfaceOutput WaterSurface(float3 pointToEye, float3 normal, float2 uv)
+SurfaceOutput WaterSurface(float3 pointToEye, float3 normal, float4 uvs)
 {
 	SurfaceOutput s;
 
-	s.albedo = float3(0.25, 0.25, 0.5);
+	s.albedo = _Albedo;
 	s.opacity = 1;
+
+	const float2 flatTangentSpaceNormal = 0.5;
+	float2 normalMapSample1 = lerp(flatTangentSpaceNormal, _NormalMap.Sample(_NormalSampler, uvs.xy).rg, _NormalStrength1);
+	float2 normalMapSample2 = lerp(flatTangentSpaceNormal, _NormalMap.Sample(_NormalSampler, uvs.zw).rg, _NormalStrength2);
 	s.normal = normal;
+	s.normal = perturb_normal(s.normal, float3(normalMapSample1, 0), pointToEye, uvs.xy);
+	s.normal = perturb_normal(s.normal, float3(normalMapSample2, 0), pointToEye, uvs.zw);
+
 	s.metalness = 0;
-	s.roughness = 0.1;
+	s.roughness = _Roughness;
 
 	return s;
 }
@@ -76,7 +109,7 @@ float4 WaterPS(VSOutputStandardForward i) : SV_TARGET
 	float2 screenUv = i.position.xy * _ViewportResolution.zw;
 
 	float3 pointToEye = _CameraWorldPosition.xyz - i.worldPos;
-	SurfaceOutput s = WaterSurface(pointToEye, i.normal, i.uv);
+	SurfaceOutput s = WaterSurface(pointToEye, i.normal, i.normalUVs);
 
 	float mainLightShadowAttenuation = SampleMainLightShadow(i.shadowCoords, screenUv);
 	float ssao = 1;

@@ -60,6 +60,7 @@ public:
 	void setCameraForShaders(const Camera& cam);
 	float getTime() { return time; }
 	Sky& getSky() { return *sky; }
+	Water* getWater() const { return water.get(); }
 
 	void lightingGui();
 	void shadowMapGui();
