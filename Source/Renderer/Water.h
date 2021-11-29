@@ -13,8 +13,11 @@ struct WaterCbData
 {
 	XMMATRIX worldTransform;
 
-	XMFLOAT3 albedo;
+	XMFLOAT3 fogColor;
+	float fogDensity;
+
 	float roughness;
+	XMFLOAT3 pad;
 
 	float normalStrength1;
 	float normalTiling1;
@@ -30,7 +33,7 @@ class Water
 public:
 	Water(const Transform& transform_);
 	void onGlobalShaderKeywordsChanged();
-	void render();
+	void render(const ITexture* scene_grab_texture, const ITexture* depth_copy_texture);
 	void gui();
 
 private:
@@ -45,5 +48,5 @@ private:
 	std::unique_ptr<IBuffer> cb;
 
 	std::unique_ptr<ITexture> normalMap;
-	ResIdHolder wrapSampler;
+	ResIdHolder wrapSampler, clampSampler, pointClampSampler;
 };

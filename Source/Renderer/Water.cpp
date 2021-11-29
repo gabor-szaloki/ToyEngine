@@ -23,14 +23,15 @@ Water::Water(const Transform& transform_) : transform(transform_)
 	renderState = drv->createRenderState(rsDesc);
 
 	cbData.worldTransform = transform.getMatrix();
-	cbData.albedo = XMFLOAT3(0.03, 0.05, 0.06);
-	cbData.roughness = 0.05;
-	cbData.normalStrength1 = 0.2;
-	cbData.normalTiling1 = 0.7;
-	cbData.normalAnimSpeed1 = XMFLOAT2(-0.18, 0.2);
-	cbData.normalStrength2 = 0.2;
-	cbData.normalTiling2 = 0.8;
-	cbData.normalAnimSpeed2 = XMFLOAT2(0.15, -0.06);
+	cbData.fogColor = XMFLOAT3(0.03f, 0.05f, 0.06f);
+	cbData.fogDensity = 1.f;
+	cbData.roughness = 0.05f;
+	cbData.normalStrength1 = 0.2f;
+	cbData.normalTiling1 = 0.7f;
+	cbData.normalAnimSpeed1 = XMFLOAT2(-0.18f, 0.2f);
+	cbData.normalStrength2 = 0.2f;
+	cbData.normalTiling2 = 0.8f;
+	cbData.normalAnimSpeed2 = XMFLOAT2(0.15f, -0.06f);
 
 	BufferDesc cbDesc;
 	cbDesc.bindFlags = BIND_CONSTANT_BUFFER;
@@ -42,6 +43,8 @@ Water::Water(const Transform& transform_) : transform(transform_)
 
 	normalMap.reset(am->loadTexture("Assets/Textures/Water/water_normal_01.png", false));
 	wrapSampler = drv->createSampler(SamplerDesc());
+	clampSampler = drv->createSampler(SamplerDesc(FILTER_DEFAULT, TexAddr::CLAMP));
+	pointClampSampler = drv->createSampler(SamplerDesc(FILTER_MIN_MAG_MIP_POINT, TexAddr::CLAMP));
 
 	onGlobalShaderKeywordsChanged();
 }
@@ -55,7 +58,7 @@ void Water::onGlobalShaderKeywordsChanged()
 	currentVariant = drv->getShaderVariantIndexForKeywords(shader, globalKeywordsCstr.data(), globalKeywordsCstr.size());
 }
 
-void Water::render()
+void Water::render(const ITexture* scene_grab_texture, const ITexture* depth_copy_texture)
 {
 	PROFILE_SCOPE("Water");
 
@@ -67,18 +70,27 @@ void Water::render()
 	ResId normalTexId = normalMap->isStub() ? am->getDefaultTexture(MaterialTexture::Purpose::NORMAL)->getId() : normalMap->getId();
 	drv->setTexture(ShaderStage::PS, 0, normalTexId);
 	drv->setSampler(ShaderStage::PS, 0, wrapSampler);
+	drv->setTexture(ShaderStage::PS, 1, scene_grab_texture->getId());
+	drv->setSampler(ShaderStage::PS, 1, clampSampler);
+	drv->setTexture(ShaderStage::PS, 3, depth_copy_texture->getId());
+	drv->setSampler(ShaderStage::PS, 3, pointClampSampler);
 
 	drv->draw(6, 0);
 
 	drv->setTexture(ShaderStage::PS, 0, BAD_RESID);
 	drv->setSampler(ShaderStage::PS, 0, BAD_RESID);
+	drv->setTexture(ShaderStage::PS, 1, BAD_RESID);
+	drv->setSampler(ShaderStage::PS, 1, BAD_RESID);
+	drv->setTexture(ShaderStage::PS, 3, BAD_RESID);
+	drv->setSampler(ShaderStage::PS, 3, BAD_RESID);
 }
 
 void Water::gui()
 {
 	bool changed = false;
 
-	changed |= ImGui::ColorEdit3("Albedo", &cbData.albedo.x);
+	changed |= ImGui::ColorEdit3("Fog color", &cbData.fogColor.x);
+	changed |= ImGui::SliderFloat("Fog density", &cbData.fogDensity, 0, 10);
 	changed |= ImGui::SliderFloat("Roughness", &cbData.roughness, 0, 1);
 
 	ImGui::TextUnformatted("1st normal layer");

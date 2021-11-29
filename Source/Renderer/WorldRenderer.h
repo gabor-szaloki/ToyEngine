@@ -107,7 +107,8 @@ private:
 	float sceneCameraTurnSpeed = 0.002f;
 
 	std::unique_ptr<ITexture> hdrTarget;
-	std::unique_ptr<ITexture> depthTex;
+	std::unique_ptr<ITexture> hdrSceneGrabBeforeWaterTexture;
+	std::unique_ptr<ITexture> depthTex, depthCopyTex;
 	ResIdHolder linearClampSampler = BAD_RESID, linearWrapSampler = BAD_RESID, linearBorderSampler = BAD_RESID;
 	ResIdHolder depthPrepassRenderStateId = BAD_RESID;
 	ResIdHolder depthPrepassWireframeRenderStateId = BAD_RESID;

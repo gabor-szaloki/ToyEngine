@@ -190,6 +190,13 @@ void WorldRenderer::render(const Camera& camera, ITexture& hdr_color_target, ITe
 		performRenderPass(RenderPass::DEPTH);
 	}
 
+	const bool depthCopyNeeded = water != nullptr;
+	if (depthCopyNeeded)
+	{
+		PROFILE_SCOPE("CopyDepthTexture");
+		depthTex->copyResource(depthCopyTex->getId());
+	}
+
 	if (ssao_enabled)
 		ssao->perform();
 	else
@@ -208,8 +215,15 @@ void WorldRenderer::render(const Camera& camera, ITexture& hdr_color_target, ITe
 		performRenderPass(RenderPass::FORWARD);
 	}
 
+	const bool sceneGrabNeeded = water != nullptr;
+	if (sceneGrabNeeded)
+	{
+		PROFILE_SCOPE("GrabSceneTexture");
+		hdrTarget->copyResource(hdrSceneGrabBeforeWaterTexture->getId());
+	}
+
 	if (water != nullptr)
-		water->render();
+		water->render(hdrSceneGrabBeforeWaterTexture.get(), depthCopyTex.get());
 
 	drv->setTexture(ShaderStage::PS, 2, BAD_RESID);
 	drv->setSampler(ShaderStage::PS, 2, BAD_RESID);
@@ -360,11 +374,19 @@ void WorldRenderer::initResolutionDependentResources()
 		TexFmt::R16G16B16A16_FLOAT, 1, ResourceUsage::DEFAULT, BIND_RENDER_TARGET | BIND_SHADER_RESOURCE);
 	hdrTarget.reset(drv->createTexture(hdrTargetDesc));
 
+	hdrTargetDesc.name = "hdrSceneGrabBeforeWaterTexture";
+	hdrTargetDesc.bindFlags = BIND_SHADER_RESOURCE;
+	hdrSceneGrabBeforeWaterTexture.reset(drv->createTexture(hdrTargetDesc));
+
 	TextureDesc depthTexDesc("depthTex", displayResolution.x, displayResolution.y,
 		TexFmt::R24G8_TYPELESS, 1, ResourceUsage::DEFAULT, BIND_DEPTH_STENCIL | BIND_SHADER_RESOURCE);
 	depthTexDesc.srvFormatOverride = TexFmt::R24_UNORM_X8_TYPELESS;
 	depthTexDesc.dsvFormatOverride = TexFmt::D24_UNORM_S8_UINT;
 	depthTex.reset(drv->createTexture(depthTexDesc));
+
+	depthTexDesc.name = "depthCopyTex";
+	depthTexDesc.bindFlags = BIND_SHADER_RESOURCE;
+	depthCopyTex.reset(drv->createTexture(depthTexDesc));
 
 	sceneCamera.Resize((float)displayResolution.x, (float)displayResolution.y);
 
@@ -375,7 +397,9 @@ void WorldRenderer::initResolutionDependentResources()
 void WorldRenderer::closeResolutionDependentResources()
 {
 	depthTex.reset();
+	depthCopyTex.reset();
 	hdrTarget.reset();
+	hdrSceneGrabBeforeWaterTexture.reset();
 	ssao.reset();
 }
 
