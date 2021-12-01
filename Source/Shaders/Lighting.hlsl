@@ -9,20 +9,6 @@ TextureCube _SpecularMap : register(t11);
 Texture2D _BrdfLut : register(t12);
 SamplerState _LinearSampler : register(s10);
 
-float3 Lambert_Diffuse_Direct(float3 albedo, float metalness, float3 kS)
-{
-	float3 kD = (1 - kS) * (1 - metalness);
-	float3 lambert = albedo / PI;
-	return kD * lambert;
-}
-
-float3 Lambert_Diffuse_IBL(float3 albedo, float3 normal, float metalness, float3 kS)
-{
-	float3 kD = (1 - kS) * (1 - metalness);
-	float3 irradiance = _IrradianceMap.Sample(_LinearSampler, normal).rgb;
-	return kD * irradiance * albedo;
-}
-
 float3 GGX_Specular_Direct(float3 normal, float3 lightVector, float3 viewVector, float roughness, float3 F0, out float3 kS)
 {
 	float3 halfVector = normalize(lightVector + viewVector);
@@ -51,7 +37,7 @@ float3 GGX_Specular_Direct(float3 normal, float3 lightVector, float3 viewVector,
 	return numerator / max(denominator, 0.001);
 }
 
-float3 GGX_Specular_IBL(float3 normal, float3 viewVector, float roughness, float perceptualRoughness, float3 F0, out float3 kS)
+float3 GGX_Specular_Indirect(float3 normal, float3 viewVector, float roughness, float perceptualRoughness, float3 F0, out float3 kS)
 {
 	float nDotV = max(dot(normal, viewVector), 0.0);
 	float3 F = FresnelSchlickRoughness(nDotV, F0, roughness);
@@ -66,6 +52,20 @@ float3 GGX_Specular_IBL(float3 normal, float3 viewVector, float roughness, float
 	float2 envBRDF = _BrdfLut.Sample(_LinearSampler, float2(nDotV, perceptualRoughness)).rg;
 
 	return prefilteredColor * (F * envBRDF.x + envBRDF.y);
+}
+
+float3 Lambert_Diffuse_Direct(float3 albedo, float metalness, float3 kS)
+{
+	float3 kD = (1 - kS) * (1 - metalness);
+	float3 lambert = albedo / PI;
+	return kD * lambert;
+}
+
+float3 Lambert_Diffuse_Indirect(float3 albedo, float3 normal, float metalness, float3 kS)
+{
+	float3 kD = (1 - kS) * (1 - metalness);
+	float3 irradiance = _IrradianceMap.Sample(_LinearSampler, normal).rgb;
+	return kD * irradiance * albedo;
 }
 
 float3 Lighting(SurfaceOutput s, float3 pointToEye, float mainLightShadowAttenuation, float ao)
@@ -89,8 +89,8 @@ float3 Lighting(SurfaceOutput s, float3 pointToEye, float mainLightShadowAttenua
 	float3 indirectLighting;
 	{
 		float3 kS;
-		float3 specular = GGX_Specular_IBL(s.normal, viewVector, roughness, perceptualRoughness, F0, kS);
-		float3 diffuse = Lambert_Diffuse_IBL(s.albedo, s.normal, s.metalness, kS);
+		float3 specular = GGX_Specular_Indirect(s.normal, viewVector, roughness, perceptualRoughness, F0, kS);
+		float3 diffuse = Lambert_Diffuse_Indirect(s.albedo, s.normal, s.metalness, kS);
 		indirectLighting = (diffuse + specular) * ao;
 	}
 

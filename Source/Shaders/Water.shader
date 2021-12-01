@@ -158,10 +158,10 @@ float3 WaterLighting(WaterSurfaceOutput s, float3 pointToEye, float mainLightSha
 	{
 		// Indirect specular on water surface
 		float3 kS;
-		float3 specular = GGX_Specular_IBL(s.normal, viewVector, roughness, perceptualRoughness, F0, kS);
+		float3 specular = GGX_Specular_Indirect(s.normal, viewVector, roughness, perceptualRoughness, F0, kS);
 
 		// Similarly to direct part, only calcualte diffuse for water for, we'll blend refraction color to this later
-		float3 diffuse = Lambert_Diffuse_IBL(s.fogColor, s.normal, 0, kS);
+		float3 diffuse = Lambert_Diffuse_Indirect(s.fogColor, s.normal, 0, kS);
 
 		indirectDiffuse = diffuse * ao;
 		indirectSpecular = specular * ao;
