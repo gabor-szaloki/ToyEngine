@@ -9,7 +9,21 @@ TextureCube _SpecularMap : register(t11);
 Texture2D _BrdfLut : register(t12);
 SamplerState _LinearSampler : register(s10);
 
-float3 GGX_Specular(float3 normal, float3 lightVector, float3 viewVector, float roughness, float3 F0, out float3 kS)
+float3 Lambert_Diffuse_Direct(float3 albedo, float metalness, float3 kS)
+{
+	float3 kD = (1 - kS) * (1 - metalness);
+	float3 lambert = albedo / PI;
+	return kD * lambert;
+}
+
+float3 Lambert_Diffuse_IBL(float3 albedo, float3 normal, float metalness, float3 kS)
+{
+	float3 kD = (1 - kS) * (1 - metalness);
+	float3 irradiance = _IrradianceMap.Sample(_LinearSampler, normal).rgb;
+	return kD * irradiance * albedo;
+}
+
+float3 GGX_Specular_Direct(float3 normal, float3 lightVector, float3 viewVector, float roughness, float3 F0, out float3 kS)
 {
 	float3 halfVector = normalize(lightVector + viewVector);
 
@@ -37,6 +51,23 @@ float3 GGX_Specular(float3 normal, float3 lightVector, float3 viewVector, float 
 	return numerator / max(denominator, 0.001);
 }
 
+float3 GGX_Specular_IBL(float3 normal, float3 viewVector, float roughness, float perceptualRoughness, float3 F0, out float3 kS)
+{
+	float nDotV = max(dot(normal, viewVector), 0.0);
+	float3 F = FresnelSchlickRoughness(nDotV, F0, roughness);
+	kS = F;
+
+	float3 reflectionVector = reflect(-viewVector, normal);
+
+	const float MAX_REFLECTION_LOD = 4.0;
+	// Note: We address prebaked textures with perceptualRoughness, becuase input roughness is also treated as such during the baking process.
+	//       Using roughness here would mean that we square preceptualRoughness twice.
+	float3 prefilteredColor = _SpecularMap.SampleLevel(_LinearSampler, reflectionVector, perceptualRoughness * MAX_REFLECTION_LOD).rgb;
+	float2 envBRDF = _BrdfLut.Sample(_LinearSampler, float2(nDotV, perceptualRoughness)).rg;
+
+	return prefilteredColor * (F * envBRDF.x + envBRDF.y);
+}
+
 float3 Lighting(SurfaceOutput s, float3 pointToEye, float mainLightShadowAttenuation, float ao)
 {
 	float3 lightVector = -_MainLightDirection.xyz;
@@ -48,39 +79,18 @@ float3 Lighting(SurfaceOutput s, float3 pointToEye, float mainLightShadowAttenua
 
 	float3 directLighting;
 	{
-		// Specular contribution
-		float3 kS = 0;
-		float3 specular = GGX_Specular(s.normal, lightVector, viewVector, roughness, F0, kS);
-
-		// Diffuse contribution
-		float3 kD = (1 - kS) * (1 - s.metalness);
-		float3 lambert = s.albedo / PI;
-		float3 diffuse = kD * lambert;
-
+		float3 kS;
+		float3 specular = GGX_Specular_Direct(s.normal, lightVector, viewVector, roughness, F0, kS);
+		float3 diffuse = Lambert_Diffuse_Direct(s.albedo, s.metalness, kS);
 		float nDotL = saturate(dot(s.normal, lightVector));
 		directLighting = (diffuse + specular) * nDotL * _MainLightColor.rgb * mainLightShadowAttenuation;
 	}
 
 	float3 indirectLighting;
 	{
-		float nDotV = max(dot(s.normal, viewVector), 0.0);
-		float3 F = FresnelSchlickRoughness(nDotV, F0, roughness);
-		float3 kS = F;
-
-		// Specular contribution
-		// Note: We adress prebaked textures with perceptualRoughness, becuase input roughness is also treated as such during the baking process.
-		//       Using roughness here would mean that we square preceptualRoughness twice.
-		float3 reflectionVector = reflect(-viewVector, s.normal);
-		const float MAX_REFLECTION_LOD = 4.0;
-		float3 prefilteredColor = _SpecularMap.SampleLevel(_LinearSampler, reflectionVector, perceptualRoughness * MAX_REFLECTION_LOD).rgb;
-		float2 envBRDF = _BrdfLut.Sample(_LinearSampler, float2(nDotV, perceptualRoughness)).rg;
-		float3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
-
-		// Diffuse contribution
-		float3 kD = (1 - kS) * (1 - s.metalness);
-		float3 irradiance = _IrradianceMap.Sample(_LinearSampler, s.normal).rgb;
-		float3 diffuse = kD * irradiance * s.albedo;
-
+		float3 kS;
+		float3 specular = GGX_Specular_IBL(s.normal, viewVector, roughness, perceptualRoughness, F0, kS);
+		float3 diffuse = Lambert_Diffuse_IBL(s.albedo, s.normal, s.metalness, kS);
 		indirectLighting = (diffuse + specular) * ao;
 	}
 

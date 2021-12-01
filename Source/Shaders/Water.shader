@@ -143,12 +143,10 @@ float3 WaterLighting(WaterSurfaceOutput s, float3 pointToEye, float mainLightSha
 	{
 		// Direct light specular on water surface
 		float3 kS = 0;
-		float3 specular = GGX_Specular(s.normal, lightVector, viewVector, roughness, F0, kS);
+		float3 specular = GGX_Specular_Direct(s.normal, lightVector, viewVector, roughness, F0, kS);
 
-		// Diffuse lit water fog
-		float3 kD = 1 - kS;
-		float3 lambert = s.fogColor / PI;
-		float3 diffuse = kD * lambert;
+		// Only calcualte diffuse lighting for water fog, we'll blend refraction color to this later
+		float3 diffuse = Lambert_Diffuse_Direct(s.fogColor, 0, kS);
 
 		float nDotL = saturate(dot(s.normal, lightVector));
 		directDiffuse = diffuse * nDotL * _MainLightColor.rgb * mainLightShadowAttenuation;
@@ -158,23 +156,12 @@ float3 WaterLighting(WaterSurfaceOutput s, float3 pointToEye, float mainLightSha
 	float3 indirectDiffuse;
 	float3 indirectSpecular;
 	{
-		float nDotV = max(dot(s.normal, viewVector), 0.0);
-		float3 F = FresnelSchlickRoughness(nDotV, F0, roughness);
-		float3 kS = F;
+		// Indirect specular on water surface
+		float3 kS;
+		float3 specular = GGX_Specular_IBL(s.normal, viewVector, roughness, perceptualRoughness, F0, kS);
 
-		// Specular contribution
-		// Note: We adress prebaked textures with perceptualRoughness, becuase input roughness is also treated as such during the baking process.
-		//       Using roughness here would mean that we square preceptualRoughness twice.
-		float3 reflectionVector = reflect(-viewVector, s.normal);
-		const float MAX_REFLECTION_LOD = 4.0;
-		float3 prefilteredColor = _SpecularMap.SampleLevel(_LinearSampler, reflectionVector, perceptualRoughness * MAX_REFLECTION_LOD).rgb;
-		float2 envBRDF = _BrdfLut.Sample(_LinearSampler, float2(nDotV, perceptualRoughness)).rg;
-		float3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
-
-		// Diffuse contribution
-		float3 kD = 1 - kS;
-		float3 irradiance = _IrradianceMap.Sample(_LinearSampler, s.normal).rgb;
-		float3 diffuse = kD * irradiance * s.fogColor;
+		// Similarly to direct part, only calcualte diffuse for water for, we'll blend refraction color to this later
+		float3 diffuse = Lambert_Diffuse_IBL(s.fogColor, s.normal, 0, kS);
 
 		indirectDiffuse = diffuse * ao;
 		indirectSpecular = specular * ao;
