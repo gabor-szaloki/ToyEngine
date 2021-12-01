@@ -126,7 +126,7 @@ WaterSurfaceOutput WaterSurface(float3 pointToEye, float3 normal, float4 normalU
 
 float GetFogStrength(float waterDepth)
 {
-	return 1 - rcp(exp(waterDepth * _FogDensity));
+	return 1 - exp(-waterDepth * _FogDensity);
 }
 
 float3 WaterLighting(WaterSurfaceOutput s, float3 pointToEye, float mainLightShadowAttenuation, float ao)
@@ -134,7 +134,7 @@ float3 WaterLighting(WaterSurfaceOutput s, float3 pointToEye, float mainLightSha
 	float3 lightVector = -_MainLightDirection.xyz;
 	float3 viewVector = normalize(pointToEye);
 
-	const float3 F0 = 0.04; // Color at normal incidence
+	const float3 F0 = 0.02; // Water base reflectance based on https://refractiveindex.info/?shelf=3d&book=liquids&page=water
 	float perceptualRoughness = s.roughness;
 	float roughness = perceptualRoughness * perceptualRoughness; // calculate roughness to be used in PBR from perceptual roughness stored in surface
 
@@ -197,8 +197,6 @@ float4 WaterPS(VSOutputStandardForward i) : SV_TARGET
 	float mainLightShadowAttenuation = SampleMainLightShadow(i.shadowCoords, screenUv);
 	float ssao = 1;
 	c.rgb = WaterLighting(s, pointToEye, mainLightShadowAttenuation, ssao);
-
-	//c.rgb = s.waterDepth * 0.5;
 
 	return c;
 }
