@@ -29,7 +29,9 @@ cbuffer WaterConstantBuffer : register(b4)
 	float _FogDensity;
 
 	float _Roughness;
-	float3 _Pad;
+	float _RefractionStrength;
+	int _NumRefractionIterations;
+	float _Pad;
 
 	float _NormalStrength1;
 	float _NormalTiling1;
@@ -105,7 +107,6 @@ WaterSurfaceOutput WaterSurface(float3 pointToEye, float3 normal, float4 normalU
 	WaterSurfaceOutput s;
 
 	s.fogColor = _FogColor;
-	s.refractionColor = _SceneGrabTexture.Sample(_LinearClampSampler, screenUv).rgb;
 
 	float depth = linearize_depth(_DepthCopyTexture.Sample(_PointClampSampler, screenUv));
 	float3 eyeToBottom = lerp_view_vec(screenUv) * depth;
@@ -118,6 +119,24 @@ WaterSurfaceOutput WaterSurface(float3 pointToEye, float3 normal, float4 normalU
 	s.normal = normal;
 	s.normal = perturb_normal(s.normal, float3(normalMapSample1, 0), pointToEye, normalUvs.xy);
 	s.normal = perturb_normal(s.normal, float3(normalMapSample2, 0), pointToEye, normalUvs.zw);
+
+	float3 worldPos = _CameraWorldPosition.xyz + eyeToSurface;
+	float3 viewDir = normalize(eyeToSurface); // TODO: let's not normalize pointToEye twice (here and in WaterLighting)
+	const float refractiveIndex = lerp(1.0, 1.0/1.3325, _RefractionStrength);
+	float3 refractionDir = refract(viewDir, s.normal, refractiveIndex);
+
+	float2 refractionUv = screenUv;
+	for (int i = 0; i < _NumRefractionIterations; i++)
+	{
+		float3 refractionSamplePoint = worldPos + refractionDir * s.waterDepth; // let's assume same water depth for refracted case
+		float4 refractionSamplePointClipSpace = mul(_ViewProjection, float4(refractionSamplePoint, 1));
+		refractionUv = refractionSamplePointClipSpace.xy / refractionSamplePointClipSpace.w * float2(0.5, -0.5) + 0.5;// * _ViewportResolution.zw;
+		float refractionDepth = linearize_depth(_DepthCopyTexture.Sample(_PointClampSampler, refractionUv));
+		eyeToBottom = lerp_view_vec(refractionUv) * refractionDepth;
+		s.waterDepth = length(eyeToBottom - eyeToSurface);
+	}
+
+	s.refractionColor = _SceneGrabTexture.Sample(_LinearClampSampler, refractionUv).rgb;
 
 	s.roughness = _Roughness;
 
@@ -134,6 +153,7 @@ float3 WaterLighting(WaterSurfaceOutput s, float3 pointToEye, float mainLightSha
 	float3 lightVector = -_MainLightDirection.xyz;
 	float3 viewVector = normalize(pointToEye);
 
+	const float metalness = 0;
 	const float3 F0 = 0.02; // Water base reflectance based on https://refractiveindex.info/?shelf=3d&book=liquids&page=water
 	float perceptualRoughness = s.roughness;
 	float roughness = perceptualRoughness * perceptualRoughness; // calculate roughness to be used in PBR from perceptual roughness stored in surface
@@ -146,7 +166,7 @@ float3 WaterLighting(WaterSurfaceOutput s, float3 pointToEye, float mainLightSha
 		float3 specular = GGX_Specular_Direct(s.normal, lightVector, viewVector, roughness, F0, kS);
 
 		// Only calcualte diffuse lighting for water fog, we'll blend refraction color to this later
-		float3 diffuse = Lambert_Diffuse_Direct(s.fogColor, 0, kS);
+		float3 diffuse = Lambert_Diffuse_Direct(s.fogColor, metalness, kS);
 
 		float nDotL = saturate(dot(s.normal, lightVector));
 		directDiffuse = diffuse * nDotL * _MainLightColor.rgb * mainLightShadowAttenuation;
@@ -161,7 +181,7 @@ float3 WaterLighting(WaterSurfaceOutput s, float3 pointToEye, float mainLightSha
 		float3 specular = GGX_Specular_Indirect(s.normal, viewVector, roughness, perceptualRoughness, F0, kS);
 
 		// Similarly to direct part, only calcualte diffuse for water for, we'll blend refraction color to this later
-		float3 diffuse = Lambert_Diffuse_Indirect(s.fogColor, s.normal, 0, kS);
+		float3 diffuse = Lambert_Diffuse_Indirect(s.fogColor, s.normal, metalness, kS);
 
 		indirectDiffuse = diffuse * ao;
 		indirectSpecular = specular * ao;

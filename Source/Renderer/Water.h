@@ -17,7 +17,9 @@ struct WaterCbData
 	float fogDensity;
 
 	float roughness;
-	XMFLOAT3 pad;
+	float refractionStrength;
+	int numRefractionIterations;
+	float pad;
 
 	float normalStrength1;
 	float normalTiling1;

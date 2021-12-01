@@ -26,6 +26,8 @@ Water::Water(const Transform& transform_) : transform(transform_)
 	cbData.fogColor = XMFLOAT3(0.03f, 0.05f, 0.06f);
 	cbData.fogDensity = 1.f;
 	cbData.roughness = 0.05f;
+	cbData.refractionStrength = 1.0f;
+	cbData.numRefractionIterations = 4;
 	cbData.normalStrength1 = 0.2f;
 	cbData.normalTiling1 = 0.7f;
 	cbData.normalAnimSpeed1 = XMFLOAT2(-0.18f, 0.2f);
@@ -92,6 +94,8 @@ void Water::gui()
 	changed |= ImGui::ColorEdit3("Fog color", &cbData.fogColor.x);
 	changed |= ImGui::SliderFloat("Fog density", &cbData.fogDensity, 0, 10);
 	changed |= ImGui::SliderFloat("Roughness", &cbData.roughness, 0, 1);
+	changed |= ImGui::SliderFloat("Refraction strength", &cbData.refractionStrength, 0, 1);
+	changed |= ImGui::SliderInt("Num refraction iterations", &cbData.numRefractionIterations, 0, 5);
 
 	ImGui::TextUnformatted("1st normal layer");
 	changed |= ImGui::SliderFloat("Strength##Normal1", &cbData.normalStrength1, 0, 1);
