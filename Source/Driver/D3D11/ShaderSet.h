@@ -44,5 +44,6 @@ namespace drv_d3d11
 			bool compiledSuccessfully = false;
 		};
 		std::vector<ShaderSetVariant> variants;
+		std::vector<std::string> supportedKeywords;
 	};
 }

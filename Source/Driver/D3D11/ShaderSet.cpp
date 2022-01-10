@@ -40,12 +40,18 @@ bool ShaderSet::recompile()
 unsigned int ShaderSet::getVariantIndexForKeywords(const char** keywords, unsigned int num_keywords)
 {
 	unsigned int result = 0;
-	std::vector<unsigned int> candidates(variants.size());
-	std::iota(candidates.begin(), candidates.end(), 0);
+	std::vector<const char*> relevantKeywords;
 	for (unsigned int i = 0; i < num_keywords; i++)
 	{
+		if (std::find(supportedKeywords.begin(), supportedKeywords.end(), keywords[i]) != supportedKeywords.end())
+			relevantKeywords.push_back(keywords[i]);
+	}
+	std::vector<unsigned int> candidates(variants.size());
+	std::iota(candidates.begin(), candidates.end(), 0);
+	for (unsigned int i = 0; i < relevantKeywords.size(); i++)
+	{
 		candidates.erase(std::remove_if(candidates.begin(), candidates.end(),
-			[&](unsigned int c) { return std::find(variants[c].keywords.begin(), variants[c].keywords.end(), keywords[i]) == variants[c].keywords.end(); }),
+			[&](unsigned int c) { return std::find(variants[c].keywords.begin(), variants[c].keywords.end(), relevantKeywords[i]) == variants[c].keywords.end(); }),
 			candidates.end());
 		if (candidates.empty())
 			break;
@@ -93,6 +99,7 @@ void ShaderSet::releaseAll()
 		SAFE_RELEASE(v.cs);
 	}
 	variants.clear();
+	supportedKeywords.clear();
 }
 
 bool ShaderSet::compileAll()
@@ -113,7 +120,9 @@ bool ShaderSet::compileAll()
 
 void ShaderSet::parseKeywordCombinations(std::vector<std::vector<std::string>>& keyword_combinations)
 {
-	// NODE: This function can definitely be done way faster if needed
+	// NOTE: This function can definitely be done way faster if needed
+
+	supportedKeywords.clear();
 
 	std::vector<std::string> emptyCombination;
 	keyword_combinations.push_back(emptyCombination);
@@ -152,6 +161,8 @@ void ShaderSet::parseKeywordCombinations(std::vector<std::vector<std::string>>& 
 			std::vector<std::vector<std::string>> updatedCombinations;
 			for (const std::string& possibleKeyword : possibleKeywords)
 			{
+				supportedKeywords.push_back(possibleKeyword);
+
 				for (const std::vector<std::string>& existingCombination : keyword_combinations)
 				{
 					std::vector<std::string> newCombination(existingCombination);
