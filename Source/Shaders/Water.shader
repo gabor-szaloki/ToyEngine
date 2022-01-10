@@ -1,5 +1,6 @@
 #pragma warning(disable:3568) // warning X3568 : 'multi_compile' : unknown pragma ignored
 #pragma multi_compile SOFT_SHADOWS_OFF SOFT_SHADOWS_TENT SOFT_SHADOWS_VARIANCE SOFT_SHADOWS_POISSON
+#pragma multi_compile WATER_REFRACTION_MODE_OFF WATER_REFRACTION_MODE_DISTORT WATER_REFRACTION_MODE_REFRACT
 
 //--------------------------------------------------------------------------------------
 // Includes
@@ -122,19 +123,34 @@ WaterSurfaceOutput WaterSurface(float3 pointToEye, float3 normal, float4 normalU
 
 	float3 worldPos = _CameraWorldPosition.xyz + eyeToSurface;
 	float3 viewDir = normalize(eyeToSurface); // TODO: let's not normalize pointToEye twice (here and in WaterLighting)
-	const float refractiveIndex = lerp(1.0, 1.0/1.3325, _RefractionStrength);
-	float3 refractionDir = refract(viewDir, s.normal, refractiveIndex);
 
 	float2 refractionUv = screenUv;
+
+#if WATER_REFRACTION_MODE_DISTORT
+	const float refractionStrengthMutliplier = 0.05f; // So _RefractionStrength == 1 produces sensible results
+	const float maxWaterDepthForScalingDistortion = 1.0f;
+	float2 refractionUvCandidate = screenUv + s.normal.xz * min(maxWaterDepthForScalingDistortion, s.waterDepth) * _RefractionStrength * refractionStrengthMutliplier;
+	float refractionDepth = linearize_depth(_DepthCopyTexture.Sample(_PointClampSampler, refractionUvCandidate));
+	bool refractionIsUnderWaterSurface = refractionDepth * refractionDepth > dot(eyeToSurface, eyeToSurface);
+	[flatten] if (refractionIsUnderWaterSurface)
+	{
+		refractionUv = refractionUvCandidate;
+		eyeToBottom = lerp_view_vec(refractionUv) * refractionDepth;
+		s.waterDepth = length(eyeToBottom - eyeToSurface);
+	}
+#elif WATER_REFRACTION_MODE_REFRACT
+	const float refractiveIndex = lerp(1.0, 1.0/1.3325, _RefractionStrength);
+	float3 refractionDir = refract(viewDir, s.normal, refractiveIndex);
 	for (int i = 0; i < _NumRefractionIterations; i++)
 	{
 		float3 refractionSamplePoint = worldPos + refractionDir * s.waterDepth; // let's assume same water depth for refracted case
 		float4 refractionSamplePointClipSpace = mul(_ViewProjection, float4(refractionSamplePoint, 1));
-		refractionUv = refractionSamplePointClipSpace.xy / refractionSamplePointClipSpace.w * float2(0.5, -0.5) + 0.5;// * _ViewportResolution.zw;
+		refractionUv = refractionSamplePointClipSpace.xy / refractionSamplePointClipSpace.w * float2(0.5, -0.5) + 0.5;
 		float refractionDepth = linearize_depth(_DepthCopyTexture.Sample(_PointClampSampler, refractionUv));
 		eyeToBottom = lerp_view_vec(refractionUv) * refractionDepth;
 		s.waterDepth = length(eyeToBottom - eyeToSurface);
 	}
+#endif
 
 	s.refractionColor = _SceneGrabTexture.Sample(_LinearClampSampler, refractionUv).rgb;
 

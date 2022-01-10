@@ -10,6 +10,18 @@
 #include "WorldRenderer.h"
 #include "ConstantBuffers.h"
 
+// Modes must match multi_compile pragma at top of Water.shader
+enum { WATER_REFRACTION_MODE_OFF, WATER_REFRACTION_MODE_DISTORT, WATER_REFRACTION_MODE_REFRACT, NUM_WATER_REFRACTION_MODES };
+static const char* refraction_mode_keyword_names[] = { "WATER_REFRACTION_MODE_OFF", "WATER_REFRACTION_MODE_DISTORT", "WATER_REFRACTION_MODE_REFRACT" };
+static const char* refraction_mode_display_names[] = { "Off", "Distort", "Refract" };
+static int default_refraction_mode = WATER_REFRACTION_MODE_DISTORT;
+
+static void set_refraction_mode(int mode)
+{
+	for (int i = 0; i < NUM_WATER_REFRACTION_MODES; i++)
+		am->setGlobalShaderKeyword(refraction_mode_keyword_names[i], i == mode);
+}
+
 Water::Water(const Transform& transform_) : transform(transform_)
 {
 	ShaderSetDesc shaderDesc("Water", "Source/Shaders/Water.shader");
@@ -47,6 +59,8 @@ Water::Water(const Transform& transform_) : transform(transform_)
 	wrapSampler = drv->createSampler(SamplerDesc());
 	clampSampler = drv->createSampler(SamplerDesc(FILTER_DEFAULT, TexAddr::CLAMP));
 	pointClampSampler = drv->createSampler(SamplerDesc(FILTER_MIN_MAG_MIP_POINT, TexAddr::CLAMP));
+
+	set_refraction_mode(default_refraction_mode);
 
 	onGlobalShaderKeywordsChanged();
 }
@@ -94,8 +108,23 @@ void Water::gui()
 	changed |= ImGui::ColorEdit3("Fog color", &cbData.fogColor.x);
 	changed |= ImGui::SliderFloat("Fog density", &cbData.fogDensity, 0, 10);
 	changed |= ImGui::SliderFloat("Roughness", &cbData.roughness, 0, 1);
-	changed |= ImGui::SliderFloat("Refraction strength", &cbData.refractionStrength, 0, 1);
-	changed |= ImGui::SliderInt("Num refraction iterations", &cbData.numRefractionIterations, 0, 5);
+
+	ImGui::TextUnformatted("Refraction");
+	changed |= ImGui::SliderFloat("Refraction strength", &cbData.refractionStrength, 0, 2);
+
+	static int selectedRefractionMode = default_refraction_mode;
+	bool refractionModeChanged = false;
+	for (int i = 0; i < NUM_WATER_REFRACTION_MODES; i++)
+	{
+		refractionModeChanged |= ImGui::RadioButton(refraction_mode_display_names[i], &selectedRefractionMode, i);
+		ImGui::SameLine();
+	}
+	ImGui::SameLine(ImGui::GetWindowWidth() * 0.65f, 12); // Hack to continue where labels are
+	ImGui::TextUnformatted("Refraction mode");
+	if (refractionModeChanged)
+		set_refraction_mode(selectedRefractionMode);
+	if (selectedRefractionMode == WATER_REFRACTION_MODE_REFRACT)
+		changed |= ImGui::SliderInt("Refraction iterations", &cbData.numRefractionIterations, 0, 5);
 
 	ImGui::TextUnformatted("1st normal layer");
 	changed |= ImGui::SliderFloat("Strength##Normal1", &cbData.normalStrength1, 0, 1);
