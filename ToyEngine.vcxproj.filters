@@ -1767,5 +1767,8 @@
     <None Include="Source\Shaders\Water.shader">
       <Filter>Source\Shaders</Filter>
     </None>
+    <None Include="Source\Shaders\TAA.shader">
+      <Filter>Source\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

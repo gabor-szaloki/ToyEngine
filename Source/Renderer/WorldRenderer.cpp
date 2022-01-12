@@ -240,9 +240,11 @@ void WorldRenderer::render(const Camera& camera, ITexture& hdr_color_target, ITe
 	else
 		sky->render();
 
+	drv->setRenderTarget(BAD_RESID, BAD_RESID);
+
 	ITexture& antialiasedHdrTarget = *antialiasedHdrTargets[currentAntiAliasedTarget];
 	ITexture& taaHistoryTex = *antialiasedHdrTargets[1 - currentAntiAliasedTarget];
-	taa->perform(hdr_color_target, antialiasedHdrTarget, taaHistoryTex);
+	taa->perform(hdr_color_target, taaHistoryTex, antialiasedHdrTarget);
 
 	if (tonemapped_color_target != nullptr)
 	{
@@ -391,14 +393,15 @@ void WorldRenderer::initResolutionDependentResources()
 		TexFmt::R16G16B16A16_FLOAT, 1, ResourceUsage::DEFAULT, BIND_RENDER_TARGET | BIND_SHADER_RESOURCE);
 	hdrTarget.reset(drv->createTexture(hdrTargetDesc));
 
+	hdrTargetDesc.name = "hdrSceneGrabBeforeWaterTexture";
+	hdrTargetDesc.bindFlags = BIND_SHADER_RESOURCE;
+	hdrSceneGrabBeforeWaterTexture.reset(drv->createTexture(hdrTargetDesc));
+
+	hdrTargetDesc.bindFlags = BIND_UNORDERED_ACCESS | BIND_SHADER_RESOURCE;
 	hdrTargetDesc.name = "antialiasedHdrTarget_0";
 	antialiasedHdrTargets[0].reset(drv->createTexture(hdrTargetDesc));
 	hdrTargetDesc.name = "antialiasedHdrTarget_1";
 	antialiasedHdrTargets[1].reset(drv->createTexture(hdrTargetDesc));
-
-	hdrTargetDesc.name = "hdrSceneGrabBeforeWaterTexture";
-	hdrTargetDesc.bindFlags = BIND_SHADER_RESOURCE;
-	hdrSceneGrabBeforeWaterTexture.reset(drv->createTexture(hdrTargetDesc));
 
 	TextureDesc depthTexDesc("depthTex", displayResolution.x, displayResolution.y,
 		TexFmt::R24G8_TYPELESS, 1, ResourceUsage::DEFAULT, BIND_DEPTH_STENCIL | BIND_SHADER_RESOURCE);

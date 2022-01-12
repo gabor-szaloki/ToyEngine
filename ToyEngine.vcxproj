@@ -583,6 +583,7 @@
     <None Include="Source\Shaders\PostFx.shader" />
     <None Include="Source\Shaders\Sky.shader" />
     <None Include="Source\Shaders\Standard.shader" />
+    <None Include="Source\Shaders\TAA.shader" />
     <None Include="Source\Shaders\VarianceShadowMap.shader" />
     <None Include="Source\Shaders\Water.shader" />
   </ItemGroup>

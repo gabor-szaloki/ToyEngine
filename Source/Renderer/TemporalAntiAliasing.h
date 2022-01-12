@@ -15,5 +15,6 @@ public:
 
 private:
 	bool enabled = false;
-	int jitterFrameMod = 8;
+	int jitterFrameMod = 16;
+	ResIdHolder taaComputeShader;
 };
