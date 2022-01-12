@@ -47,7 +47,7 @@ void CubeRenderHelper::setupCamera(CubeFace cube_face)
 void CubeRenderHelper::renderFace(CubeFace cube_face)
 {
 	setupCamera(cube_face);
-	wr->setCameraForShaders(cam);
+	wr->setCameraForShaders(cam, false);
 	drv->setRenderTarget(cubeTarget->getId(), BAD_RESID, static_cast<unsigned int>(cube_face), 0, targetMip);
 	drv->draw(3, 0);
 }

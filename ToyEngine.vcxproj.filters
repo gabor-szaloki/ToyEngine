@@ -198,6 +198,9 @@
     <ClCompile Include="Source\Renderer\Water.cpp">
       <Filter>Source\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Renderer\TemporalAntiAliasing.cpp">
+      <Filter>Source\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common.h">
@@ -1275,6 +1278,9 @@
       <Filter>Source\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Source\Renderer\Water.h">
+      <Filter>Source\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\TemporalAntiAliasing.h">
       <Filter>Source\Renderer</Filter>
     </ClInclude>
   </ItemGroup>

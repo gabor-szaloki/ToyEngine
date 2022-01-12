@@ -7,6 +7,7 @@
 
 #include "ConstantBuffers.h"
 #include "Light.h"
+#include "TemporalAntiAliasing.h"
 #include "Hbao.h"
 #include "Water.h"
 #include "Sky.h"
@@ -64,6 +65,7 @@ WorldRenderer::~WorldRenderer()
 void WorldRenderer::init()
 {
 	initResolutionDependentResources();
+	taa = std::make_unique<TemporalAntiAliasing>();
 	sky = std::make_unique<Sky>();
 	enviLightSystem = std::make_unique<EnvironmentLightingSystem>();
 }
@@ -83,6 +85,7 @@ void WorldRenderer::update(float delta_time)
 {
 	// Update time
 	time += delta_time;
+	frameCount++;
 
 	// Update scene camera movement
 	XMVECTOR sceneCameraMoveDir =
@@ -237,10 +240,14 @@ void WorldRenderer::render(const Camera& camera, ITexture& hdr_color_target, ITe
 	else
 		sky->render();
 
+	ITexture& antialiasedHdrTarget = *antialiasedHdrTargets[currentAntiAliasedTarget];
+	ITexture& taaHistoryTex = *antialiasedHdrTargets[1 - currentAntiAliasedTarget];
+	taa->perform(hdr_color_target, antialiasedHdrTarget, taaHistoryTex);
+
 	if (tonemapped_color_target != nullptr)
 	{
 		drv->setRenderTarget(tonemapped_color_target->getId(), BAD_RESID, tonemapped_color_slice);
-		drv->setTexture(ShaderStage::PS, 0, hdr_color_target.getId());
+		drv->setTexture(ShaderStage::PS, 0, antialiasedHdrTarget.getId());
 		drv->setSampler(ShaderStage::PS, 0, linearClampSampler);
 
 		postFx.perform();
@@ -248,6 +255,8 @@ void WorldRenderer::render(const Camera& camera, ITexture& hdr_color_target, ITe
 		drv->setTexture(ShaderStage::PS, 0, BAD_RESID);
 		drv->setSampler(ShaderStage::PS, 0, BAD_RESID);
 	}
+
+	currentAntiAliasedTarget = 1 - currentAntiAliasedTarget;
 }
 
 void WorldRenderer::setEnvironment(ITexture* panoramic_environment_map, float radiance_cutoff, bool world_probe_enabled, const XMVECTOR& world_probe_pos)
@@ -337,11 +346,19 @@ static XMFLOAT4 get_projection_params(float zn, float zf, bool persp)
 	return XMFLOAT4(zn * zf, zn - zf, zf, persp ? 1.0f : 0.0f);
 }
 
-void WorldRenderer::setCameraForShaders(const Camera& cam)
+void WorldRenderer::setCameraForShaders(const Camera& cam, bool allow_jitter)
 {
 	PerCameraConstantBufferData perCameraCbData;
-	perCameraCbData.view = cam.GetViewMatrix();
+
 	perCameraCbData.projection = cam.GetProjectionMatrix();
+	if (allow_jitter)
+	{
+		XMFLOAT2 jitter = taa->getJitter(frameCount);
+		perCameraCbData.projection.r[2].m128_f32[0] = (2.0f * jitter.x) / cam.GetViewportWidth();
+		perCameraCbData.projection.r[2].m128_f32[1] = (2.0f * jitter.y) / cam.GetViewportHeight();
+	}
+
+	perCameraCbData.view = cam.GetViewMatrix();
 	perCameraCbData.viewProjection = perCameraCbData.view * perCameraCbData.projection;
 	perCameraCbData.projectionParams = get_projection_params(cam.GetNearPlane(), cam.GetFarPlane(), true);
 	XMStoreFloat4(&perCameraCbData.cameraWorldPosition, cam.GetEye());
@@ -374,6 +391,11 @@ void WorldRenderer::initResolutionDependentResources()
 		TexFmt::R16G16B16A16_FLOAT, 1, ResourceUsage::DEFAULT, BIND_RENDER_TARGET | BIND_SHADER_RESOURCE);
 	hdrTarget.reset(drv->createTexture(hdrTargetDesc));
 
+	hdrTargetDesc.name = "antialiasedHdrTarget_0";
+	antialiasedHdrTargets[0].reset(drv->createTexture(hdrTargetDesc));
+	hdrTargetDesc.name = "antialiasedHdrTarget_1";
+	antialiasedHdrTargets[1].reset(drv->createTexture(hdrTargetDesc));
+
 	hdrTargetDesc.name = "hdrSceneGrabBeforeWaterTexture";
 	hdrTargetDesc.bindFlags = BIND_SHADER_RESOURCE;
 	hdrSceneGrabBeforeWaterTexture.reset(drv->createTexture(hdrTargetDesc));
@@ -400,6 +422,8 @@ void WorldRenderer::closeResolutionDependentResources()
 	depthCopyTex.reset();
 	hdrTarget.reset();
 	hdrSceneGrabBeforeWaterTexture.reset();
+	antialiasedHdrTargets[0].reset();
+	antialiasedHdrTargets[1].reset();
 	ssao.reset();
 }
 
@@ -466,7 +490,7 @@ void WorldRenderer::setupShadowPass(const XMVECTOR& shadow_camera_pos, const XMM
 void WorldRenderer::setupDepthAndForwardPasses(const Camera& camera, ITexture& hdr_color_target, ITexture& depth_target, unsigned int hdr_color_slice, unsigned int depth_slice)
 {
 	// Main camera
-	setCameraForShaders(camera);
+	setCameraForShaders(camera, true);
 
 	// Clear targets
 	const TextureDesc& targetDesc = hdr_color_target.getDesc();

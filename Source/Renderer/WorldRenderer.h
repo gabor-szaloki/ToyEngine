@@ -17,6 +17,7 @@ class IBuffer;
 class ThreadPool;
 class Light;
 class MeshRenderer;
+class TemporalAntiAliasing;
 class Hbao;
 class Water;
 class Sky;
@@ -57,10 +58,11 @@ public:
 	ITexture* getDepthTex() const { return depthTex.get(); }
 	ITexture* getShadowMap() const { return shadowMap.get(); };
 	Camera& getSceneCamera() { return sceneCamera; };
-	void setCameraForShaders(const Camera& cam);
+	void setCameraForShaders(const Camera& cam, bool allow_jitter);
 	float getTime() { return time; }
 	Sky& getSky() { return *sky; }
 	Water* getWater() const { return water.get(); }
+	TemporalAntiAliasing& getTaa() const { return *taa; }
 
 	void lightingGui();
 	void shadowMapGui();
@@ -100,7 +102,8 @@ private:
 	void setupDepthAndForwardPasses(const Camera& camera, ITexture& hdr_color_target, ITexture& depth_target, unsigned int hdr_color_slice, unsigned int depth_slice);
 	void performRenderPass(RenderPass pass);
 
-	float time;
+	float time = 0.f;
+	unsigned int frameCount = 0;
 
 	Camera sceneCamera;
 	float sceneCameraMoveSpeed = 5.0f;
@@ -122,6 +125,10 @@ private:
 	std::unique_ptr<IBuffer> perFrameCb;
 	std::unique_ptr<IBuffer> perCameraCb;
 	std::unique_ptr<IBuffer> perObjectCb;
+
+	std::unique_ptr<TemporalAntiAliasing> taa;
+	std::unique_ptr<ITexture> antialiasedHdrTargets[2];
+	int currentAntiAliasedTarget = 0;
 
 	std::unique_ptr<Hbao> ssao;
 	float ssaoResolutionScale = 1.0f;

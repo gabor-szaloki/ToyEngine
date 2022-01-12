@@ -61,6 +61,7 @@
     <ClCompile Include="Source\Renderer\RenderUtil.cpp" />
     <ClCompile Include="Source\Renderer\Sky.cpp" />
     <ClCompile Include="Source\Renderer\Hbao.cpp" />
+    <ClCompile Include="Source\Renderer\TemporalAntiAliasing.cpp" />
     <ClCompile Include="Source\Renderer\VarianceShadowMap.cpp" />
     <ClCompile Include="Source\Renderer\Water.cpp" />
     <ClCompile Include="Source\Renderer\WorldRenderer.cpp" />
@@ -417,6 +418,7 @@
     <ClInclude Include="Source\Renderer\RenderUtil.h" />
     <ClInclude Include="Source\Renderer\Sky.h" />
     <ClInclude Include="Source\Renderer\Hbao.h" />
+    <ClInclude Include="Source\Renderer\TemporalAntiAliasing.h" />
     <ClInclude Include="Source\Renderer\VarianceShadowMap.h" />
     <ClInclude Include="Source\Renderer\Water.h" />
     <ClInclude Include="Source\Renderer\WorldRenderer.h" />
