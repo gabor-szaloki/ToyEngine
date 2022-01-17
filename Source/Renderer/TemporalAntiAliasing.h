@@ -8,13 +8,34 @@
 class TemporalAntiAliasing
 {
 public:
+	struct PerformParams
+	{
+		ITexture* destTex = nullptr;
+		ITexture* currentFrameTex = nullptr;
+		ITexture* historyTex = nullptr;
+		ITexture* depthTex = nullptr;
+		XMMATRIX viewMatrix{};
+		XMMATRIX projMatrix{};
+		unsigned int frame = 0;
+	};
+
 	TemporalAntiAliasing();
 	XMFLOAT2 getJitter(unsigned int frame) const;
-	void perform(const ITexture& source_tex, const ITexture& dest_tex, const ITexture& history_tex);
+	void addJitterToProjectionMatrix(XMMATRIX& proj, unsigned int frame, float viewport_width, float viewport_height) const;
+	void perform(const PerformParams& textures);
 	void gui();
 
 private:
-	bool enabled = false;
+	struct SkyBakeCbData
+	{
+		float historyWeight = 0.95f;
+		float pad[3];
+		XMMATRIX prevViewProjMatrixWithCurrentFrameJitter{};
+	} cbData;
+
+	bool enabled = true;
 	int jitterFrameMod = 16;
 	ResIdHolder taaComputeShader;
+	ResIdHolder linearClampSampler;
+	std::unique_ptr<IBuffer> cb;
 };

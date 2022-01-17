@@ -246,8 +246,17 @@ void WorldRenderer::render(const Camera& camera, ITexture& hdr_color_target, ITe
 	if (antialiasing_enabled)
 	{
 		antialiasedHdrTarget = antialiasedHdrTargets[currentAntiAliasedTarget].get();
-		ITexture& taaHistoryTex = *antialiasedHdrTargets[1 - currentAntiAliasedTarget];
-		taa->perform(hdr_color_target, taaHistoryTex, *antialiasedHdrTarget);
+
+		TemporalAntiAliasing::PerformParams taaParams;
+		taaParams.destTex = antialiasedHdrTarget;
+		taaParams.currentFrameTex = &hdr_color_target;
+		taaParams.historyTex = antialiasedHdrTargets[1 - currentAntiAliasedTarget].get();
+		taaParams.depthTex = depthTex.get();
+		taaParams.viewMatrix = camera.GetViewMatrix();
+		taaParams.projMatrix = camera.GetProjectionMatrix();
+		taaParams.frame = frameCount;
+
+		taa->perform(taaParams);
 	}
 	else
 	{
@@ -362,11 +371,7 @@ void WorldRenderer::setCameraForShaders(const Camera& cam, bool allow_jitter)
 
 	perCameraCbData.projection = cam.GetProjectionMatrix();
 	if (allow_jitter)
-	{
-		XMFLOAT2 jitter = taa->getJitter(frameCount);
-		perCameraCbData.projection.r[2].m128_f32[0] = (2.0f * jitter.x) / cam.GetViewportWidth();
-		perCameraCbData.projection.r[2].m128_f32[1] = (2.0f * jitter.y) / cam.GetViewportHeight();
-	}
+		taa->addJitterToProjectionMatrix(perCameraCbData.projection, frameCount, cam.GetViewportWidth(), cam.GetViewportHeight());
 
 	perCameraCbData.view = cam.GetViewMatrix();
 	perCameraCbData.viewProjection = perCameraCbData.view * perCameraCbData.projection;
@@ -390,6 +395,7 @@ void WorldRenderer::setCameraForShaders(const Camera& cam, bool allow_jitter)
 
 	drv->setConstantBuffer(ShaderStage::VS, PER_CAMERA_CONSTANT_BUFFER_SLOT, perCameraCb->getId());
 	drv->setConstantBuffer(ShaderStage::PS, PER_CAMERA_CONSTANT_BUFFER_SLOT, perCameraCb->getId());
+	drv->setConstantBuffer(ShaderStage::CS, PER_CAMERA_CONSTANT_BUFFER_SLOT, perCameraCb->getId());
 }
 
 void WorldRenderer::initResolutionDependentResources()
@@ -473,6 +479,7 @@ void WorldRenderer::setupFrame(const Camera& camera, XMVECTOR& out_shadow_camera
 
 	drv->setConstantBuffer(ShaderStage::VS, PER_FRAME_CONSTANT_BUFFER_SLOT, perFrameCb->getId());
 	drv->setConstantBuffer(ShaderStage::PS, PER_FRAME_CONSTANT_BUFFER_SLOT, perFrameCb->getId());
+	drv->setConstantBuffer(ShaderStage::CS, PER_FRAME_CONSTANT_BUFFER_SLOT, perFrameCb->getId());
 }
 
 void WorldRenderer::setupShadowPass(const XMVECTOR& shadow_camera_pos, const XMMATRIX& light_view_matrix, const XMMATRIX& light_proj_matrix)
@@ -489,6 +496,7 @@ void WorldRenderer::setupShadowPass(const XMVECTOR& shadow_camera_pos, const XMM
 	perCameraCb->updateData(&perCameraCbData);
 	drv->setConstantBuffer(ShaderStage::VS, PER_CAMERA_CONSTANT_BUFFER_SLOT, perCameraCb->getId());
 	drv->setConstantBuffer(ShaderStage::PS, PER_CAMERA_CONSTANT_BUFFER_SLOT, perCameraCb->getId());
+	drv->setConstantBuffer(ShaderStage::CS, PER_CAMERA_CONSTANT_BUFFER_SLOT, perCameraCb->getId());
 
 	// Setup state and render target
 	drv->setRenderState(softShadowMode == SoftShadowMode::VARIANCE ? shadowRenderStateNoBiasId : shadowRenderStateId);
