@@ -150,11 +150,11 @@ static XMMATRIX get_shadow_matrix(XMMATRIX& lightView, XMMATRIX& lightProj)
 
 void WorldRenderer::render()
 {
-	render(getSceneCamera(), *hdrTarget.get(), drv->getBackbufferTexture(), *depthTex.get(), 0, 0, 0, true);
+	render(getSceneCamera(), *hdrTarget.get(), drv->getBackbufferTexture(), *depthTex.get(), 0, 0, 0, true, true);
 }
 
 void WorldRenderer::render(const Camera& camera, ITexture& hdr_color_target, ITexture* tonemapped_color_target, ITexture& depth_target,
-	unsigned int hdr_color_slice, unsigned int tonemapped_color_slice, unsigned int depth_slice, bool ssao_enabled)
+	unsigned int hdr_color_slice, unsigned int tonemapped_color_slice, unsigned int depth_slice, bool ssao_enabled, bool antialiasing_enabled)
 {
 	PROFILE_SCOPE("RenderWorld");
 
@@ -242,14 +242,22 @@ void WorldRenderer::render(const Camera& camera, ITexture& hdr_color_target, ITe
 
 	drv->setRenderTarget(BAD_RESID, BAD_RESID);
 
-	ITexture& antialiasedHdrTarget = *antialiasedHdrTargets[currentAntiAliasedTarget];
-	ITexture& taaHistoryTex = *antialiasedHdrTargets[1 - currentAntiAliasedTarget];
-	taa->perform(hdr_color_target, taaHistoryTex, antialiasedHdrTarget);
+	ITexture* antialiasedHdrTarget = nullptr;
+	if (antialiasing_enabled)
+	{
+		antialiasedHdrTarget = antialiasedHdrTargets[currentAntiAliasedTarget].get();
+		ITexture& taaHistoryTex = *antialiasedHdrTargets[1 - currentAntiAliasedTarget];
+		taa->perform(hdr_color_target, taaHistoryTex, *antialiasedHdrTarget);
+	}
+	else
+	{
+		antialiasedHdrTarget = &hdr_color_target;
+	}
 
 	if (tonemapped_color_target != nullptr)
 	{
 		drv->setRenderTarget(tonemapped_color_target->getId(), BAD_RESID, tonemapped_color_slice);
-		drv->setTexture(ShaderStage::PS, 0, antialiasedHdrTarget.getId());
+		drv->setTexture(ShaderStage::PS, 0, antialiasedHdrTarget->getId());
 		drv->setSampler(ShaderStage::PS, 0, linearClampSampler);
 
 		postFx.perform();

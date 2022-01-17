@@ -42,7 +42,7 @@ public:
 	void beforeRender();
 	void render();
 	void render(const Camera& camera, ITexture& hdr_color_target, ITexture* tonemapped_color_target, ITexture& depth_target,
-		unsigned int hdr_color_slice, unsigned int tonemapped_color_slice, unsigned int depth_slice, bool ssao_enabled);
+		unsigned int hdr_color_slice, unsigned int tonemapped_color_slice, unsigned int depth_slice, bool ssao_enabled, bool antialiasing_enabled);
 
 	void toggleWireframe() { showWireframe = !showWireframe; }
 	void setEnvironment(ITexture* panoramic_environment_map, float radiance_cutoff, bool world_probe_enabled, const XMVECTOR& world_probe_pos); // <0 radiance cutoff means no cutoff

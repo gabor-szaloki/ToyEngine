@@ -44,7 +44,7 @@ void EnvironmentProbe::renderEnvironmentCube(ITexture* cube_target)
 	for (int i = 0; i < 6; i++)
 	{
 		cubeRenderHelper.setupCamera((CubeFace)i);
-		wr->render(cubeRenderHelper.getCamera(), *cube_target, nullptr, *depthTex.get(), i, 0, 0, false);
+		wr->render(cubeRenderHelper.getCamera(), *cube_target, nullptr, *depthTex.get(), i, 0, 0, false, false);
 	}
 
 	drv->setRenderTarget(BAD_RESID, BAD_RESID);
