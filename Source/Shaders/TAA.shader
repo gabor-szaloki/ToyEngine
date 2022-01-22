@@ -7,12 +7,27 @@ Texture2D<float> _DepthTex : register(t2);
 RWTexture2D<float4> _DestTex : register(u0);
 SamplerState _LinearClamp : register(s0);
 
-cbuffer SkyConstantBuffer : register(b4)
+cbuffer TaaConstantBuffer : register(b4)
 {
 	float _HistoryWeight;
-	float3 pad;
+	float _NeighborhoodClippingStrength;
+	float2 pad;
 	float4x4 _PrevViewProjMatrixWithCurrentFrameJitter;
 };
+
+float HistoryClip(float3 history_color, float3 current_color, float3 neighborhood_min, float3 neighborhood_max)
+{
+	float3 rayOrigin = history_color;
+	float3 rayDir = current_color - history_color;
+	rayDir = abs(rayDir) < (1.0 / 65536.0) ? (1.0 / 65536.0) : rayDir;
+	float3 invRayDir = rcp(rayDir);
+
+	float3 minIntersect = (neighborhood_min - rayOrigin) * invRayDir;
+	float3 maxIntersect = (neighborhood_max - rayOrigin) * invRayDir;
+	float3 enterIntersect = min(minIntersect, maxIntersect);
+
+	return saturate(max(enterIntersect.x, max(enterIntersect.y, enterIntersect.z)) * _NeighborhoodClippingStrength);
+}
 
 [numthreads(16, 16, 1)]
 void TAA(uint2 id : SV_DispatchThreadID)
@@ -32,5 +47,25 @@ void TAA(uint2 id : SV_DispatchThreadID)
 
 	float4 currentFrameColor = _CurrentFrameTex[id];
 	float4 historyColor = _HistoryTex.SampleLevel(_LinearClamp, historyUv, 0);
+
+	float4 neighborhoodMin = currentFrameColor;
+	float4 neighborhoodMax = currentFrameColor;
+	int2 frameBounds = _ViewportResolution.xy;
+	[unroll] for (int y = -1; y <= 1; y++)
+	{
+		[unroll] for (int x = -1; x <= 1; x++)
+		{	
+			if (x == 0 && y == 0)
+				continue;
+			int2 neighborCoord = clamp(id + int2(x, y), 0, frameBounds);
+			float4 neighborColor = _CurrentFrameTex[neighborCoord];
+			neighborhoodMin = min(neighborhoodMin, neighborColor);
+			neighborhoodMax = max(neighborhoodMax, neighborColor);
+		}
+	}
+
+	float historyClipFactor = HistoryClip(historyColor.rgb, currentFrameColor.rgb, neighborhoodMin.rgb, neighborhoodMax.rgb);
+	historyColor = lerp(historyColor, currentFrameColor, historyClipFactor);
+
 	_DestTex[id] = lerp(currentFrameColor, historyColor, historyWeight);
 }

@@ -29,7 +29,8 @@ private:
 	struct SkyBakeCbData
 	{
 		float historyWeight = 0.95f;
-		float pad[3];
+		float neighborhoodClippingStrength = 1.0f;
+		float pad[2];
 		XMMATRIX prevViewProjMatrixWithCurrentFrameJitter{};
 	} cbData;
 

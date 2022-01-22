@@ -100,6 +100,7 @@ void TemporalAntiAliasing::gui()
 	ImGui::Checkbox("Enabled", &enabled);
 	ImGui::SliderInt("Jitter frame modulo", &jitterFrameMod, 1, 64);
 	ImGui::SliderFloat("History weight", &cbData.historyWeight, 0, 1);
+	ImGui::SliderFloat("Neighborhood clipping strength", &cbData.neighborhoodClippingStrength, 0, 1);
 }
 
 REGISTER_IMGUI_WINDOW("TAA settings", [] { wr->getTaa().gui(); });
