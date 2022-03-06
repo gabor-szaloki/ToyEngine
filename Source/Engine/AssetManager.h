@@ -41,6 +41,7 @@ public:
 	IBuffer* getDefaultMeshVb() const { return defaultMeshVb.get(); }
 	ResId getDefaultInputLayout() const { return defaultInputLayout; }
 	ResId getDefaultMaterialTextureSampler() const { return defaultMaterialTextureSampler; }
+	void setDefaultMaterialSamplerMipBias(float mip_bias);
 
 	void sceneGui();
 
@@ -48,6 +49,7 @@ private:
 	void initInis();
 	void initShaders();
 	void initDefaultAssets();
+	void initDefaultMaterialTextureSampler();
 
 	std::vector<ITexture*> engineTextures;
 	std::vector<ITexture*> sceneTextures;
@@ -65,6 +67,7 @@ private:
 	std::unique_ptr<IBuffer> defaultMeshVb;
 	ResId defaultInputLayout = BAD_RESID;
 	ResIdHolder defaultMaterialTextureSampler;
+	float mipBias = 0.0f;
 
 	std::unique_ptr<mINI::INIFile> materialsIniFile;
 	mINI::INIStructure materialsIni;

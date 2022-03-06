@@ -27,7 +27,7 @@ TemporalAntiAliasing::TemporalAntiAliasing()
 	shaderDesc.sourceFilePath = "Source/Shaders/TAA.shader";
 	shaderDesc.name = "TAA";
 	shaderDesc.shaderFuncName = "TAA";
-	taaComputeShader = drv->createComputeShader(shaderDesc);
+	taaShader = drv->createComputeShader(shaderDesc);
 
 	BufferDesc cbDesc;
 	cbDesc.bindFlags = BIND_CONSTANT_BUFFER;
@@ -76,7 +76,7 @@ void TemporalAntiAliasing::perform(const PerformParams& params)
 
 	cb->updateData(&cbData);
 
-	drv->setShader(taaComputeShader, 0);
+	drv->setShader(taaShader, 0);
 
 	drv->setConstantBuffer(ShaderStage::CS, 4, cb->getId());
 
@@ -101,6 +101,8 @@ void TemporalAntiAliasing::gui()
 	ImGui::SliderInt("Jitter frame modulo", &jitterFrameMod, 1, 64);
 	ImGui::SliderFloat("History weight", &cbData.historyWeight, 0, 1);
 	ImGui::SliderFloat("Neighborhood clipping strength", &cbData.neighborhoodClippingStrength, 0, 1);
+	ImGui::SliderFloat("Mip bias", &mipBias, -5, 5);
+	ImGui::SliderFloat("Sharpening", &cbData.sharpening, 0, 1);
 }
 
 REGISTER_IMGUI_WINDOW("TAA settings", [] { wr->getTaa().gui(); });

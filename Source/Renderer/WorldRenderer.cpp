@@ -158,6 +158,8 @@ void WorldRenderer::render(const Camera& camera, ITexture& hdr_color_target, ITe
 {
 	PROFILE_SCOPE("RenderWorld");
 
+	am->setDefaultMaterialSamplerMipBias(antialiasing_enabled ? taa->getMipBias() : 0);
+
 	// Set resources for lighting
 	drv->setTexture(ShaderStage::PS, 10, enviLightSystem->getIrradianceCube()->getId());
 	drv->setTexture(ShaderStage::PS, 11, enviLightSystem->getSpecularCube()->getId());

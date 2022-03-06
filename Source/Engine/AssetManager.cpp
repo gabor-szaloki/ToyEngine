@@ -853,6 +853,14 @@ void AssetManager::setGlobalShaderKeyword(const std::string& keyword, bool enabl
 		wr->onGlobalShaderKeywordsChanged(); // TODO: make this some event that stuff can subscribe to
 }
 
+void AssetManager::setDefaultMaterialSamplerMipBias(float mip_bias)
+{
+	if (mip_bias == mipBias)
+		return;
+	mipBias = mip_bias;
+	initDefaultMaterialTextureSampler();
+}
+
 void AssetManager::initInis()
 {
 	const char* materialsIniPath = "Assets/materials.ini";
@@ -921,5 +929,12 @@ void AssetManager::initDefaultAssets()
 
 	defaultInputLayout = standardInputLayout;
 
-	defaultMaterialTextureSampler = drv->createSampler(SamplerDesc());
+	initDefaultMaterialTextureSampler();
+}
+
+void AssetManager::initDefaultMaterialTextureSampler()
+{
+	SamplerDesc defaultMaterialTextureSamplerDesc;
+	defaultMaterialTextureSamplerDesc.mipBias = mipBias;
+	defaultMaterialTextureSampler = drv->createSampler(defaultMaterialTextureSamplerDesc);
 }

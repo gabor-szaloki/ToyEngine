@@ -22,6 +22,7 @@ public:
 	TemporalAntiAliasing();
 	XMFLOAT2 getJitter(unsigned int frame) const;
 	void addJitterToProjectionMatrix(XMMATRIX& proj, unsigned int frame, float viewport_width, float viewport_height) const;
+	float getMipBias() const { return enabled ? mipBias : 0.f; }
 	void perform(const PerformParams& textures);
 	void gui();
 
@@ -30,13 +31,15 @@ private:
 	{
 		float historyWeight = 0.95f;
 		float neighborhoodClippingStrength = 1.0f;
-		float pad[2];
+		float sharpening = 0.5f;
+		float pad;
 		XMMATRIX prevViewProjMatrixWithCurrentFrameJitter{};
 	} cbData;
 
 	bool enabled = true;
 	int jitterFrameMod = 16;
-	ResIdHolder taaComputeShader;
+	float mipBias = -0.5;
+	ResIdHolder taaShader;
 	ResIdHolder linearClampSampler;
 	std::unique_ptr<IBuffer> cb;
 };

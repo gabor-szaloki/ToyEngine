@@ -1770,5 +1770,8 @@
     <None Include="Source\Shaders\TAA.shader">
       <Filter>Source\Shaders</Filter>
     </None>
+    <None Include="Source\Shaders\SampleBicubic.hlsl">
+      <Filter>Source\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

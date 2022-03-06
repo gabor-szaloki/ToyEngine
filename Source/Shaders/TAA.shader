@@ -1,6 +1,11 @@
 #include "ConstantBuffers.hlsl"
 #include "PostFxCommon.hlsl"
 
+#define BICUBIC_HISTORY 1
+#if BICUBIC_HISTORY
+	#include "SampleBicubic.hlsl"
+#endif
+
 Texture2D _CurrentFrameTex : register(t0);
 Texture2D _HistoryTex : register(t1);
 Texture2D<float> _DepthTex : register(t2);
@@ -11,9 +16,19 @@ cbuffer TaaConstantBuffer : register(b4)
 {
 	float _HistoryWeight;
 	float _NeighborhoodClippingStrength;
-	float2 pad;
+	float _Sharpening;
+	float pad;
 	float4x4 _PrevViewProjMatrixWithCurrentFrameJitter;
 };
+
+float4 SampleHistory(float2 uv)
+{
+#if BICUBIC_HISTORY
+	return SampleBicubicSharpenedLevelZero(_HistoryTex, uv, _ViewportResolution.xy, _Sharpening);
+#else
+	return _HistoryTex.SampleLevel(_LinearClamp, uv, 0);
+#endif
+}
 
 float HistoryClip(float3 history_color, float3 current_color, float3 neighborhood_min, float3 neighborhood_max)
 {
@@ -46,7 +61,7 @@ void TAA(uint2 id : SV_DispatchThreadID)
 		historyWeight = 0;
 
 	float4 currentFrameColor = _CurrentFrameTex[id];
-	float4 historyColor = _HistoryTex.SampleLevel(_LinearClamp, historyUv, 0);
+	float4 historyColor = SampleHistory(historyUv);
 
 	float4 neighborhoodMin = currentFrameColor;
 	float4 neighborhoodMax = currentFrameColor;
