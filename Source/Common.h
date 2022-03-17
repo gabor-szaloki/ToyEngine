@@ -22,6 +22,10 @@ char* wcs_to_utf8(const wchar_t* wcs_str, char* utf8_buf, int utf8_buf_len);
 float random_01();
 float random_range(float min, float max);
 
+namespace cxxopts { class ParseResult; }
+void init_cmdline_opts();
+const cxxopts::ParseResult& get_cmdline_opts();
+
 #define RAD_TO_DEG 57.2957795f;	
 #define DEG_TO_RAD 0.0174532925f;
 inline float to_deg(float rad) { return rad * RAD_TO_DEG; }

@@ -76,6 +76,9 @@
     <Filter Include="Source\Shaders\Experiments">
       <UniqueIdentifier>{492f3bec-2c0c-4091-9453-c4df18c7e21e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\3rdParty\cxxopts">
+      <UniqueIdentifier>{bc7b4a86-488a-40cc-8b81-d10a3640ae30}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Common.cpp">
@@ -1282,6 +1285,9 @@
     </ClInclude>
     <ClInclude Include="Source\Renderer\TemporalAntiAliasing.h">
       <Filter>Source\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\cxxopts\cxxopts.hpp">
+      <Filter>Source\3rdParty\cxxopts</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

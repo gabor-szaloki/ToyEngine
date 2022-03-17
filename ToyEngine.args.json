@@ -1,0 +1,14 @@
+{
+  "FileVersion": 2,
+  "Id": "562e8108-9c6c-4a33-979b-d4df397dc153",
+  "Items": [
+    {
+      "Id": "53f286be-db5e-48dc-8d20-c14f434bebbe",
+      "Command": "--help"
+    },
+    {
+      "Id": "08dc5aed-d37c-4598-afdd-7326557b79f4",
+      "Command": "--debug-device"
+    }
+  ]
+}

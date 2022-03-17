@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <3rdParty/imgui/imgui.h>
 #include <3rdParty/imgui/implot.h>
+#include <3rdParty/cxxopts/cxxopts.hpp>
 #include <Driver/IDriver.h>
 #include <Util/AutoImGui.h>
 
@@ -13,6 +14,7 @@ ThreadPool* tp;
 AssetManager* am;
 WorldRenderer* wr;
 IFullscreenExperiment* fe;
+cxxopts::ParseResult parsed_cmdline;
 
 wchar_t* utf8_to_wcs(const char* utf8_str, wchar_t* wcs_buf, int wcs_buf_len)
 {
@@ -40,6 +42,44 @@ float random_01()
 float random_range(float min, float max)
 {
 	return random_01() * (min - max) + min;
+}
+
+void init_cmdline_opts()
+{
+	PLOG_INFO << "Command line: " << GetCommandLine();
+
+	cxxopts::Options options("ToyEngine", "My attempt at a minimalistic graphics playground");
+	options.allow_unrecognised_options();
+
+#if defined(TOY_DEBUG)
+	const char* ddDefault = "true";
+#else
+	const char* ddDefault = "false";
+#endif
+
+	options.add_options()
+		("h,help", "Print usage")
+		("debug-device", "Initialize debug D3D Device with Debug Layer enabled. Enabled by default in debug builds, disabled by default otherwise", cxxopts::value<bool>()->default_value(ddDefault))
+		;
+
+	parsed_cmdline = options.parse(__argc, __argv);
+
+	if (!parsed_cmdline.unmatched().empty())
+	{
+		for (const std::string& unmatched_arg : parsed_cmdline.unmatched())
+			LOG_WARNING << "Unknown command line argument: " << unmatched_arg;
+	}
+
+	if (parsed_cmdline.count("help"))
+	{
+		PLOG_INFO << "Help:" << std::endl << options.help();
+		exit(0);
+	}
+}
+
+const cxxopts::ParseResult& get_cmdline_opts()
+{
+	return parsed_cmdline;
 }
 
 static void driver_settings_window()

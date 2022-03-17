@@ -93,6 +93,7 @@ static void init_logging()
 static bool init()
 {
 	init_logging();
+	init_cmdline_opts();
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();

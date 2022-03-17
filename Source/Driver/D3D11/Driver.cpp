@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <3rdParty/imgui/imgui.h>
 #include <3rdParty/imgui/imgui_impl_dx11.h>
+#include <3rdParty/cxxopts/cxxopts.hpp>
 
 #include "Texture.h"
 #include "Buffer.h"
@@ -42,9 +43,12 @@ bool Driver::init(void* hwnd, int display_width, int display_height)
 	scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
 	unsigned int creationFlags = 0;
-#if defined(TOY_DEBUG)
-	creationFlags |= D3D11_CREATE_DEVICE_DEBUG; // TODO: make this a cmd line param
-#endif
+
+	if (get_cmdline_opts()["debug-device"].as<bool>())
+	{
+		creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
+		PLOG_INFO << "Initializing debug device";
+	}
 
 	hr = D3D11CreateDeviceAndSwapChain(
 		nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, creationFlags, nullptr, 0, D3D11_SDK_VERSION,
