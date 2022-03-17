@@ -79,15 +79,18 @@ static void init_logging()
 #if defined(TOY_DEBUG)
 	const plog::Severity logSeverity = plog::debug;
 	log_file_path = ".log/" + timeStamp + "_dbg.log";
-#else
+#elif defined(TOY_DEV)
 	const plog::Severity logSeverity = plog::info;
+	log_file_path = ".log/" + timeStamp + "_dev.log";
+#else
+	const plog::Severity logSeverity = plog::error;
 	log_file_path = ".log/" + timeStamp + "_rel.log";
 #endif
 	_mkdir(".log");
 	static plog::RollingFileAppender<plog::ToyTxtFormatter> fileAppender(log_file_path.c_str(), 100 * 1024 * 1024, 1);
 	static plog::DebugOutputAppender<plog::ToyTxtFormatter> debugOutputAppender;
 	plog::init(logSeverity).addAppender(&fileAppender).addAppender(&debugOutputAppender).addAppender(&plog::imguiLogWindow);
-	PLOG_INFO << "Log system initialized. Log file: " << log_file_path;
+	PLOG_INFO << "Log system initialized. Severity: " << plog::severityToString(logSeverity) <<". Log file : " << log_file_path;
 }
 
 static bool init()
