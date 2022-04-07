@@ -3,8 +3,22 @@
 #pragma warning(disable:4267) // warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
 #pragma warning(disable:4244) // warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 
+// This disables some unimplemented stuff while D3D12 backend is in early development
+//#define D3D12_DEV
+
 #include <DirectXMath.h>
 #include <3rdParty/plog/Log.h>
+
+typedef signed char        int8;
+typedef short              int16;
+typedef int                int32;
+typedef long long          int64;
+typedef unsigned char      uint8;
+typedef unsigned char      byte;
+typedef unsigned short     uint16;
+typedef unsigned int       uint32;
+typedef unsigned int       uint;
+typedef unsigned long long uint64;
 
 extern class IDriver* drv;
 extern class ThreadPool* tp;
@@ -12,6 +26,7 @@ extern class AssetManager* am;
 extern class WorldRenderer* wr;
 extern class IFullscreenExperiment* fe;
 extern void create_driver_d3d11();
+extern void create_driver_d3d12();
 extern void* get_hwnd();
 extern void exit_program();
 extern const char* get_log_file_path();

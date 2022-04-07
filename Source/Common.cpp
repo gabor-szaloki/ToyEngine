@@ -59,7 +59,9 @@ void init_cmdline_opts()
 
 	options.add_options()
 		("h,help", "Print usage")
+		("d,driver", "Select graphics API to run with. Default is D3D11.", cxxopts::value<std::string>()->default_value("d3d11"), "d3d11|d3d12")
 		("debug-device", "Initialize debug D3D Device with Debug Layer enabled. Enabled by default in debug builds, disabled by default otherwise", cxxopts::value<bool>()->default_value(ddDefault))
+		("s,scene", "Load given scene by default.", cxxopts::value<std::string>()->default_value("")->implicit_value(""))
 		;
 
 	parsed_cmdline = options.parse(__argc, __argv);

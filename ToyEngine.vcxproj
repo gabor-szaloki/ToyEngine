@@ -46,6 +46,7 @@
     <ClCompile Include="Source\Driver\D3D11\Sampler.cpp" />
     <ClCompile Include="Source\Driver\D3D11\ShaderSet.cpp" />
     <ClCompile Include="Source\Driver\D3D11\Texture.cpp" />
+    <ClCompile Include="Source\Driver\D3D12\DriverD3D12.cpp" />
     <ClCompile Include="Source\Engine\AssetManager.cpp" />
     <ClCompile Include="Source\Engine\AssetManagerGui.cpp" />
     <ClCompile Include="Source\Engine\Material.cpp" />
@@ -55,6 +56,7 @@
     <ClCompile Include="Source\Renderer\CubeRenderHelper.cpp" />
     <ClCompile Include="Source\Renderer\EnvironmentLightingSystem.cpp" />
     <ClCompile Include="Source\Renderer\EnvironmentProbe.cpp" />
+    <ClCompile Include="Source\Renderer\Experiments\D3D12Test.cpp" />
     <ClCompile Include="Source\Renderer\Experiments\SlimeSim.cpp" />
     <ClCompile Include="Source\Renderer\Light.cpp" />
     <ClCompile Include="Source\Renderer\PostFx.cpp" />
@@ -71,6 +73,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\3rdParty\cxxopts\cxxopts.hpp" />
+    <ClInclude Include="Source\3rdParty\DirectX-Headers\d3dx12.h" />
     <ClInclude Include="Source\3rdParty\glm\common.hpp" />
     <ClInclude Include="Source\3rdParty\glm\detail\compute_common.hpp" />
     <ClInclude Include="Source\3rdParty\glm\detail\compute_vector_relational.hpp" />
@@ -395,6 +398,7 @@
     <ClInclude Include="Source\Driver\D3D11\Sampler.h" />
     <ClInclude Include="Source\Driver\D3D11\ShaderSet.h" />
     <ClInclude Include="Source\Driver\D3D11\Texture.h" />
+    <ClInclude Include="Source\Driver\D3D12\DriverD3D12.h" />
     <ClInclude Include="Source\Driver\DriverCommon.h" />
     <ClInclude Include="Source\Driver\DriverSettings.h" />
     <ClInclude Include="Source\Driver\IBuffer.h" />
@@ -412,6 +416,7 @@
     <ClInclude Include="Source\Renderer\CubeRenderHelper.h" />
     <ClInclude Include="Source\Renderer\EnvironmentLightingSystem.h" />
     <ClInclude Include="Source\Renderer\EnvironmentProbe.h" />
+    <ClInclude Include="Source\Renderer\Experiments\D3D12Test.h" />
     <ClInclude Include="Source\Renderer\Experiments\SlimeSim.h" />
     <ClInclude Include="Source\Renderer\Experiments\IFullscreenExperiment.h" />
     <ClInclude Include="Source\Renderer\Light.h" />

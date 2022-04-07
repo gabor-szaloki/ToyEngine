@@ -10,6 +10,7 @@
 #include <3rdParty/plog/Log.h>
 #include <3rdParty/plog/Appenders/RollingFileAppender.h>
 #include <3rdParty/plog/Appenders/DebugOutputAppender.h>
+#include <3rdParty/cxxopts/cxxopts.hpp>
 #include <Driver/ITexture.h>
 #include <Engine/AssetManager.h>
 #include <Renderer/WorldRenderer.h>
@@ -104,7 +105,16 @@ static bool init()
 	ImGui_ImplWin32_Init(hWnd);
 	autoimgui::init();
 
-	create_driver_d3d11();
+	const std::string& driverOption = get_cmdline_opts()["driver"].as<std::string>();
+	if (driverOption == "d3d11" || driverOption == "D3D11")
+		create_driver_d3d11();
+	else if (driverOption == "d3d12" || driverOption == "D3D12")
+		create_driver_d3d12();
+	else
+	{
+		PLOG_ERROR << "Unknown driver passed as command line param. Defaulting to D3D11.";
+		create_driver_d3d11();
+	}
 	bool success = drv->init(hWnd, DEFAULT_WINDOWED_WIDTH, DEFAULT_WINDOWED_HEIGHT);
 	if (!success)
 	{
@@ -118,14 +128,29 @@ static bool init()
 	PLOG_INFO << "Initializing thread pool with " << numWorkerThreads << " threads";
 	tp = new ThreadPool(numWorkerThreads);
 
+#ifndef D3D12_DEV
 	render_util::init();
+#endif
 
 	am = new AssetManager();
 
+#ifndef D3D12_DEV
 	wr = new WorldRenderer();
 	wr->init();
+#endif
 
-	std::string scenePath = autoimgui::load_custom_param("lastLoadedScenePath", "Assets/Scenes/default.ini");
+	const std::string& sceneOption = get_cmdline_opts()["scene"].as<std::string>();
+	std::string scenePath;
+	if (!sceneOption.empty())
+	{
+		scenePath = "Assets/Scenes/";
+		scenePath += sceneOption;
+		scenePath += ".ini";
+	}
+	else
+	{
+		scenePath = autoimgui::load_custom_param("lastLoadedScenePath", "Assets/Scenes/default.ini");
+	}
 	am->loadScene(scenePath);
 
 	return true;
@@ -137,7 +162,7 @@ static void shutdown()
 	delete wr;
 	delete am;
 	SAFE_DELETE(fe);
-	render_util::shutdown();
+	//render_util::shutdown();
 	drv->shutdown();
 	delete drv;
 	autoimgui::shutdown();
@@ -153,9 +178,11 @@ static void update()
 	float deltaTimeInSeconds = (float)(((double)std::chrono::duration_cast<std::chrono::microseconds>(currentTime - lastTime).count()) * 0.001 * 0.001);
 	lastTime = currentTime;
 
+#ifndef D3D12_DEV
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 	autoimgui::perform();
+#endif
 	if (fe != nullptr)
 	{
 		fe->gui();
@@ -175,17 +202,21 @@ static void render()
 		wr->render();
 	}
 
+#ifndef D3D12_DEV
 	drv->setRenderTarget(drv->getBackbufferTexture()->getId(), BAD_RESID);
 
 	if (autoimgui::is_active)
 		ImGui::Render();
 	else
 		ImGui::EndFrame();
+#endif
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
 {
 	showCmd = nShowCmd;
+
+	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 	create_hwnd(hInstance);
 	if (!init())

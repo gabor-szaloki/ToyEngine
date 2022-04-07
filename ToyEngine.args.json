@@ -9,6 +9,14 @@
     {
       "Id": "08dc5aed-d37c-4598-afdd-7326557b79f4",
       "Command": "--debug-device"
+    },
+    {
+      "Id": "5f2a99ec-4cf4-41c5-9685-8e3294da49cf",
+      "Command": "--driver=d3d12"
+    },
+    {
+      "Id": "6b1f62d3-5300-4e22-9ad6-228d40508a49",
+      "Command": "--scene=d3d12test"
     }
   ]
 }

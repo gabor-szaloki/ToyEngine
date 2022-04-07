@@ -16,6 +16,7 @@
 #include <Renderer/Light.h>
 #include <Renderer/ConstantBuffers.h>
 #include <Renderer/Experiments/SlimeSim.h>
+#include <Renderer/Experiments/D3D12Test.h>
 
 #include "Material.h"
 #include "MeshRenderer.h"
@@ -26,8 +27,10 @@ static constexpr bool ASYNC_LOADING_ENABLED = true;
 AssetManager::AssetManager()
 {
 	initInis();
+#ifndef D3D12_DEV
 	initShaders();
 	initDefaultAssets();
+#endif
 }
 
 AssetManager::~AssetManager()
@@ -680,11 +683,13 @@ void AssetManager::loadScene(const std::string& scene_file)
 {
 	SAFE_DELETE(fe);
 
+#ifndef D3D12_DEV
 	wr->setWater(nullptr);
 	wr->mainLight->SetRotation(-XM_PI / 3, XM_PI / 3);
 	wr->mainLight->SetColor(XMFLOAT4(1, 1, 1, 1));
 	wr->mainLight->SetIntensity(0);
 	wr->resetEnvironment();
+#endif
 
 	currentSceneIniFile = std::make_unique<mINI::INIFile>(scene_file);
 	if (!currentSceneIniFile->read(currentSceneIni))
@@ -813,6 +818,12 @@ void AssetManager::loadScene(const std::string& scene_file)
 			int w, h;
 			drv->getDisplaySize(w, h);
 			fe = new SlimeSim(w, h);
+		}
+		else if (elemProperties["type"] == "d3d12test")
+		{
+			int w, h;
+			drv->getDisplaySize(w, h);
+			fe = new D3D12Test(w, h);
 		}
 	}
 }

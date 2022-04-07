@@ -79,6 +79,12 @@
     <Filter Include="Source\3rdParty\cxxopts">
       <UniqueIdentifier>{bc7b4a86-488a-40cc-8b81-d10a3640ae30}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Driver\D3D12">
+      <UniqueIdentifier>{7a4e21e0-fb89-4c55-b654-15725e1b5e19}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\3rdParty\DirectX-Headers">
+      <UniqueIdentifier>{3a3a0606-ca9d-4fa2-8010-8242c8dd1e4c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Common.cpp">
@@ -203,6 +209,12 @@
     </ClCompile>
     <ClCompile Include="Source\Renderer\TemporalAntiAliasing.cpp">
       <Filter>Source\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\Experiments\D3D12Test.cpp">
+      <Filter>Source\Renderer\Experiments</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Driver\D3D12\DriverD3D12.cpp">
+      <Filter>Source\Driver\D3D12</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1288,6 +1300,15 @@
     </ClInclude>
     <ClInclude Include="Source\3rdParty\cxxopts\cxxopts.hpp">
       <Filter>Source\3rdParty\cxxopts</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\Experiments\D3D12Test.h">
+      <Filter>Source\Renderer\Experiments</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\D3D12\DriverD3D12.h">
+      <Filter>Source\Driver\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\DirectX-Headers\d3dx12.h">
+      <Filter>Source\3rdParty\DirectX-Headers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
