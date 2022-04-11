@@ -162,7 +162,9 @@ static void shutdown()
 	delete wr;
 	delete am;
 	SAFE_DELETE(fe);
-	//render_util::shutdown();
+#ifndef D3D12_DEV
+	render_util::shutdown();
+#endif
 	drv->shutdown();
 	delete drv;
 	autoimgui::shutdown();
