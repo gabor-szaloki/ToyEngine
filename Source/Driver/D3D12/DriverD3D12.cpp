@@ -265,8 +265,22 @@ void DriverD3D12::shutdown()
 	flush(commandQueue, fence, fenceValue, fenceEvent);
 
 	::CloseHandle(fenceEvent);
+	fence.Reset();
+	fenceValue = 0;
 
-	// TODO: close stuff
+	commandList.Reset();
+	for (int i = 0; i < NUM_SWACHAIN_BUFFERS; ++i)
+	{
+		fenceValue = 0;
+		commandAllocators[i].Reset();
+	}
+
+	closeResolutionDependentResources();
+
+	rtvDescriptorHeap.Reset();
+	swapchain.Reset();
+	commandQueue.Reset();
+	device.Reset();
 
 	if (dxgiDebug != nullptr)
 		dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_DETAIL);
