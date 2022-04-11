@@ -116,10 +116,23 @@ static void stats_window()
 			frameTimes[0] = io.DeltaTime * 1000.0f;
 		}
 
+		/*
 		ImPlot::SetNextPlotLimits(0, 1000, 0, 1000.0 / 60.0);
 		if (ImPlot::BeginPlot("Frame times", "frames", "frame time (ms)", ImVec2(-1, 0), 0, ImPlotAxisFlags_Invert, ImPlotAxisFlags_LockMin)) {
 			ImPlot::PlotLine("Frame times", frameTimes, NUM_FRAMES);
 			ImPlot::EndPlot();
+		}
+		*/
+		
+		if (ImPlot::BeginPlot("Frame times", ImVec2(-1, 0)))
+		{
+			ImPlot::SetupAxis(ImAxis_X1, "frames", ImPlotAxisFlags_Invert);
+			ImPlot::SetupAxisLimits(ImAxis_X1, 0.0, 1000.0);
+
+			ImPlot::SetupAxis(ImAxis_Y1, "frame time (ms)", ImPlotAxisFlags_LockMin);
+			ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, 1000.0 / 60.0);
+
+			ImPlot::PlotLine("Frame times", frameTimes, NUM_FRAMES);
 		}
 
 		if (ImGui::Button("Clear"))

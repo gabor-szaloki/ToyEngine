@@ -216,6 +216,12 @@
     <ClCompile Include="Source\Driver\D3D12\DriverD3D12.cpp">
       <Filter>Source\Driver\D3D12</Filter>
     </ClCompile>
+    <ClCompile Include="Source\3rdParty\ImGui\imgui_impl_dx12.cpp">
+      <Filter>Source\3rdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\3rdParty\ImGui\imgui_tables.cpp">
+      <Filter>Source\3rdParty\imgui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common.h">
@@ -1309,6 +1315,9 @@
     </ClInclude>
     <ClInclude Include="Source\3rdParty\DirectX-Headers\d3dx12.h">
       <Filter>Source\3rdParty\DirectX-Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\ImGui\imgui_impl_dx12.h">
+      <Filter>Source\3rdParty\imgui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
