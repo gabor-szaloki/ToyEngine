@@ -180,11 +180,10 @@ static void update()
 	float deltaTimeInSeconds = (float)(((double)std::chrono::duration_cast<std::chrono::microseconds>(currentTime - lastTime).count()) * 0.001 * 0.001);
 	lastTime = currentTime;
 
-#ifndef D3D12_DEV
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 	autoimgui::perform();
-#endif
+
 	if (fe != nullptr)
 	{
 		fe->gui();
@@ -206,12 +205,12 @@ static void render()
 
 #ifndef D3D12_DEV
 	drv->setRenderTarget(drv->getBackbufferTexture()->getId(), BAD_RESID);
+#endif
 
 	if (autoimgui::is_active)
 		ImGui::Render();
 	else
 		ImGui::EndFrame();
-#endif
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
@@ -245,6 +244,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 		drv->beginFrame();
 		update();
+		drv->beginRender();
 		render();
 		drv->endFrame();
 		drv->present();

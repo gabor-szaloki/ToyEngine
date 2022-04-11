@@ -554,6 +554,10 @@ void Driver::beginFrame()
 	ImGui_ImplDX11_NewFrame();
 }
 
+void Driver::beginRender()
+{
+}
+
 void Driver::endFrame()
 {
 	ImDrawData* drawData = ImGui::GetDrawData();

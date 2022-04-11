@@ -142,6 +142,6 @@ void WorldRenderer::ssaoTexGui()
 	ImGui::Image(ssaoTex->getViewHandle(), ImVec2(zoom * ssaoTexRes.x, zoom * ssaoTexRes.y));
 }
 
-REGISTER_IMGUI_WINDOW("Lighting settings", []() { wr->lightingGui(); });
-REGISTER_IMGUI_WINDOW_EX("Shadowmap debug", nullptr, 200, ImGuiWindowFlags_HorizontalScrollbar, []() { wr->shadowMapGui(); });
-REGISTER_IMGUI_WINDOW_EX("SSAO tex debug", nullptr, 201, ImGuiWindowFlags_HorizontalScrollbar, []() { wr->ssaoTexGui(); });
+REGISTER_IMGUI_WINDOW("Lighting settings", []() { if (wr != nullptr) wr->lightingGui(); });
+REGISTER_IMGUI_WINDOW_EX("Shadowmap debug", nullptr, 200, ImGuiWindowFlags_HorizontalScrollbar, []() { if (wr != nullptr) wr->shadowMapGui(); });
+REGISTER_IMGUI_WINDOW_EX("SSAO tex debug", nullptr, 201, ImGuiWindowFlags_HorizontalScrollbar, []() { if (wr != nullptr) wr->ssaoTexGui(); });

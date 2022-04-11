@@ -26,6 +26,7 @@ namespace drv_d3d12
 	{
 	public:
 		static constexpr int NUM_SWACHAIN_BUFFERS = 2;
+		static constexpr DXGI_FORMAT SWAPCHAIN_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM;
 
 		static DriverD3D12& get();
 
@@ -71,6 +72,7 @@ namespace drv_d3d12
 		void clearRenderTargets(const RenderTargetClearParams clear_params) override;
 
 		void beginFrame() override;
+		void beginRender() override;
 		void endFrame() override;
 		void present() override;
 
@@ -105,8 +107,13 @@ namespace drv_d3d12
 		ComPtr<ID3D12Resource> backbuffers[NUM_SWACHAIN_BUFFERS]; // TODO: Make these our Texture type
 		ComPtr<ID3D12GraphicsCommandList> commandList;
 		ComPtr<ID3D12CommandAllocator> commandAllocators[NUM_SWACHAIN_BUFFERS];
+
 		ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap;
 		uint rtvDescriptorSize = 0;
+		static constexpr uint NUM_RTV_DESCRIPTORS = 100;
+		ComPtr<ID3D12DescriptorHeap> cbvSrvUavDescriptorHeap;
+		uint cbvSrvUavDescriptorSize = 0;
+		static constexpr uint NUM_CBV_SRV_UAV_DESCRIPTORS = 100;
 
 		// Synchronization objects
 		ComPtr<ID3D12Fence> fence;

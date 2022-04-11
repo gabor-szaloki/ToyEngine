@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <chrono>
 #include <3rdParty/cxxopts/cxxopts.hpp>
+#include <3rdParty/imgui/imgui_impl_dx12.h>
 
 using namespace drv_d3d12;
 
@@ -114,7 +115,7 @@ static ComPtr<ID3D12CommandQueue> create_command_queue(ComPtr<ID3D12Device2> dev
 	return d3d12CommandQueue;
 }
 
-static ComPtr<IDXGISwapChain4> create_swap_chain(HWND hwnd, ComPtr<ID3D12CommandQueue> command_queue, uint width, uint height, uint buffer_count, bool debug_layer_enabled)
+static ComPtr<IDXGISwapChain4> create_swap_chain(HWND hwnd, ComPtr<ID3D12CommandQueue> command_queue, uint width, uint height, DXGI_FORMAT format, uint buffer_count, bool debug_layer_enabled)
 {
 	ComPtr<IDXGISwapChain4> dxgiSwapChain4;
 	ComPtr<IDXGIFactory4> dxgiFactory4;
@@ -127,7 +128,7 @@ static ComPtr<IDXGISwapChain4> create_swap_chain(HWND hwnd, ComPtr<ID3D12Command
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
 	swapChainDesc.Width = width;
 	swapChainDesc.Height = height;
-	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	swapChainDesc.Format = format;
 	swapChainDesc.Stereo = FALSE;
 	swapChainDesc.SampleDesc = { 1, 0 };
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -155,15 +156,20 @@ static ComPtr<IDXGISwapChain4> create_swap_chain(HWND hwnd, ComPtr<ID3D12Command
 	return dxgiSwapChain4;
 }
 
-static ComPtr<ID3D12DescriptorHeap> create_descriptor_heap(ComPtr<ID3D12Device2> device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t num_descriptors)
+static ComPtr<ID3D12DescriptorHeap> create_descriptor_heap(ComPtr<ID3D12Device2> device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint num_descriptors, uint* out_descriptor_size = nullptr)
 {
 	ComPtr<ID3D12DescriptorHeap> descriptorHeap;
 
 	D3D12_DESCRIPTOR_HEAP_DESC desc = {};
 	desc.NumDescriptors = num_descriptors;
 	desc.Type = type;
+	if (type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER)
+		desc.Flags |= D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
 	ThrowIfFailed(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap)));
+
+	if (out_descriptor_size != nullptr)
+		*out_descriptor_size = device->GetDescriptorHandleIncrementSize(type);
 
 	return descriptorHeap;
 }
@@ -242,10 +248,10 @@ bool DriverD3D12::init(void* hwnd, int display_width, int display_height)
 	ComPtr<IDXGIAdapter4> adapter = get_adapter(debug_layer_enabled);
 	device = create_device(adapter, debug_layer_enabled);
 	commandQueue = create_command_queue(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
-	swapchain = create_swap_chain(hWnd, commandQueue, displayWidth, displayHeight, NUM_SWACHAIN_BUFFERS, debug_layer_enabled);
+	swapchain = create_swap_chain(hWnd, commandQueue, displayWidth, displayHeight, SWAPCHAIN_FORMAT, NUM_SWACHAIN_BUFFERS, debug_layer_enabled);
 	currentBackBufferIndex = swapchain->GetCurrentBackBufferIndex();
-	rtvDescriptorHeap = create_descriptor_heap(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, NUM_SWACHAIN_BUFFERS);
-	rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	rtvDescriptorHeap = create_descriptor_heap(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, NUM_RTV_DESCRIPTORS, &rtvDescriptorSize);
+	cbvSrvUavDescriptorHeap = create_descriptor_heap(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, NUM_CBV_SRV_UAV_DESCRIPTORS, &cbvSrvUavDescriptorSize);
 
 	initResolutionDependentResources();
 
@@ -256,6 +262,9 @@ bool DriverD3D12::init(void* hwnd, int display_width, int display_height)
 	fence = create_fence(device);
 	fenceEvent = create_event_handle();
 
+	ImGui_ImplDX12_Init(device.Get(), NUM_SWACHAIN_BUFFERS, SWAPCHAIN_FORMAT, cbvSrvUavDescriptorHeap.Get(),
+		cbvSrvUavDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), cbvSrvUavDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+
 	return true;
 }
 
@@ -263,6 +272,8 @@ void DriverD3D12::shutdown()
 {
 	// Make sure the command queue has finished all commands before closing.
 	flush(commandQueue, fence, fenceValue, fenceEvent);
+
+	ImGui_ImplDX12_Shutdown();
 
 	::CloseHandle(fenceEvent);
 	fence.Reset();
@@ -277,6 +288,7 @@ void DriverD3D12::shutdown()
 
 	closeResolutionDependentResources();
 
+	cbvSrvUavDescriptorHeap.Reset();
 	rtvDescriptorHeap.Reset();
 	swapchain.Reset();
 	commandQueue.Reset();
@@ -472,59 +484,61 @@ void DriverD3D12::clearRenderTargets(const RenderTargetClearParams clear_params)
 
 void DriverD3D12::beginFrame()
 {
-	// TODO: ImGui
+	ImGui_ImplDX12_NewFrame();
 }
 
-void DriverD3D12::endFrame()
+void DriverD3D12::beginRender()
 {
-	// TODO: ImGui
-}
-
-void DriverD3D12::present()
-{
-	auto commandAllocator = commandAllocators[currentBackBufferIndex];
-	auto backBuffer = backbuffers[currentBackBufferIndex];
-
-	commandAllocator->Reset();
-	commandList->Reset(commandAllocator.Get(), nullptr);
+	// Begin graphics work recording
+	commandAllocators[currentBackBufferIndex]->Reset();
+	commandList->Reset(commandAllocators[currentBackBufferIndex].Get(), nullptr);
 
 	// Clear the render target.
 	{
-		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(backbuffers[currentBackBufferIndex].Get(),
+			D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 		commandList->ResourceBarrier(1, &barrier);
 
 		float clearColor[] = { 0.4f, 0.6f, 0.9f, 1.0f };
-		CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-			currentBackBufferIndex, rtvDescriptorSize);
+		CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), currentBackBufferIndex, rtvDescriptorSize);
 
 		commandList->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
 	}
+}
 
-	// Present
-	{
-		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			backBuffer.Get(),
-			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-		commandList->ResourceBarrier(1, &barrier);
+void DriverD3D12::endFrame()
+{
+	// TODO: remove render target setting from here once we support it via the interface
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvs[] = { CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), currentBackBufferIndex, rtvDescriptorSize) };
+	commandList->OMSetRenderTargets(1, rtvs, false, nullptr);
 
-		ThrowIfFailed(commandList->Close());
+	// Render Dear ImGui graphics
+	commandList->SetDescriptorHeaps(1, cbvSrvUavDescriptorHeap.GetAddressOf());
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
+}
 
-		ID3D12CommandList* const commandLists[] = {
-			commandList.Get()
-		};
-		commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
+void DriverD3D12::present()
+{
+	CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		backbuffers[currentBackBufferIndex].Get(),
+		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	commandList->ResourceBarrier(1, &barrier);
 
-		uint syncInterval = settings.vsync ? 1 : 0;
-		uint presentFlags = settings.vsync ? 0 : DXGI_PRESENT_ALLOW_TEARING;
-		ThrowIfFailed(swapchain->Present(syncInterval, presentFlags));
+	// Submit graphics work
+	ThrowIfFailed(commandList->Close());
+	ID3D12CommandList* const commandLists[] = { commandList.Get() };
+	commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
 
-		frameFenceValues[currentBackBufferIndex] = signal(commandQueue, fence, fenceValue);
+	uint syncInterval = settings.vsync ? 1 : 0;
+	uint presentFlags = settings.vsync ? 0 : DXGI_PRESENT_ALLOW_TEARING;
+	ThrowIfFailed(swapchain->Present(syncInterval, presentFlags));
 
-		currentBackBufferIndex = swapchain->GetCurrentBackBufferIndex();
+	frameFenceValues[currentBackBufferIndex] = signal(commandQueue, fence, fenceValue);
 
-		wait_for_fence_value(fence, frameFenceValues[currentBackBufferIndex], fenceEvent);
-	}
+	currentBackBufferIndex = swapchain->GetCurrentBackBufferIndex();
+
+	wait_for_fence_value(fence, frameFenceValues[currentBackBufferIndex], fenceEvent);
 }
 
 void DriverD3D12::beginEvent(const char* label)

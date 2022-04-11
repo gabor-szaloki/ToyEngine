@@ -150,4 +150,4 @@ void Sky::bakeInternal(const ITexture* panoramic_environment_map)
 	isBakedFromTexture = !procedural;
 }
 
-REGISTER_IMGUI_WINDOW("Sky parameters", [] { wr->getSky().gui(); });
+REGISTER_IMGUI_WINDOW("Sky parameters", [] { if (wr != nullptr) wr->getSky().gui(); });

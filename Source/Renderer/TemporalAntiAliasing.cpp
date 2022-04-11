@@ -105,4 +105,4 @@ void TemporalAntiAliasing::gui()
 	ImGui::SliderFloat("Sharpening", &cbData.sharpening, 0, 1);
 }
 
-REGISTER_IMGUI_WINDOW("TAA settings", [] { wr->getTaa().gui(); });
+REGISTER_IMGUI_WINDOW("TAA settings", [] { if (wr != nullptr) wr->getTaa().gui(); });
