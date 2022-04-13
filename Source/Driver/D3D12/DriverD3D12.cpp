@@ -3,18 +3,18 @@
 #pragma comment(lib, "dxgi.lib")
 
 #include <assert.h>
-#include <chrono>
 #include <3rdParty/cxxopts/cxxopts.hpp>
 #include <3rdParty/imgui/imgui_impl_dx12.h>
 
-using namespace drv_d3d12;
-
 void create_driver_d3d12()
 {
-	drv = new DriverD3D12();
+	drv = new drv_d3d12::DriverD3D12();
 }
 
-DriverD3D12& drv_d3d12::DriverD3D12::get()
+namespace drv_d3d12
+{
+
+DriverD3D12& DriverD3D12::get()
 {
 	return *(DriverD3D12*)drv;
 }
@@ -549,3 +549,5 @@ void DriverD3D12::updateBackbufferRTVs()
 		rtvHandle.Offset(rtvDescriptorSize);
 	}
 }
+
+} // namespace drv_d3d12

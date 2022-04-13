@@ -265,6 +265,29 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		return 0;
 	}
 
+#ifdef D3D12_DEV
+	if (message == WM_SIZE)
+	{
+		RECT clientRect;
+		GetClientRect(hWnd, &clientRect);
+		int w = clientRect.right - clientRect.left;
+		int h = clientRect.bottom - clientRect.top;
+		PLOG_INFO << "WM_SIZE, clientrect: x:" << clientRect.left << ", y:" << clientRect.top << ", w:" << w << ", h:" << h;
+
+		// Minimize sends WM_SIZE requests with 0 size, which is invalid.
+		w = std::max(8, w);
+		h = std::max(8, h);
+		if (wr)
+			wr->onResize(w, h);
+		else
+			drv->resize(w, h);
+		if (fe != nullptr)
+			fe->onResize(w, h);
+	}
+
+	return DefWindowProc(hWnd, message, wParam, lParam);
+#endif
+
 	if (wr == nullptr)
 		return DefWindowProc(hWnd, message, wParam, lParam);
 
