@@ -1,21 +1,16 @@
 #pragma once
 
-#define NOMINMAX
-#include <d3d12.h>
+#include <Driver/IDriver.h>
+
+#include "DriverCommonD3D12.h"
+#include "CommandQueue.h"
+
 #include <3rdParty/DirectX-Headers/d3dx12.h>
 #include <dxgi1_6.h>
 #include <dxgidebug.h>
-#pragma comment(lib, "d3d12.lib")
-#pragma comment(lib, "dxgi.lib")
-
-#include <wrl.h>
-//#pragma comment(lib, "runtimeobject.lib")
-template<typename T>
-using ComPtr = Microsoft::WRL::ComPtr<T>;
 
 #include <string>
-
-#include <Driver/IDriver.h>
+#include <memory>
 
 #define SAFE_RELEASE(resource) { if (resource != nullptr) { resource->Release(); resource = nullptr; } }
 #define ASSERT_NOT_IMPLEMENTED assert(false && "drv_d3d12: Not implemented.")
@@ -102,11 +97,13 @@ namespace drv_d3d12
 		HWND hWnd;
 
 		ComPtr<ID3D12Device2> device;
-		ComPtr<ID3D12CommandQueue> commandQueue;
+
+		std::unique_ptr<CommandQueue> commandQueue;
+		ComPtr<ID3D12GraphicsCommandList2> commandList = nullptr;
+
 		ComPtr<IDXGISwapChain4> swapchain;
 		ComPtr<ID3D12Resource> backbuffers[NUM_SWACHAIN_BUFFERS]; // TODO: Make these our Texture type
-		ComPtr<ID3D12GraphicsCommandList> commandList;
-		ComPtr<ID3D12CommandAllocator> commandAllocators[NUM_SWACHAIN_BUFFERS];
+		uint64 frameFenceValues[NUM_SWACHAIN_BUFFERS] = {};
 
 		ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap;
 		uint rtvDescriptorSize = 0;
@@ -115,12 +112,6 @@ namespace drv_d3d12
 		uint cbvSrvUavDescriptorSize = 0;
 		static constexpr uint NUM_CBV_SRV_UAV_DESCRIPTORS = 100;
 
-		// Synchronization objects
-		ComPtr<ID3D12Fence> fence;
-		uint64 fenceValue = 0;
-		uint64 frameFenceValues[NUM_SWACHAIN_BUFFERS] = {};
-		HANDLE fenceEvent = nullptr;
-
 		ComPtr<IDXGIDebug> dxgiDebug = nullptr;
 	};
 
@@ -128,11 +119,5 @@ namespace drv_d3d12
 	{
 		if (child != nullptr)
 			child->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)name.size(), name.c_str());
-	}
-
-	inline void ThrowIfFailed(HRESULT hr)
-	{
-		if (FAILED(hr))
-			throw std::exception();
 	}
 }

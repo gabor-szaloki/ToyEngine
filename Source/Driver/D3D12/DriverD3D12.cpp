@@ -1,6 +1,6 @@
 #include "DriverD3D12.h"
-
-#include <Common.h>
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
 
 #include <assert.h>
 #include <chrono>
@@ -100,21 +100,6 @@ static ComPtr<ID3D12Device2> create_device(ComPtr<IDXGIAdapter4> adapter, bool d
 	return d3d12Device2;
 }
 
-static ComPtr<ID3D12CommandQueue> create_command_queue(ComPtr<ID3D12Device2> device, D3D12_COMMAND_LIST_TYPE type)
-{
-	ComPtr<ID3D12CommandQueue> d3d12CommandQueue;
-
-	D3D12_COMMAND_QUEUE_DESC desc = {};
-	desc.Type = type;
-	desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-	desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	desc.NodeMask = 0;
-
-	ThrowIfFailed(device->CreateCommandQueue(&desc, IID_PPV_ARGS(&d3d12CommandQueue)));
-
-	return d3d12CommandQueue;
-}
-
 static ComPtr<IDXGISwapChain4> create_swap_chain(HWND hwnd, ComPtr<ID3D12CommandQueue> command_queue, uint width, uint height, DXGI_FORMAT format, uint buffer_count, bool debug_layer_enabled)
 {
 	ComPtr<IDXGISwapChain4> dxgiSwapChain4;
@@ -174,66 +159,6 @@ static ComPtr<ID3D12DescriptorHeap> create_descriptor_heap(ComPtr<ID3D12Device2>
 	return descriptorHeap;
 }
 
-static ComPtr<ID3D12CommandAllocator> create_command_allocator(ComPtr<ID3D12Device2> device, D3D12_COMMAND_LIST_TYPE type)
-{
-	ComPtr<ID3D12CommandAllocator> commandAllocator;
-	ThrowIfFailed(device->CreateCommandAllocator(type, IID_PPV_ARGS(&commandAllocator)));
-
-	return commandAllocator;
-}
-
-static ComPtr<ID3D12GraphicsCommandList> create_command_list(ComPtr<ID3D12Device2> device, ComPtr<ID3D12CommandAllocator> command_allocator, D3D12_COMMAND_LIST_TYPE type)
-{
-	ComPtr<ID3D12GraphicsCommandList> commandList;
-	ThrowIfFailed(device->CreateCommandList(0, type, command_allocator.Get(), nullptr, IID_PPV_ARGS(&commandList)));
-
-	ThrowIfFailed(commandList->Close());
-
-	return commandList;
-}
-
-static ComPtr<ID3D12Fence> create_fence(ComPtr<ID3D12Device2> device)
-{
-	ComPtr<ID3D12Fence> fence;
-
-	ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
-
-	return fence;
-}
-
-static uint64 signal(ComPtr<ID3D12CommandQueue> command_queue, ComPtr<ID3D12Fence> fence, uint64& fence_value)
-{
-	uint64_t fenceValueForSignal = ++fence_value;
-	ThrowIfFailed(command_queue->Signal(fence.Get(), fenceValueForSignal));
-
-	return fenceValueForSignal;
-}
-
-static void wait_for_fence_value(ComPtr<ID3D12Fence> fence, uint64_t fence_value, HANDLE fence_event, std::chrono::milliseconds duration = std::chrono::milliseconds::max())
-{
-	if (fence->GetCompletedValue() < fence_value)
-	{
-		ThrowIfFailed(fence->SetEventOnCompletion(fence_value, fence_event));
-		::WaitForSingleObject(fence_event, static_cast<DWORD>(duration.count()));
-	}
-}
-
-static void flush(ComPtr<ID3D12CommandQueue> command_queue, ComPtr<ID3D12Fence> fence, uint64_t& fence_value, HANDLE fence_event)
-{
-	uint64_t fenceValueForSignal = signal(command_queue, fence, fence_value);
-	wait_for_fence_value(fence, fenceValueForSignal, fence_event);
-}
-
-static HANDLE create_event_handle()
-{
-	HANDLE fenceEvent;
-
-	fenceEvent = ::CreateEvent(NULL, FALSE, FALSE, NULL);
-	assert(fenceEvent && "Failed to create fence event.");
-
-	return fenceEvent;
-}
-
 bool DriverD3D12::init(void* hwnd, int display_width, int display_height)
 {
 	hWnd = (HWND)hwnd;
@@ -247,20 +172,13 @@ bool DriverD3D12::init(void* hwnd, int display_width, int display_height)
 
 	ComPtr<IDXGIAdapter4> adapter = get_adapter(debug_layer_enabled);
 	device = create_device(adapter, debug_layer_enabled);
-	commandQueue = create_command_queue(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
-	swapchain = create_swap_chain(hWnd, commandQueue, displayWidth, displayHeight, SWAPCHAIN_FORMAT, NUM_SWACHAIN_BUFFERS, debug_layer_enabled);
+	commandQueue = std::make_unique<CommandQueue>(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
+	swapchain = create_swap_chain(hWnd, commandQueue->GetD3D12CommandQueue(), displayWidth, displayHeight, SWAPCHAIN_FORMAT, NUM_SWACHAIN_BUFFERS, debug_layer_enabled);
 	currentBackBufferIndex = swapchain->GetCurrentBackBufferIndex();
 	rtvDescriptorHeap = create_descriptor_heap(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, NUM_RTV_DESCRIPTORS, &rtvDescriptorSize);
 	cbvSrvUavDescriptorHeap = create_descriptor_heap(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, NUM_CBV_SRV_UAV_DESCRIPTORS, &cbvSrvUavDescriptorSize);
 
 	initResolutionDependentResources();
-
-	for (int i = 0; i < NUM_SWACHAIN_BUFFERS; ++i)
-		commandAllocators[i] = create_command_allocator(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
-	commandList = create_command_list(device, commandAllocators[currentBackBufferIndex], D3D12_COMMAND_LIST_TYPE_DIRECT);
-
-	fence = create_fence(device);
-	fenceEvent = create_event_handle();
 
 	ImGui_ImplDX12_Init(device.Get(), NUM_SWACHAIN_BUFFERS, SWAPCHAIN_FORMAT, cbvSrvUavDescriptorHeap.Get(),
 		cbvSrvUavDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), cbvSrvUavDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
@@ -271,27 +189,20 @@ bool DriverD3D12::init(void* hwnd, int display_width, int display_height)
 void DriverD3D12::shutdown()
 {
 	// Make sure the command queue has finished all commands before closing.
-	flush(commandQueue, fence, fenceValue, fenceEvent);
+	commandQueue->Flush();
 
 	ImGui_ImplDX12_Shutdown();
 
-	::CloseHandle(fenceEvent);
-	fence.Reset();
-	fenceValue = 0;
-
-	commandList.Reset();
 	for (int i = 0; i < NUM_SWACHAIN_BUFFERS; ++i)
-	{
-		fenceValue = 0;
-		commandAllocators[i].Reset();
-	}
+		frameFenceValues[i] = 0;
 
 	closeResolutionDependentResources();
 
 	cbvSrvUavDescriptorHeap.Reset();
 	rtvDescriptorHeap.Reset();
 	swapchain.Reset();
-	commandQueue.Reset();
+	commandList.Reset();
+	commandQueue.reset();
 	device.Reset();
 
 	if (dxgiDebug != nullptr)
@@ -305,7 +216,7 @@ void DriverD3D12::resize(int display_width, int display_height)
 
 	// Flush the GPU queue to make sure the swap chain's back buffers
 	// are not being referenced by an in-flight command list.
-	flush(commandQueue, fence, fenceValue, fenceEvent);
+	commandQueue->Flush();
 
 	closeResolutionDependentResources();
 
@@ -489,9 +400,8 @@ void DriverD3D12::beginFrame()
 
 void DriverD3D12::beginRender()
 {
-	// Begin graphics work recording
-	commandAllocators[currentBackBufferIndex]->Reset();
-	commandList->Reset(commandAllocators[currentBackBufferIndex].Get(), nullptr);
+	// Begin graphics work
+	commandList = commandQueue->GetCommandList();
 
 	// Clear the render target.
 	{
@@ -526,19 +436,17 @@ void DriverD3D12::present()
 	commandList->ResourceBarrier(1, &barrier);
 
 	// Submit graphics work
-	ThrowIfFailed(commandList->Close());
-	ID3D12CommandList* const commandLists[] = { commandList.Get() };
-	commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
+	commandQueue->ExecuteCommandList(commandList);
 
 	uint syncInterval = settings.vsync ? 1 : 0;
 	uint presentFlags = settings.vsync ? 0 : DXGI_PRESENT_ALLOW_TEARING;
 	ThrowIfFailed(swapchain->Present(syncInterval, presentFlags));
 
-	frameFenceValues[currentBackBufferIndex] = signal(commandQueue, fence, fenceValue);
+	frameFenceValues[currentBackBufferIndex] = commandQueue->Signal();
 
 	currentBackBufferIndex = swapchain->GetCurrentBackBufferIndex();
 
-	wait_for_fence_value(fence, frameFenceValues[currentBackBufferIndex], fenceEvent);
+	commandQueue->WaitForFenceValue(frameFenceValues[currentBackBufferIndex]);
 }
 
 void DriverD3D12::beginEvent(const char* label)

@@ -222,6 +222,9 @@
     <ClCompile Include="Source\3rdParty\ImGui\imgui_tables.cpp">
       <Filter>Source\3rdParty\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Driver\D3D12\CommandQueue.cpp">
+      <Filter>Source\Driver\D3D12</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common.h">
@@ -1318,6 +1321,12 @@
     </ClInclude>
     <ClInclude Include="Source\3rdParty\ImGui\imgui_impl_dx12.h">
       <Filter>Source\3rdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\D3D12\CommandQueue.h">
+      <Filter>Source\Driver\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\D3D12\DriverCommonD3D12.h">
+      <Filter>Source\Driver\D3D12</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
