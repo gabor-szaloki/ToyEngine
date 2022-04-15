@@ -73,6 +73,7 @@ namespace drv_d3d11
 		void clearRenderTargets(const RenderTargetClearParams clear_params) override;
 
 		void beginFrame() override;
+		void update(float delta_time) override;
 		void beginRender() override;
 		void endFrame() override;
 		void present() override;

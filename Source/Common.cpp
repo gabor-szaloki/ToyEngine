@@ -57,11 +57,19 @@ void init_cmdline_opts()
 	const char* ddDefault = "false";
 #endif
 
+#if defined(D3D12_DEV)
+	const char* driverDefault = "d3d12";
+	const char* sceneDefault = "d3d12test";
+#else
+	const char* driverDefault = "d3d11";
+	const char* sceneDefault = "";
+#endif
+
 	options.add_options()
 		("h,help", "Print usage")
-		("d,driver", "Select graphics API to run with. Default is D3D11.", cxxopts::value<std::string>()->default_value("d3d11"), "d3d11|d3d12")
+		("d,driver", "Select graphics API to run with. Default is D3D11.", cxxopts::value<std::string>()->default_value(driverDefault), "d3d11|d3d12")
 		("debug-device", "Initialize debug D3D Device with Debug Layer enabled. Enabled by default in debug builds, disabled by default otherwise", cxxopts::value<bool>()->default_value(ddDefault))
-		("s,scene", "Load given scene by default.", cxxopts::value<std::string>()->default_value("")->implicit_value(""))
+		("s,scene", "Load given scene by default.", cxxopts::value<std::string>()->default_value(sceneDefault)->implicit_value(""))
 		;
 
 	parsed_cmdline = options.parse(__argc, __argv);

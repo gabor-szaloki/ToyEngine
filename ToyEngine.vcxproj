@@ -588,6 +588,7 @@
       <FileType>Document</FileType>
     </None>
     <None Include="Source\Shaders\Error.shader" />
+    <None Include="Source\Shaders\Experiments\D3D12Test.shader" />
     <None Include="Source\Shaders\Experiments\SlimeSim.shader" />
     <None Include="Source\Shaders\HBAO.hlsli" />
     <None Include="Source\Shaders\HBAO.shader" />

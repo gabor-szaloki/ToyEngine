@@ -67,6 +67,7 @@ namespace drv_d3d12
 		void clearRenderTargets(const RenderTargetClearParams clear_params) override;
 
 		void beginFrame() override;
+		void update(float delta_time) override;
 		void beginRender() override;
 		void endFrame() override;
 		void present() override;
@@ -83,10 +84,36 @@ namespace drv_d3d12
 		ResId getErrorShader() override;
 
 	private:
+		void flush();
 		bool initResolutionDependentResources();
 		void closeResolutionDependentResources();
 		void enableDebugLayer();
 		void updateBackbufferRTVs();
+		void transitionResource(ComPtr<ID3D12Resource> resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState);
+		void updateBufferResource(ID3D12GraphicsCommandList2* cmdList, ID3D12Resource** pDestinationResource, ID3D12Resource** pIntermediateResource, size_t numElements, size_t elementSize, const void* bufferData, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE);
+
+		//
+		// Stuff for the cube demo
+		// 
+		// Vertex buffer for the cube.
+		ComPtr<ID3D12Resource> m_VertexBuffer;
+		D3D12_VERTEX_BUFFER_VIEW m_VertexBufferView;
+		// Index buffer for the cube.
+		ComPtr<ID3D12Resource> m_IndexBuffer;
+		D3D12_INDEX_BUFFER_VIEW m_IndexBufferView;
+		// Depth buffer.
+		ComPtr<ID3D12Resource> m_DepthBuffer;
+		// Root signature
+		ComPtr<ID3D12RootSignature> m_RootSignature;
+		// Pipeline state object.
+		ComPtr<ID3D12PipelineState> m_PipelineState;
+		float m_FoV = 45.0f;
+		XMMATRIX m_ModelMatrix;
+		XMMATRIX m_ViewMatrix;
+		XMMATRIX m_ProjectionMatrix;
+		bool loadDemoContent();
+		void destroyDemoContent();
+		//
 
 		int displayWidth = -1, displayHeight = -1;
 		uint currentBackBufferIndex = 0;
@@ -98,7 +125,10 @@ namespace drv_d3d12
 
 		ComPtr<ID3D12Device2> device;
 
-		std::unique_ptr<CommandQueue> commandQueue;
+		std::unique_ptr<CommandQueue> directCommandQueue;
+		std::unique_ptr<CommandQueue> computeCommandQueue;
+		std::unique_ptr<CommandQueue> copyCommandQueue;
+
 		ComPtr<ID3D12GraphicsCommandList2> commandList = nullptr;
 
 		ComPtr<IDXGISwapChain4> swapchain;
@@ -108,6 +138,9 @@ namespace drv_d3d12
 		ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap;
 		uint rtvDescriptorSize = 0;
 		static constexpr uint NUM_RTV_DESCRIPTORS = 100;
+		ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap;
+		uint dsvDescriptorSize = 0;
+		static constexpr uint NUM_DSV_DESCRIPTORS = 100;
 		ComPtr<ID3D12DescriptorHeap> cbvSrvUavDescriptorHeap;
 		uint cbvSrvUavDescriptorSize = 0;
 		static constexpr uint NUM_CBV_SRV_UAV_DESCRIPTORS = 100;

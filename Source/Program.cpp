@@ -184,6 +184,8 @@ static void update()
 	ImGui::NewFrame();
 	autoimgui::perform();
 
+	drv->update(deltaTimeInSeconds);
+
 	if (fe != nullptr)
 	{
 		fe->gui();
@@ -277,7 +279,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		// Minimize sends WM_SIZE requests with 0 size, which is invalid.
 		w = std::max(8, w);
 		h = std::max(8, h);
-		if (wr)
+		if (wr != nullptr)
 			wr->onResize(w, h);
 		else
 			drv->resize(w, h);

@@ -1818,5 +1818,8 @@
     <None Include="Source\Shaders\SampleBicubic.hlsl">
       <Filter>Source\Shaders</Filter>
     </None>
+    <None Include="Source\Shaders\Experiments\D3D12Test.shader">
+      <Filter>Source\Shaders\Experiments</Filter>
+    </None>
   </ItemGroup>
 </Project>

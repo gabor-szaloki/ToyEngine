@@ -554,6 +554,10 @@ void Driver::beginFrame()
 	ImGui_ImplDX11_NewFrame();
 }
 
+void Driver::update(float delta_time)
+{
+}
+
 void Driver::beginRender()
 {
 }

@@ -50,6 +50,7 @@ public:
 	virtual void clearRenderTargets(const RenderTargetClearParams clear_params) = 0;
 
 	virtual void beginFrame() = 0;
+	virtual void update(float delta_time) = 0;
 	virtual void beginRender() = 0;
 	virtual void endFrame() = 0;
 	virtual void present() = 0;
