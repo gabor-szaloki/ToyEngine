@@ -11,8 +11,8 @@
 
 #include <string>
 #include <memory>
+#include <unordered_map>
 
-#define SAFE_RELEASE(resource) { if (resource != nullptr) { resource->Release(); resource = nullptr; } }
 #define ASSERT_NOT_IMPLEMENTED assert(false && "drv_d3d12: Not implemented.")
 
 namespace drv_d3d12
@@ -85,12 +85,14 @@ namespace drv_d3d12
 
 	private:
 		void flush();
+		void initDefaultPipelineStates();
 		bool initResolutionDependentResources();
 		void closeResolutionDependentResources();
 		void enableDebugLayer();
 		void updateBackbufferRTVs();
 		void transitionResource(ComPtr<ID3D12Resource> resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState);
 		void updateBufferResource(ID3D12GraphicsCommandList2* cmdList, ID3D12Resource** pDestinationResource, ID3D12Resource** pIntermediateResource, size_t numElements, size_t elementSize, const void* bufferData, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE);
+		ID3D12PipelineState* getOrCreateCurrentGraphicsPipeline();
 
 		//
 		// Stuff for the cube demo
@@ -105,8 +107,9 @@ namespace drv_d3d12
 		ComPtr<ID3D12Resource> m_DepthBuffer;
 		// Root signature
 		ComPtr<ID3D12RootSignature> m_RootSignature;
-		// Pipeline state object.
-		ComPtr<ID3D12PipelineState> m_PipelineState;
+		// Shaders
+		ComPtr<ID3DBlob> m_VertexShaderBlob;
+		ComPtr<ID3DBlob> m_PixelShaderBlob;
 		float m_FoV = 45.0f;
 		XMMATRIX m_ModelMatrix;
 		XMMATRIX m_ViewMatrix;
@@ -129,7 +132,7 @@ namespace drv_d3d12
 		std::unique_ptr<CommandQueue> computeCommandQueue;
 		std::unique_ptr<CommandQueue> copyCommandQueue;
 
-		ComPtr<ID3D12GraphicsCommandList2> commandList = nullptr;
+		ComPtr<ID3D12GraphicsCommandList2> commandList;
 
 		ComPtr<IDXGISwapChain4> swapchain;
 		ComPtr<ID3D12Resource> backbuffers[NUM_SWACHAIN_BUFFERS]; // TODO: Make these our Texture type
@@ -144,6 +147,29 @@ namespace drv_d3d12
 		ComPtr<ID3D12DescriptorHeap> cbvSrvUavDescriptorHeap;
 		uint cbvSrvUavDescriptorSize = 0;
 		static constexpr uint NUM_CBV_SRV_UAV_DESCRIPTORS = 100;
+
+		struct GraphicsPipelineStateStream
+		{
+			CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE rootSignature;
+			CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT inputLayout;
+			CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY primitiveTopology;
+			CD3DX12_PIPELINE_STATE_STREAM_VS vs;
+			CD3DX12_PIPELINE_STATE_STREAM_GS gs;
+			CD3DX12_PIPELINE_STATE_STREAM_HS hs;
+			CD3DX12_PIPELINE_STATE_STREAM_DS ds;
+			CD3DX12_PIPELINE_STATE_STREAM_PS ps;
+			CD3DX12_PIPELINE_STATE_STREAM_BLEND_DESC blendState;
+			CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL1 depthStencilState;
+			CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT depthStencilFormat;
+			CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER rasterizerState;
+			CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS renderTargetFormats;
+
+			uint64 hash() const;
+		};
+
+		GraphicsPipelineStateStream currentGraphicsPipelineState;
+
+		std::unordered_map<uint64, ID3D12PipelineState*> psoHashMap;
 
 		ComPtr<IDXGIDebug> dxgiDebug = nullptr;
 	};

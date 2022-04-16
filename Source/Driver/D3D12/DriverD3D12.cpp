@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <3rdParty/cxxopts/cxxopts.hpp>
 #include <3rdParty/imgui/imgui_impl_dx12.h>
+#include <3rdParty/smhasher/MurmurHash3.h>
 
 void create_driver_d3d12()
 {
@@ -62,7 +63,7 @@ static ComPtr<IDXGIAdapter4> get_adapter(bool debug_layer_enabled)
 	if (debug_layer_enabled)
 		createFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
 
-	ThrowIfFailed(CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&dxgiFactory)));
+	verify(CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&dxgiFactory)));
 
 	ComPtr<IDXGIAdapter1> dxgiAdapter1;
 	ComPtr<IDXGIAdapter4> dxgiAdapter4;
@@ -81,7 +82,7 @@ static ComPtr<IDXGIAdapter4> get_adapter(bool debug_layer_enabled)
 			dxgiAdapterDesc1.DedicatedVideoMemory > maxDedicatedVideoMemory)
 		{
 			maxDedicatedVideoMemory = dxgiAdapterDesc1.DedicatedVideoMemory;
-			ThrowIfFailed(dxgiAdapter1.As(&dxgiAdapter4));
+			verify(dxgiAdapter1.As(&dxgiAdapter4));
 		}
 	}
 
@@ -91,7 +92,7 @@ static ComPtr<IDXGIAdapter4> get_adapter(bool debug_layer_enabled)
 static ComPtr<ID3D12Device2> create_device(ComPtr<IDXGIAdapter4> adapter, bool debug_layer_enabled)
 {
 	ComPtr<ID3D12Device2> d3d12Device2;
-	ThrowIfFailed(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12Device2)));
+	verify(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12Device2)));
 
 	// Enable debug messages in debug mode.
 	if (debug_layer_enabled)
@@ -144,7 +145,7 @@ static ComPtr<IDXGISwapChain4> create_swap_chain(HWND hwnd, ComPtr<ID3D12Command
 	if (debug_layer_enabled)
 		createFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
 
-	ThrowIfFailed(CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&dxgiFactory4)));
+	verify(CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&dxgiFactory4)));
 
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
 	swapChainDesc.Width = width;
@@ -160,7 +161,7 @@ static ComPtr<IDXGISwapChain4> create_swap_chain(HWND hwnd, ComPtr<ID3D12Command
 	swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
 	ComPtr<IDXGISwapChain1> swapChain1;
-	ThrowIfFailed(dxgiFactory4->CreateSwapChainForHwnd(
+	verify(dxgiFactory4->CreateSwapChainForHwnd(
 		command_queue.Get(),
 		hwnd,
 		&swapChainDesc,
@@ -170,9 +171,9 @@ static ComPtr<IDXGISwapChain4> create_swap_chain(HWND hwnd, ComPtr<ID3D12Command
 
 	// Disable the Alt+Enter fullscreen toggle feature. Switching to fullscreen
 	// will be handled manually.
-	ThrowIfFailed(dxgiFactory4->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER));
+	verify(dxgiFactory4->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER));
 
-	ThrowIfFailed(swapChain1.As(&dxgiSwapChain4));
+	verify(swapChain1.As(&dxgiSwapChain4));
 
 	return dxgiSwapChain4;
 }
@@ -187,7 +188,7 @@ static ComPtr<ID3D12DescriptorHeap> create_descriptor_heap(ComPtr<ID3D12Device2>
 	if (type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER)
 		desc.Flags |= D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
-	ThrowIfFailed(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap)));
+	verify(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap)));
 
 	if (out_descriptor_size != nullptr)
 		*out_descriptor_size = device->GetDescriptorHandleIncrementSize(type);
@@ -220,6 +221,8 @@ bool DriverD3D12::init(void* hwnd, int display_width, int display_height)
 	dsvDescriptorHeap = create_descriptor_heap(device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, NUM_DSV_DESCRIPTORS, &dsvDescriptorSize);
 	cbvSrvUavDescriptorHeap = create_descriptor_heap(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, NUM_CBV_SRV_UAV_DESCRIPTORS, &cbvSrvUavDescriptorSize);
 
+	initDefaultPipelineStates();
+
 	initResolutionDependentResources();
 
 	ImGui_ImplDX12_Init(device.Get(), NUM_SWACHAIN_BUFFERS, SWAPCHAIN_FORMAT, cbvSrvUavDescriptorHeap.Get(),
@@ -236,6 +239,10 @@ void DriverD3D12::shutdown()
 	flush();
 
 	destroyDemoContent();
+
+	for (auto& pair : psoHashMap)
+		pair.second->Release();
+	psoHashMap.clear();
 
 	ImGui_ImplDX12_Shutdown();
 
@@ -276,8 +283,8 @@ void DriverD3D12::resize(int display_width, int display_height)
 	displayHeight = display_height;
 
 	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-	ThrowIfFailed(swapchain->GetDesc(&swapChainDesc));
-	ThrowIfFailed(swapchain->ResizeBuffers(NUM_SWACHAIN_BUFFERS, displayWidth, displayHeight,
+	verify(swapchain->GetDesc(&swapChainDesc));
+	verify(swapchain->ResizeBuffers(NUM_SWACHAIN_BUFFERS, displayWidth, displayHeight,
 		swapChainDesc.BufferDesc.Format, swapChainDesc.Flags));
 	currentBackBufferIndex = swapchain->GetCurrentBackBufferIndex();
 
@@ -503,7 +510,24 @@ void DriverD3D12::beginRender()
 
 	// Render demo cube
 	{
-		commandList->SetPipelineState(m_PipelineState.Get());
+		D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		};
+
+		D3D12_RT_FORMAT_ARRAY rtvFormats = {};
+		rtvFormats.NumRenderTargets = 1;
+		rtvFormats.RTFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+		currentGraphicsPipelineState.rootSignature = m_RootSignature.Get();
+		currentGraphicsPipelineState.inputLayout = { inputLayout, _countof(inputLayout) };
+		currentGraphicsPipelineState.primitiveTopology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		currentGraphicsPipelineState.vs = CD3DX12_SHADER_BYTECODE(m_VertexShaderBlob.Get());
+		currentGraphicsPipelineState.ps = CD3DX12_SHADER_BYTECODE(m_PixelShaderBlob.Get());
+		currentGraphicsPipelineState.depthStencilFormat = DXGI_FORMAT_D32_FLOAT;
+		currentGraphicsPipelineState.renderTargetFormats = rtvFormats;
+
+		commandList->SetPipelineState(getOrCreateCurrentGraphicsPipeline());
 		commandList->SetGraphicsRootSignature(m_RootSignature.Get());
 
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -540,7 +564,7 @@ void DriverD3D12::present()
 
 	uint syncInterval = settings.vsync ? 1 : 0;
 	uint presentFlags = settings.vsync ? 0 : DXGI_PRESENT_ALLOW_TEARING;
-	ThrowIfFailed(swapchain->Present(syncInterval, presentFlags));
+	verify(swapchain->Present(syncInterval, presentFlags));
 
 	currentBackBufferIndex = swapchain->GetCurrentBackBufferIndex();
 	directCommandQueue->WaitForFenceValue(frameFenceValues[currentBackBufferIndex]);
@@ -600,6 +624,14 @@ void DriverD3D12::flush()
 	copyCommandQueue->Flush();
 }
 
+void DriverD3D12::initDefaultPipelineStates()
+{
+	currentGraphicsPipelineState.primitiveTopology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	currentGraphicsPipelineState.blendState = CD3DX12_BLEND_DESC(CD3DX12_DEFAULT());
+	currentGraphicsPipelineState.rasterizerState = CD3DX12_RASTERIZER_DESC(CD3DX12_DEFAULT());
+	currentGraphicsPipelineState.depthStencilState = CD3DX12_DEPTH_STENCIL_DESC1(CD3DX12_DEFAULT());
+}
+
 bool DriverD3D12::initResolutionDependentResources()
 {
 	updateBackbufferRTVs();
@@ -614,7 +646,7 @@ bool DriverD3D12::initResolutionDependentResources()
 		{
 			CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
 			CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, displayWidth, displayHeight, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
-			ThrowIfFailed(device->CreateCommittedResource(
+			verify(device->CreateCommittedResource(
 				&heapProperties,
 				D3D12_HEAP_FLAG_NONE,
 				&resourceDesc,
@@ -677,7 +709,7 @@ void DriverD3D12::updateBackbufferRTVs()
 	for (int i = 0; i < NUM_SWACHAIN_BUFFERS; ++i)
 	{
 		ComPtr<ID3D12Resource> backbuffer;
-		ThrowIfFailed(swapchain->GetBuffer(i, IID_PPV_ARGS(&backbuffer)));
+		verify(swapchain->GetBuffer(i, IID_PPV_ARGS(&backbuffer)));
 
 		device->CreateRenderTargetView(backbuffer.Get(), nullptr, rtvHandle);
 
@@ -701,7 +733,7 @@ void DriverD3D12::updateBufferResource(ID3D12GraphicsCommandList2* cmdList, ID3D
 	{
 		const CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
 		const CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize, flags);
-		ThrowIfFailed(device->CreateCommittedResource(
+		verify(device->CreateCommittedResource(
 			&heapProperties,
 			D3D12_HEAP_FLAG_NONE,
 			&resourceDesc,
@@ -715,7 +747,7 @@ void DriverD3D12::updateBufferResource(ID3D12GraphicsCommandList2* cmdList, ID3D
 	{
 		const CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_UPLOAD);
 		const CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize);
-		ThrowIfFailed(device->CreateCommittedResource(
+		verify(device->CreateCommittedResource(
 			&heapProperties,
 			D3D12_HEAP_FLAG_NONE,
 			&resourceDesc,
@@ -730,6 +762,24 @@ void DriverD3D12::updateBufferResource(ID3D12GraphicsCommandList2* cmdList, ID3D
 
 		UpdateSubresources(cmdList, *pDestinationResource, *pIntermediateResource, 0, 0, 1, &subresourceData);
 	}
+}
+
+ID3D12PipelineState* DriverD3D12::getOrCreateCurrentGraphicsPipeline()
+{
+	uint64 pipelineHash = currentGraphicsPipelineState.hash();
+	auto findResult = psoHashMap.find(pipelineHash);
+	if (findResult != psoHashMap.end())
+		return findResult->second;
+
+	PLOG_DEBUG << "Pipeline hash ("<< std::hex << pipelineHash << ") not found. Size of PSO hashmap: " << std::dec << psoHashMap.size();
+
+	ID3D12PipelineState* newPso;
+	D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = { sizeof(currentGraphicsPipelineState), &currentGraphicsPipelineState };
+	verify(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&newPso)));
+
+	psoHashMap[pipelineHash] = newPso;
+
+	return newPso;
 }
 
 bool DriverD3D12::loadDemoContent()
@@ -761,8 +811,7 @@ bool DriverD3D12::loadDemoContent()
 	ComPtr<ID3DBlob> errorBlob;
 
 	// Load the vertex shader.
-	ComPtr<ID3DBlob> vertexShaderBlob;
-	HRESULT hr = D3DCompileFromFile(L"Source/Shaders/Experiments/D3D12Test.shader", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VsMain", "vs_5_1", 0, 0, &vertexShaderBlob, &errorBlob);
+	HRESULT hr = D3DCompileFromFile(L"Source/Shaders/Experiments/D3D12Test.shader", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VsMain", "vs_5_1", 0, 0, &m_VertexShaderBlob, &errorBlob);
 	if (FAILED(hr) && errorBlob == nullptr)
 	{
 		PLOG_ERROR << "HRESULT: 0x" << std::hex << hr << " " << std::system_category().message(hr);
@@ -775,8 +824,7 @@ bool DriverD3D12::loadDemoContent()
 	}
 
 	// Load the pixel shader.
-	ComPtr<ID3DBlob> pixelShaderBlob;
-	hr = D3DCompileFromFile(L"Source/Shaders/Experiments/D3D12Test.shader", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PsMain", "ps_5_1", 0, 0, &pixelShaderBlob, &errorBlob);
+	hr = D3DCompileFromFile(L"Source/Shaders/Experiments/D3D12Test.shader", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PsMain", "ps_5_1", 0, 0, &m_PixelShaderBlob, &errorBlob);
 	if (FAILED(hr) && errorBlob == nullptr)
 	{
 		PLOG_ERROR << "HRESULT: 0x" << std::hex << hr << " " << std::system_category().message(hr);
@@ -819,44 +867,12 @@ bool DriverD3D12::loadDemoContent()
 
 		// Serialize the root signature.
 		ComPtr<ID3DBlob> rootSignatureBlob;
-		ThrowIfFailed(D3DX12SerializeVersionedRootSignature(&rootSignatureDescription,
+		verify(D3DX12SerializeVersionedRootSignature(&rootSignatureDescription,
 			featureData.HighestVersion, &rootSignatureBlob, &errorBlob));
 		// Create the root signature.
-		ThrowIfFailed(device->CreateRootSignature(0, rootSignatureBlob->GetBufferPointer(),
+		verify(device->CreateRootSignature(0, rootSignatureBlob->GetBufferPointer(),
 			rootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature)));
 	}
-
-	struct PipelineStateStream
-	{
-		CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE pRootSignature;
-		CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT InputLayout;
-		CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
-		CD3DX12_PIPELINE_STATE_STREAM_VS VS;
-		CD3DX12_PIPELINE_STATE_STREAM_PS PS;
-		CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT DSVFormat;
-		CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS RTVFormats;
-	} pipelineStateStream;
-
-	// Create the vertex input layout
-	D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-	};
-
-	D3D12_RT_FORMAT_ARRAY rtvFormats = {};
-	rtvFormats.NumRenderTargets = 1;
-	rtvFormats.RTFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-
-	pipelineStateStream.pRootSignature = m_RootSignature.Get();
-	pipelineStateStream.InputLayout = { inputLayout, _countof(inputLayout) };
-	pipelineStateStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	pipelineStateStream.VS = CD3DX12_SHADER_BYTECODE(vertexShaderBlob.Get());
-	pipelineStateStream.PS = CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
-	pipelineStateStream.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-	pipelineStateStream.RTVFormats = rtvFormats;
-
-	D3D12_PIPELINE_STATE_STREAM_DESC pipelineStateStreamDesc = { sizeof(PipelineStateStream), &pipelineStateStream };
-	ThrowIfFailed(device->CreatePipelineState(&pipelineStateStreamDesc, IID_PPV_ARGS(&m_PipelineState)));
 
 	uint64 fenceValue = copyCommandQueue->ExecuteCommandList(cmdList);
 	copyCommandQueue->WaitForFenceValue(fenceValue);
@@ -866,10 +882,17 @@ bool DriverD3D12::loadDemoContent()
 
 void DriverD3D12::destroyDemoContent()
 {
-	m_PipelineState.Reset();
 	m_RootSignature.Reset();
 	m_IndexBuffer.Reset();
 	m_VertexBuffer.Reset();
 }
+
+uint64 DriverD3D12::GraphicsPipelineStateStream::hash() const
+{
+	uint64 result[2];
+	MurmurHash3_x64_128(this, static_cast<int>(sizeof(GraphicsPipelineStateStream)), 0, result);
+	return result[0];
+}
+
 
 } // namespace drv_d3d12

@@ -85,6 +85,9 @@
     <Filter Include="Source\3rdParty\DirectX-Headers">
       <UniqueIdentifier>{3a3a0606-ca9d-4fa2-8010-8242c8dd1e4c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\3rdParty\smhasher">
+      <UniqueIdentifier>{63227620-77d0-418b-8bc5-8b2a556e17dd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Common.cpp">
@@ -224,6 +227,9 @@
     </ClCompile>
     <ClCompile Include="Source\Driver\D3D12\CommandQueue.cpp">
       <Filter>Source\Driver\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\3rdParty\smhasher\MurmurHash3.cpp">
+      <Filter>Source\3rdParty\smhasher</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1327,6 +1333,9 @@
     </ClInclude>
     <ClInclude Include="Source\Driver\D3D12\DriverCommonD3D12.h">
       <Filter>Source\Driver\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\3rdParty\smhasher\MurmurHash3.h">
+      <Filter>Source\3rdParty\smhasher</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
