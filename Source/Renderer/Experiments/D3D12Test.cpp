@@ -14,6 +14,13 @@ D3D12Test::D3D12Test(int display_width, int display_height) : displayWidth(displ
 	shaderDesc.shaderFuncNames[(int)ShaderStage::VS] = "VsMain";
 	shaderDesc.shaderFuncNames[(int)ShaderStage::PS] = "PsMain";
 	shaderSet = drv->createShaderSet(shaderDesc);
+
+	InputLayoutElementDesc standardInputLayoutDesc[2] =
+	{
+		{ VertexInputSemantic::POSITION, 0, TexFmt::R32G32B32_FLOAT },
+		{ VertexInputSemantic::COLOR,    0, TexFmt::R32G32B32_FLOAT },
+	};
+	inputLayout = drv->createInputLayout(standardInputLayoutDesc, _countof(standardInputLayoutDesc), shaderSet);
 }
 
 void D3D12Test::onResize(int display_width, int display_height)
@@ -26,4 +33,5 @@ void D3D12Test::render(ITexture& target)
 {
 	drv->setView(0, 0, displayWidth, displayHeight, 0, 1);
 	drv->setShader(shaderSet, 0);
+	drv->setInputLayout(inputLayout);
 }

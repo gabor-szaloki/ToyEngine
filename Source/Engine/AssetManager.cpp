@@ -27,11 +27,8 @@ static constexpr bool ASYNC_LOADING_ENABLED = true;
 AssetManager::AssetManager()
 {
 	initInis();
-#ifdef D3D12_DEV
-	for (ResId& id : standardShaders)
-		id = BAD_RESID;
-#else
 	initShaders();
+#ifndef D3D12_DEV
 	initDefaultAssets();
 #endif
 }

@@ -51,6 +51,7 @@
     <ClCompile Include="Source\Driver\D3D11\Texture.cpp" />
     <ClCompile Include="Source\Driver\D3D12\CommandQueue.cpp" />
     <ClCompile Include="Source\Driver\D3D12\DriverD3D12.cpp" />
+    <ClCompile Include="Source\Driver\D3D12\InputLayoutD3D12.cpp" />
     <ClCompile Include="Source\Driver\D3D12\PipelineStates.cpp" />
     <ClCompile Include="Source\Driver\D3D12\GraphicsShaderSet.cpp" />
     <ClCompile Include="Source\Engine\AssetManager.cpp" />
@@ -409,6 +410,7 @@
     <ClInclude Include="Source\Driver\D3D12\CommandQueue.h" />
     <ClInclude Include="Source\Driver\D3D12\DriverCommonD3D12.h" />
     <ClInclude Include="Source\Driver\D3D12\DriverD3D12.h" />
+    <ClInclude Include="Source\Driver\D3D12\InputLayoutD3D12.h" />
     <ClInclude Include="Source\Driver\D3D12\PipelineStates.h" />
     <ClInclude Include="Source\Driver\D3D12\GraphicsShaderSet.h" />
     <ClInclude Include="Source\Driver\DriverCommon.h" />

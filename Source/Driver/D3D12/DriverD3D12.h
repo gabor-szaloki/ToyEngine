@@ -21,6 +21,7 @@
 namespace drv_d3d12
 {
 	class GraphicsShaderSet;
+	class InputLayout;
 
 	class DriverD3D12 : public IDriver
 	{
@@ -94,6 +95,8 @@ namespace drv_d3d12
 
 		ResId registerShaderSet(GraphicsShaderSet* shader_set);
 		void unregisterShaderSet(ResId id);
+		ResId registerInputLayout(InputLayout* input_layout);
+		void unregisterInputLayout(ResId id);
 
 	private:
 		void flush();
@@ -167,6 +170,7 @@ namespace drv_d3d12
 		std::unordered_map<uint64, ID3D12PipelineState*> psoHashMap;
 
 		std::unordered_map<ResId, GraphicsShaderSet*> graphicsShaders;
+		std::unordered_map<ResId, InputLayout*> inputLayouts;
 
 		std::unique_ptr<GraphicsShaderSet> errorShader;
 	};

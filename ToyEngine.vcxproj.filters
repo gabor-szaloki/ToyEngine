@@ -237,6 +237,9 @@
     <ClCompile Include="Source\Driver\D3D12\PipelineStates.cpp">
       <Filter>Source\Driver\D3D12</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Driver\D3D12\InputLayoutD3D12.cpp">
+      <Filter>Source\Driver\D3D12</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common.h">
@@ -1347,6 +1350,9 @@
       <Filter>Source\Driver\D3D12</Filter>
     </ClInclude>
     <ClInclude Include="Source\Driver\D3D12\PipelineStates.h">
+      <Filter>Source\Driver\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\D3D12\InputLayoutD3D12.h">
       <Filter>Source\Driver\D3D12</Filter>
     </ClInclude>
   </ItemGroup>

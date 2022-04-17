@@ -1,6 +1,7 @@
 #include "DriverD3D12.h"
 
 #include "GraphicsShaderSet.h"
+#include "InputLayoutD3D12.h"
 
 #include <d3dcompiler.h>
 #pragma comment(lib,"d3dcompiler.lib")
@@ -248,6 +249,8 @@ void DriverD3D12::shutdown()
 
 	ImGui_ImplDX12_Shutdown();
 
+	errorShader.reset();
+
 	for (int i = 0; i < NUM_SWACHAIN_BUFFERS; ++i)
 		frameFenceValues[i] = 0;
 
@@ -342,10 +345,10 @@ ResId DriverD3D12::createComputeShader(const ComputeShaderDesc& desc)
 	return BAD_RESID;
 }
 
-ResId DriverD3D12::createInputLayout(const InputLayoutElementDesc* descs, unsigned int num_descs, ResId shader_set)
+ResId DriverD3D12::createInputLayout(const InputLayoutElementDesc* descs, unsigned int num_descs, ResId /*shader_set*/)
 {
-	ASSERT_NOT_IMPLEMENTED;
-	return BAD_RESID;
+	InputLayout* inputLayout = new InputLayout(descs, num_descs);
+	return inputLayout->getId();
 }
 
 template<typename T>
@@ -368,12 +371,17 @@ void DriverD3D12::destroyResource(ResId res_id)
 {
 	if (erase_if_found(res_id, graphicsShaders))
 		return;
+	if (erase_if_found(res_id, inputLayouts))
+		return;
 	assert(false);
 }
 
 void DriverD3D12::setInputLayout(ResId res_id)
 {
-	ASSERT_NOT_IMPLEMENTED;
+	RESOURCE_LOCK_GUARD;
+	assert(inputLayouts.find(res_id) != inputLayouts.end());
+	const std::vector<D3D12_INPUT_ELEMENT_DESC>& inputElements = inputLayouts[res_id]->getInputElements();
+	currentGraphicsPipelineState.inputLayout = { inputElements.data(), (uint)inputElements.size() };
 }
 
 void DriverD3D12::setIndexBuffer(ResId res_id)
@@ -536,17 +544,11 @@ void DriverD3D12::endFrame()
 {
 	// Render demo cube
 	{
-		D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		};
-
 		D3D12_RT_FORMAT_ARRAY rtvFormats = {};
 		rtvFormats.NumRenderTargets = 1;
 		rtvFormats.RTFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 
 		currentGraphicsPipelineState.rootSignature = m_RootSignature.Get();
-		currentGraphicsPipelineState.inputLayout = { inputLayout, _countof(inputLayout) };
 		currentGraphicsPipelineState.depthStencilFormat = DXGI_FORMAT_D32_FLOAT;
 		currentGraphicsPipelineState.renderTargetFormats = rtvFormats;
 
@@ -671,6 +673,18 @@ void DriverD3D12::unregisterShaderSet(ResId id)
 {
 	RESOURCE_LOCK_GUARD;
 	erase_resource(id, graphicsShaders);
+}
+
+ResId DriverD3D12::registerInputLayout(InputLayout* input_layout)
+{
+	RESOURCE_LOCK_GUARD;
+	return emplace_resource(input_layout, inputLayouts);
+}
+
+void DriverD3D12::unregisterInputLayout(ResId id)
+{
+	RESOURCE_LOCK_GUARD;
+	erase_resource(id, inputLayouts);
 }
 
 void DriverD3D12::flush()
