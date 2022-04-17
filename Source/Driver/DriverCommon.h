@@ -119,7 +119,6 @@ struct RasterizerDesc
 	int depthBias = 0;
 	float slopeScaledDepthBias = 0;
 	bool depthClipEnable = true;
-	bool scissorEnable = false;
 };
 
 struct DepthStencilDesc

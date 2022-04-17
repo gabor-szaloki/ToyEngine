@@ -20,6 +20,7 @@
 
 namespace drv_d3d12
 {
+	class RenderState;
 	class GraphicsShaderSet;
 	class InputLayout;
 
@@ -93,6 +94,8 @@ namespace drv_d3d12
 		std::mutex& getResourceMutex() { return resourceMutex; }
 		const GraphicsShaderSet* getErrorShaderSet() { return errorShader.get(); }
 
+		ResId registerRenderState(RenderState* rs);
+		void unregisterRenderState(ResId id);
 		ResId registerShaderSet(GraphicsShaderSet* shader_set);
 		void unregisterShaderSet(ResId id);
 		ResId registerInputLayout(InputLayout* input_layout);
@@ -169,6 +172,7 @@ namespace drv_d3d12
 
 		std::unordered_map<uint64, ID3D12PipelineState*> psoHashMap;
 
+		std::unordered_map<ResId, RenderState*> renderStates;
 		std::unordered_map<ResId, GraphicsShaderSet*> graphicsShaders;
 		std::unordered_map<ResId, InputLayout*> inputLayouts;
 

@@ -1,5 +1,6 @@
 #include "DriverD3D12.h"
 
+#include "RenderStateD3D12.h"
 #include "GraphicsShaderSet.h"
 #include "InputLayoutD3D12.h"
 
@@ -329,8 +330,8 @@ ResId DriverD3D12::createSampler(const SamplerDesc& desc)
 
 ResId DriverD3D12::createRenderState(const RenderStateDesc& desc)
 {
-	ASSERT_NOT_IMPLEMENTED;
-	return BAD_RESID;
+	RenderState* rs = new RenderState(desc);
+	return rs->getId();
 }
 
 ResId DriverD3D12::createShaderSet(const ShaderSetDesc& desc)
@@ -369,6 +370,8 @@ bool erase_if_found(ResId id, std::unordered_map<ResId, T*>& from)
 
 void DriverD3D12::destroyResource(ResId res_id)
 {
+	if (erase_if_found(res_id, renderStates))
+		return;
 	if (erase_if_found(res_id, graphicsShaders))
 		return;
 	if (erase_if_found(res_id, inputLayouts))
@@ -438,7 +441,11 @@ void DriverD3D12::setRenderTargets(unsigned int num_targets, ResId* target_ids, 
 
 void DriverD3D12::setRenderState(ResId res_id)
 {
-	ASSERT_NOT_IMPLEMENTED;
+	RESOURCE_LOCK_GUARD;
+	assert(renderStates.find(res_id) != renderStates.end());
+	const RenderState* rs = renderStates[res_id];
+	currentGraphicsPipelineState.rasterizerState = rs->getRasterizerState();
+	currentGraphicsPipelineState.depthStencilState = rs->getDepthStencilState();
 }
 
 void DriverD3D12::setShader(ResId res_id, unsigned int variant_index)
@@ -661,6 +668,18 @@ static void erase_resource(ResId id, std::unordered_map<ResId, T*>& from)
 {
 	size_t numElementsErased = from.erase(id);
 	assert(numElementsErased == 1);
+}
+
+ResId DriverD3D12::registerRenderState(RenderState* rs)
+{
+	RESOURCE_LOCK_GUARD;
+	return emplace_resource(rs, renderStates);
+}
+
+void DriverD3D12::unregisterRenderState(ResId id)
+{
+	RESOURCE_LOCK_GUARD;
+	erase_resource(id, renderStates);
 }
 
 ResId DriverD3D12::registerShaderSet(GraphicsShaderSet* shader_set)

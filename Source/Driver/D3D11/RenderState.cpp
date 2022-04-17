@@ -16,7 +16,6 @@ RenderState::RenderState(const RenderStateDesc& desc_) : desc(desc_)
 	rsd.DepthBias = desc.rasterizerDesc.depthBias;
 	rsd.SlopeScaledDepthBias = desc.rasterizerDesc.slopeScaledDepthBias;
 	rsd.DepthClipEnable = desc.rasterizerDesc.depthClipEnable;
-	rsd.ScissorEnable = desc.rasterizerDesc.scissorEnable;
 	hr = Driver::get().getDevice().CreateRasterizerState(&rsd, &rasterizerState);
 	assert(SUCCEEDED(hr));
 

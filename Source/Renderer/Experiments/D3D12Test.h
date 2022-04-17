@@ -19,4 +19,5 @@ private:
 	int displayWidth, displayHeight;
 	ResIdHolder shaderSet;
 	ResIdHolder inputLayout;
+	ResIdHolder renderState;
 };

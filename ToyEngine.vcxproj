@@ -54,6 +54,7 @@
     <ClCompile Include="Source\Driver\D3D12\InputLayoutD3D12.cpp" />
     <ClCompile Include="Source\Driver\D3D12\PipelineStates.cpp" />
     <ClCompile Include="Source\Driver\D3D12\GraphicsShaderSet.cpp" />
+    <ClCompile Include="Source\Driver\D3D12\RenderStateD3D12.cpp" />
     <ClCompile Include="Source\Engine\AssetManager.cpp" />
     <ClCompile Include="Source\Engine\AssetManagerGui.cpp" />
     <ClCompile Include="Source\Engine\Material.cpp" />
@@ -413,6 +414,7 @@
     <ClInclude Include="Source\Driver\D3D12\InputLayoutD3D12.h" />
     <ClInclude Include="Source\Driver\D3D12\PipelineStates.h" />
     <ClInclude Include="Source\Driver\D3D12\GraphicsShaderSet.h" />
+    <ClInclude Include="Source\Driver\D3D12\RenderStateD3D12.h" />
     <ClInclude Include="Source\Driver\DriverCommon.h" />
     <ClInclude Include="Source\Driver\DriverSettings.h" />
     <ClInclude Include="Source\Driver\IBuffer.h" />

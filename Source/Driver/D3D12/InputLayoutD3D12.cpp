@@ -1,9 +1,6 @@
 #include "InputLayoutD3D12.h"
 
-#include "DriverCommonD3D12.h"
-
-#include <assert.h>
-#include <vector>
+#include "DriverD3D12.h"
 
 namespace drv_d3d12
 {
