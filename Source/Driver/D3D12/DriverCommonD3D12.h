@@ -4,12 +4,15 @@
 
 #define NOMINMAX
 #include <d3d12.h>
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
 
 #include <wrl.h>
 template<typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
 
-inline void safe_release(IUnknown*& resource)
+template<typename T>
+inline void safe_release(T*& resource)
 {
 	if (resource != nullptr)
 	{

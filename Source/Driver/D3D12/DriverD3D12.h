@@ -4,6 +4,7 @@
 
 #include "DriverCommonD3D12.h"
 #include "CommandQueue.h"
+#include "PipelineStates.h"
 
 #include <3rdParty/DirectX-Headers/d3dx12.h>
 #include <dxgi1_6.h>
@@ -12,11 +13,15 @@
 #include <string>
 #include <memory>
 #include <unordered_map>
+#include <mutex>
 
 #define ASSERT_NOT_IMPLEMENTED assert(false && "drv_d3d12: Not implemented.")
+#define RESOURCE_LOCK_GUARD const std::scoped_lock<std::mutex> resourceLock(DriverD3D12::get().getResourceMutex())
 
 namespace drv_d3d12
 {
+	class GraphicsShaderSet;
+
 	class DriverD3D12 : public IDriver
 	{
 	public:
@@ -83,11 +88,19 @@ namespace drv_d3d12
 		void setErrorShaderDesc(const ShaderSetDesc& desc) override;
 		ResId getErrorShader() override;
 
+		ID3D12Device& getDevice() { return *device.Get(); }
+		std::mutex& getResourceMutex() { return resourceMutex; }
+		const GraphicsShaderSet* getErrorShaderSet() { return errorShader.get(); }
+
+		ResId registerShaderSet(GraphicsShaderSet* shader_set);
+		void unregisterShaderSet(ResId id);
+
 	private:
 		void flush();
 		void initDefaultPipelineStates();
 		bool initResolutionDependentResources();
 		void closeResolutionDependentResources();
+		void releaseAllResources();
 		void enableDebugLayer();
 		void updateBackbufferRTVs();
 		void transitionResource(ComPtr<ID3D12Resource> resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState);
@@ -107,9 +120,6 @@ namespace drv_d3d12
 		ComPtr<ID3D12Resource> m_DepthBuffer;
 		// Root signature
 		ComPtr<ID3D12RootSignature> m_RootSignature;
-		// Shaders
-		ComPtr<ID3DBlob> m_VertexShaderBlob;
-		ComPtr<ID3DBlob> m_PixelShaderBlob;
 		float m_FoV = 45.0f;
 		XMMATRIX m_ModelMatrix;
 		XMMATRIX m_ViewMatrix;
@@ -148,30 +158,17 @@ namespace drv_d3d12
 		uint cbvSrvUavDescriptorSize = 0;
 		static constexpr uint NUM_CBV_SRV_UAV_DESCRIPTORS = 100;
 
-		struct GraphicsPipelineStateStream
-		{
-			CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE rootSignature;
-			CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT inputLayout;
-			CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY primitiveTopology;
-			CD3DX12_PIPELINE_STATE_STREAM_VS vs;
-			CD3DX12_PIPELINE_STATE_STREAM_GS gs;
-			CD3DX12_PIPELINE_STATE_STREAM_HS hs;
-			CD3DX12_PIPELINE_STATE_STREAM_DS ds;
-			CD3DX12_PIPELINE_STATE_STREAM_PS ps;
-			CD3DX12_PIPELINE_STATE_STREAM_BLEND_DESC blendState;
-			CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL1 depthStencilState;
-			CD3DX12_PIPELINE_STATE_STREAM_DEPTH_STENCIL_FORMAT depthStencilFormat;
-			CD3DX12_PIPELINE_STATE_STREAM_RASTERIZER rasterizerState;
-			CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS renderTargetFormats;
+		ComPtr<IDXGIDebug> dxgiDebug = nullptr;
 
-			uint64 hash() const;
-		};
+		std::mutex resourceMutex;
 
 		GraphicsPipelineStateStream currentGraphicsPipelineState;
 
 		std::unordered_map<uint64, ID3D12PipelineState*> psoHashMap;
 
-		ComPtr<IDXGIDebug> dxgiDebug = nullptr;
+		std::unordered_map<ResId, GraphicsShaderSet*> graphicsShaders;
+
+		std::unique_ptr<GraphicsShaderSet> errorShader;
 	};
 
 	inline void set_debug_name(ID3D12DeviceChild* child, const std::string& name)

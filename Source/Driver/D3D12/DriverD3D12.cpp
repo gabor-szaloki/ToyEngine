@@ -1,6 +1,6 @@
 #include "DriverD3D12.h"
-#pragma comment(lib, "d3d12.lib")
-#pragma comment(lib, "dxgi.lib")
+
+#include "GraphicsShaderSet.h"
 
 #include <d3dcompiler.h>
 #pragma comment(lib,"d3dcompiler.lib")
@@ -18,6 +18,8 @@ void create_driver_d3d12()
 
 namespace drv_d3d12
 {
+
+static ResId nextAvailableResId = 0;
 
 //
 // Stuff for the cube demo
@@ -250,6 +252,7 @@ void DriverD3D12::shutdown()
 		frameFenceValues[i] = 0;
 
 	closeResolutionDependentResources();
+	releaseAllResources();
 
 	cbvSrvUavDescriptorHeap.Reset();
 	dsvDescriptorHeap.Reset();
@@ -329,8 +332,8 @@ ResId DriverD3D12::createRenderState(const RenderStateDesc& desc)
 
 ResId DriverD3D12::createShaderSet(const ShaderSetDesc& desc)
 {
-	ASSERT_NOT_IMPLEMENTED;
-	return BAD_RESID;
+	GraphicsShaderSet* shaderSet = new GraphicsShaderSet(desc);
+	return shaderSet->getId();
 }
 
 ResId DriverD3D12::createComputeShader(const ComputeShaderDesc& desc)
@@ -345,9 +348,27 @@ ResId DriverD3D12::createInputLayout(const InputLayoutElementDesc* descs, unsign
 	return BAD_RESID;
 }
 
+template<typename T>
+bool erase_if_found(ResId id, std::unordered_map<ResId, T*>& from)
+{
+	T* res;
+	{
+		RESOURCE_LOCK_GUARD;
+		auto it = from.find(id);
+		if (it == from.end())
+			return false;
+		res = it->second;
+	}
+	delete res;
+	// resource will remove itself from the pool from dtor
+	return true;
+}
+
 void DriverD3D12::destroyResource(ResId res_id)
 {
-	// TODO
+	if (erase_if_found(res_id, graphicsShaders))
+		return;
+	assert(false);
 }
 
 void DriverD3D12::setInputLayout(ResId res_id)
@@ -414,7 +435,9 @@ void DriverD3D12::setRenderState(ResId res_id)
 
 void DriverD3D12::setShader(ResId res_id, unsigned int variant_index)
 {
-	ASSERT_NOT_IMPLEMENTED;
+	RESOURCE_LOCK_GUARD;
+	assert(graphicsShaders.find(res_id) != graphicsShaders.end());
+	graphicsShaders[res_id]->setToPipelineState(currentGraphicsPipelineState, variant_index);
 }
 
 void DriverD3D12::setView(float x, float y, float w, float h, float z_min, float z_max)
@@ -507,7 +530,10 @@ void DriverD3D12::beginRender()
 	// TODO: remove render target setting from here once we support it via the interface
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvs[] = { rtv };
 	commandList->OMSetRenderTargets(1, rtvs, false, &dsv);
+}
 
+void DriverD3D12::endFrame()
+{
 	// Render demo cube
 	{
 		D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
@@ -521,9 +547,6 @@ void DriverD3D12::beginRender()
 
 		currentGraphicsPipelineState.rootSignature = m_RootSignature.Get();
 		currentGraphicsPipelineState.inputLayout = { inputLayout, _countof(inputLayout) };
-		currentGraphicsPipelineState.primitiveTopology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		currentGraphicsPipelineState.vs = CD3DX12_SHADER_BYTECODE(m_VertexShaderBlob.Get());
-		currentGraphicsPipelineState.ps = CD3DX12_SHADER_BYTECODE(m_PixelShaderBlob.Get());
 		currentGraphicsPipelineState.depthStencilFormat = DXGI_FORMAT_D32_FLOAT;
 		currentGraphicsPipelineState.renderTargetFormats = rtvFormats;
 
@@ -534,11 +557,6 @@ void DriverD3D12::beginRender()
 		commandList->IASetVertexBuffers(0, 1, &m_VertexBufferView);
 		commandList->IASetIndexBuffer(&m_IndexBufferView);
 
-		CD3DX12_VIEWPORT viewport(0.0f, 0.0f, (float)displayWidth, (float)displayHeight, 0.0f, 1.0f);
-		commandList->RSSetViewports(1, &viewport);
-		D3D12_RECT scissor = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
-		commandList->RSSetScissorRects(1, &scissor);
-
 		// Update the MVP matrix
 		XMMATRIX mvpMatrix = XMMatrixMultiply(m_ModelMatrix, m_ViewMatrix);
 		mvpMatrix = XMMatrixMultiply(mvpMatrix, m_ProjectionMatrix);
@@ -546,10 +564,7 @@ void DriverD3D12::beginRender()
 
 		commandList->DrawIndexedInstanced(_countof(g_Indicies), 1, 0, 0, 0);
 	}
-}
 
-void DriverD3D12::endFrame()
-{
 	// Render Dear ImGui graphics
 	commandList->SetDescriptorHeaps(1, cbvSrvUavDescriptorHeap.GetAddressOf());
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
@@ -586,8 +601,9 @@ void DriverD3D12::endEvent()
 
 unsigned int DriverD3D12::getShaderVariantIndexForKeywords(ResId shader_res_id, const char** keywords, unsigned int num_keywords)
 {
-	ASSERT_NOT_IMPLEMENTED;
-	return 0;
+	RESOURCE_LOCK_GUARD;
+	assert(graphicsShaders.find(shader_res_id) != graphicsShaders.end());
+	return graphicsShaders[shader_res_id]->getVariantIndexForKeywords(keywords, num_keywords);
 }
 
 void DriverD3D12::setSettings(const DriverSettings& new_settings)
@@ -603,18 +619,58 @@ void DriverD3D12::setSettings(const DriverSettings& new_settings)
 
 void DriverD3D12::recompileShaders()
 {
-	ASSERT_NOT_IMPLEMENTED;
+	int numShaders = 0, numShadersFailedToCompile = 0;
+	for (auto& [k, v] : graphicsShaders)
+	{
+		if (strlen(settings.shaderRecompileFilter) > 0 && strstr(v->getName().c_str(), settings.shaderRecompileFilter) == nullptr)
+			continue;
+		if (!v->recompile())
+			numShadersFailedToCompile++;
+		numShaders++;
+	}
+	if (numShadersFailedToCompile <= 0)
+		PLOG_INFO << "Shaders recompiled successfully. Number of shaders: " << numShaders;
+	else
+		PLOG_ERROR << "There were errors during shader recompilation. Number of shaders: " << numShaders << " Number of shaders failed to compile: " << numShadersFailedToCompile;
 }
 
 void DriverD3D12::setErrorShaderDesc(const ShaderSetDesc& desc)
 {
-	ASSERT_NOT_IMPLEMENTED;
+	ResId errorShaderResId = createShaderSet(desc);
+	errorShader.reset(graphicsShaders[errorShaderResId]);
 }
 
 ResId DriverD3D12::getErrorShader()
 {
-	ASSERT_NOT_IMPLEMENTED;
-	return BAD_RESID;
+	return errorShader->getId();
+}
+
+template<typename T>
+static ResId emplace_resource(T* res, std::unordered_map<ResId, T*>& dest)
+{
+	ResId resId = nextAvailableResId++;
+	auto&& emplaceResult = dest.emplace(resId, res);
+	assert(emplaceResult.second);
+	return resId;
+}
+
+template<typename T>
+static void erase_resource(ResId id, std::unordered_map<ResId, T*>& from)
+{
+	size_t numElementsErased = from.erase(id);
+	assert(numElementsErased == 1);
+}
+
+ResId DriverD3D12::registerShaderSet(GraphicsShaderSet* shader_set)
+{
+	RESOURCE_LOCK_GUARD;
+	return emplace_resource(shader_set, graphicsShaders);
+}
+
+void DriverD3D12::unregisterShaderSet(ResId id)
+{
+	RESOURCE_LOCK_GUARD;
+	erase_resource(id, graphicsShaders);
 }
 
 void DriverD3D12::flush()
@@ -679,6 +735,20 @@ void DriverD3D12::closeResolutionDependentResources()
 		backbuffers[i].Reset();
 		frameFenceValues[i] = frameFenceValues[currentBackBufferIndex];
 	}
+}
+
+template<typename T>
+static void release_pool(std::unordered_map<ResId, T*>& pool)
+{
+	for (auto itr = pool.begin(); itr != pool.end();)
+		delete (itr++)->second;
+	pool.clear();
+}
+
+void DriverD3D12::releaseAllResources()
+{
+	assert(graphicsShaders.size() == 0);
+	release_pool(graphicsShaders);
 }
 
 void DriverD3D12::enableDebugLayer()
@@ -808,34 +878,6 @@ bool DriverD3D12::loadDemoContent()
 	m_IndexBufferView.Format = DXGI_FORMAT_R16_UINT;
 	m_IndexBufferView.SizeInBytes = sizeof(g_Indicies);
 
-	ComPtr<ID3DBlob> errorBlob;
-
-	// Load the vertex shader.
-	HRESULT hr = D3DCompileFromFile(L"Source/Shaders/Experiments/D3D12Test.shader", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VsMain", "vs_5_1", 0, 0, &m_VertexShaderBlob, &errorBlob);
-	if (FAILED(hr) && errorBlob == nullptr)
-	{
-		PLOG_ERROR << "HRESULT: 0x" << std::hex << hr << " " << std::system_category().message(hr);
-		return false;
-	}
-	else if (FAILED(hr) && errorBlob != nullptr)
-	{
-		PLOG_ERROR << reinterpret_cast<const char*>(errorBlob->GetBufferPointer());
-		return false;
-	}
-
-	// Load the pixel shader.
-	hr = D3DCompileFromFile(L"Source/Shaders/Experiments/D3D12Test.shader", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PsMain", "ps_5_1", 0, 0, &m_PixelShaderBlob, &errorBlob);
-	if (FAILED(hr) && errorBlob == nullptr)
-	{
-		PLOG_ERROR << "HRESULT: 0x" << std::hex << hr << " " << std::system_category().message(hr);
-		return false;
-	}
-	else if (FAILED(hr) && errorBlob != nullptr)
-	{
-		PLOG_ERROR << reinterpret_cast<const char*>(errorBlob->GetBufferPointer());
-		return false;
-	}
-
 	// Create the root signature.
 	{
 		// Before creating the root signature, the highest supported version of the root signature is queried. Root signature version 1.1 should be preferred because it allows for driver level optimizations to be made.
@@ -866,7 +908,7 @@ bool DriverD3D12::loadDemoContent()
 		rootSignatureDescription.Init_1_1(_countof(rootParameters), rootParameters, 0, nullptr, rootSignatureFlags);
 
 		// Serialize the root signature.
-		ComPtr<ID3DBlob> rootSignatureBlob;
+		ComPtr<ID3DBlob> rootSignatureBlob, errorBlob;
 		verify(D3DX12SerializeVersionedRootSignature(&rootSignatureDescription,
 			featureData.HighestVersion, &rootSignatureBlob, &errorBlob));
 		// Create the root signature.
@@ -886,13 +928,5 @@ void DriverD3D12::destroyDemoContent()
 	m_IndexBuffer.Reset();
 	m_VertexBuffer.Reset();
 }
-
-uint64 DriverD3D12::GraphicsPipelineStateStream::hash() const
-{
-	uint64 result[2];
-	MurmurHash3_x64_128(this, static_cast<int>(sizeof(GraphicsPipelineStateStream)), 0, result);
-	return result[0];
-}
-
 
 } // namespace drv_d3d12

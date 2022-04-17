@@ -231,6 +231,12 @@
     <ClCompile Include="Source\3rdParty\smhasher\MurmurHash3.cpp">
       <Filter>Source\3rdParty\smhasher</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Driver\D3D12\GraphicsShaderSet.cpp">
+      <Filter>Source\Driver\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Driver\D3D12\PipelineStates.cpp">
+      <Filter>Source\Driver\D3D12</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common.h">
@@ -1336,6 +1342,12 @@
     </ClInclude>
     <ClInclude Include="Source\3rdParty\smhasher\MurmurHash3.h">
       <Filter>Source\3rdParty\smhasher</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\D3D12\GraphicsShaderSet.h">
+      <Filter>Source\Driver\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Driver\D3D12\PipelineStates.h">
+      <Filter>Source\Driver\D3D12</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

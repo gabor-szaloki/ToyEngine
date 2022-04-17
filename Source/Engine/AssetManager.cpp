@@ -27,7 +27,10 @@ static constexpr bool ASYNC_LOADING_ENABLED = true;
 AssetManager::AssetManager()
 {
 	initInis();
-#ifndef D3D12_DEV
+#ifdef D3D12_DEV
+	for (ResId& id : standardShaders)
+		id = BAD_RESID;
+#else
 	initShaders();
 	initDefaultAssets();
 #endif
@@ -47,8 +50,11 @@ AssetManager::~AssetManager()
 	standardInputLayout.close();
 	for (ResId& id : standardShaders)
 	{
-		drv->destroyResource(id);
-		id = BAD_RESID;
+		if (id != BAD_RESID)
+		{
+			drv->destroyResource(id);
+			id = BAD_RESID;
+		}
 	}
 }
 
