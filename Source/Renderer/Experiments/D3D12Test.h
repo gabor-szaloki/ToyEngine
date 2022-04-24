@@ -17,6 +17,7 @@ public:
 
 private:
 	int displayWidth, displayHeight;
+	std::unique_ptr<IBuffer> cubeVb, cubeIb;
 	ResIdHolder shaderSet;
 	ResIdHolder inputLayout;
 	ResIdHolder renderState;

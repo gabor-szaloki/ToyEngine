@@ -29,3 +29,9 @@ inline void verify(HRESULT hr)
 		assert(false && "Failed verified HRESULT. See error log for more info");
 	}
 }
+
+inline void set_debug_name(ID3D12DeviceChild* child, const std::string& name)
+{
+	if (child != nullptr)
+		child->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)name.size(), name.c_str());
+}

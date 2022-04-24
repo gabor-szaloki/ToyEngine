@@ -49,6 +49,7 @@
     <ClCompile Include="Source\Driver\D3D11\Sampler.cpp" />
     <ClCompile Include="Source\Driver\D3D11\ShaderSet.cpp" />
     <ClCompile Include="Source\Driver\D3D11\Texture.cpp" />
+    <ClCompile Include="Source\Driver\D3D12\BufferD3D12.cpp" />
     <ClCompile Include="Source\Driver\D3D12\CommandQueue.cpp" />
     <ClCompile Include="Source\Driver\D3D12\DriverD3D12.cpp" />
     <ClCompile Include="Source\Driver\D3D12\InputLayoutD3D12.cpp" />
@@ -408,6 +409,7 @@
     <ClInclude Include="Source\Driver\D3D11\Sampler.h" />
     <ClInclude Include="Source\Driver\D3D11\ShaderSet.h" />
     <ClInclude Include="Source\Driver\D3D11\Texture.h" />
+    <ClInclude Include="Source\Driver\D3D12\BufferD3D12.h" />
     <ClInclude Include="Source\Driver\D3D12\CommandQueue.h" />
     <ClInclude Include="Source\Driver\D3D12\DriverCommonD3D12.h" />
     <ClInclude Include="Source\Driver\D3D12\DriverD3D12.h" />

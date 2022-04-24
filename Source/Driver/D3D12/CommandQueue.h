@@ -2,8 +2,8 @@
 
 #include "DriverCommonD3D12.h"
 
-#include <string>
 #include <queue>
+#include <mutex>
 
 namespace drv_d3d12
 {
@@ -50,5 +50,7 @@ namespace drv_d3d12
 
 		CommandAllocatorQueue m_CommandAllocatorQueue;
 		CommandListQueue m_CommandListQueue;
+
+		std::mutex mutex;
 	};
 }

@@ -1,5 +1,6 @@
 #include "DriverD3D12.h"
 
+#include "BufferD3D12.h"
 #include "RenderStateD3D12.h"
 #include "GraphicsShaderSet.h"
 #include "InputLayoutD3D12.h"
@@ -22,38 +23,6 @@ namespace drv_d3d12
 {
 
 static ResId nextAvailableResId = 0;
-
-//
-// Stuff for the cube demo
-// 
-
-// Vertex data for a colored cube.
-struct VertexPosColor
-{
-	XMFLOAT3 Position;
-	XMFLOAT3 Color;
-};
-
-static VertexPosColor g_Vertices[8] = {
-	{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }, // 0
-	{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) }, // 1
-	{ XMFLOAT3( 1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) }, // 2
-	{ XMFLOAT3( 1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) }, // 3
-	{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) }, // 4
-	{ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(0.0f, 1.0f, 1.0f) }, // 5
-	{ XMFLOAT3( 1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f) }, // 6
-	{ XMFLOAT3( 1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f) }  // 7
-};
-
-static WORD g_Indicies[36] =
-{
-	0, 1, 2, 0, 2, 3,
-	4, 6, 5, 4, 7, 6,
-	4, 5, 1, 4, 1, 0,
-	3, 2, 6, 3, 6, 7,
-	1, 5, 6, 1, 6, 2,
-	4, 0, 3, 4, 3, 7
-};
 
 DriverD3D12& DriverD3D12::get()
 {
@@ -264,7 +233,7 @@ void DriverD3D12::shutdown()
 
 	swapchain.Reset();
 
-	commandList.Reset();
+	frameCmdList.Reset();
 
 	copyCommandQueue.reset();
 	computeCommandQueue.reset();
@@ -318,8 +287,7 @@ ITexture* DriverD3D12::createTextureStub()
 
 IBuffer* DriverD3D12::createBuffer(const BufferDesc& desc)
 {
-	ASSERT_NOT_IMPLEMENTED;
-	return nullptr;
+	return new Buffer(desc);
 }
 
 ResId DriverD3D12::createSampler(const SamplerDesc& desc)
@@ -370,6 +338,8 @@ bool erase_if_found(ResId id, std::unordered_map<ResId, T*>& from)
 
 void DriverD3D12::destroyResource(ResId res_id)
 {
+	if (erase_if_found(res_id, buffers))
+		return;
 	if (erase_if_found(res_id, renderStates))
 		return;
 	if (erase_if_found(res_id, graphicsShaders))
@@ -379,22 +349,43 @@ void DriverD3D12::destroyResource(ResId res_id)
 	assert(false);
 }
 
-void DriverD3D12::setInputLayout(ResId res_id)
+template<typename T>
+T* get_resource(ResId res_id, std::unordered_map<ResId, T*>& pool)
 {
 	RESOURCE_LOCK_GUARD;
-	assert(inputLayouts.find(res_id) != inputLayouts.end());
-	const std::vector<D3D12_INPUT_ELEMENT_DESC>& inputElements = inputLayouts[res_id]->getInputElements();
+	assert(pool.find(res_id) != pool.end());
+	return pool[res_id];
+}
+
+void DriverD3D12::setInputLayout(ResId res_id)
+{
+	const InputLayout* inputLayout = get_resource(res_id, inputLayouts);
+	const std::vector<D3D12_INPUT_ELEMENT_DESC>& inputElements = inputLayout->getInputElements();
 	currentGraphicsPipelineState.inputLayout = { inputElements.data(), (uint)inputElements.size() };
 }
 
 void DriverD3D12::setIndexBuffer(ResId res_id)
 {
-	ASSERT_NOT_IMPLEMENTED;
+	const Buffer* buf = get_resource(res_id, buffers);
+
+	D3D12_INDEX_BUFFER_VIEW ibv;
+	ibv.BufferLocation = buf->getResource()->GetGPUVirtualAddress();
+	ibv.SizeInBytes = buf->getDesc().numElements * buf->getDesc().elementByteSize;
+	ibv.Format = static_cast<DXGI_FORMAT>(getIndexFormat());
+
+	frameCmdList->IASetIndexBuffer(&ibv);
 }
 
 void DriverD3D12::setVertexBuffer(ResId res_id)
 {
-	ASSERT_NOT_IMPLEMENTED;
+	const Buffer* buf = get_resource(res_id, buffers);
+
+	D3D12_VERTEX_BUFFER_VIEW vbv;
+	vbv.BufferLocation = buf->getResource()->GetGPUVirtualAddress();
+	vbv.SizeInBytes = buf->getDesc().numElements * buf->getDesc().elementByteSize;
+	vbv.StrideInBytes = buf->getDesc().elementByteSize;
+
+	frameCmdList->IASetVertexBuffers(0, 1, &vbv);
 }
 
 void DriverD3D12::setConstantBuffer(ShaderStage stage, unsigned int slot, ResId res_id)
@@ -441,27 +432,21 @@ void DriverD3D12::setRenderTargets(unsigned int num_targets, ResId* target_ids, 
 
 void DriverD3D12::setRenderState(ResId res_id)
 {
-	RESOURCE_LOCK_GUARD;
-	assert(renderStates.find(res_id) != renderStates.end());
-	const RenderState* rs = renderStates[res_id];
+	const RenderState* rs = get_resource(res_id, renderStates);
 	currentGraphicsPipelineState.rasterizerState = rs->getRasterizerState();
 	currentGraphicsPipelineState.depthStencilState = rs->getDepthStencilState();
 }
 
 void DriverD3D12::setShader(ResId res_id, unsigned int variant_index)
 {
-	RESOURCE_LOCK_GUARD;
-	assert(graphicsShaders.find(res_id) != graphicsShaders.end());
-	graphicsShaders[res_id]->setToPipelineState(currentGraphicsPipelineState, variant_index);
+	const GraphicsShaderSet* shader = get_resource(res_id, graphicsShaders);
+	shader->setToPipelineState(currentGraphicsPipelineState, variant_index);
 }
 
 void DriverD3D12::setView(float x, float y, float w, float h, float z_min, float z_max)
 {
 	CD3DX12_VIEWPORT viewport(x, y, w, h, z_min, z_max);
-	CD3DX12_RECT scissorRect(0, 0, LONG_MAX, LONG_MAX); // TODO: either support setting scissor, or just set it once per cmdlist
-
-	commandList->RSSetViewports(1, &viewport);
-	commandList->RSSetScissorRects(1, &scissorRect);
+	frameCmdList->RSSetViewports(1, &viewport);
 }
 
 void DriverD3D12::setView(const ViewportParams& vp)
@@ -526,8 +511,18 @@ void DriverD3D12::update(float delta_time)
 
 void DriverD3D12::beginRender()
 {
-	// Begin graphics work
-	commandList = directCommandQueue->GetCommandList();
+	// Init frame cmdlist
+	{
+		frameCmdList = directCommandQueue->GetCommandList();
+
+		// Expose the following stuff to IDriver interface if we want to customize them
+		{
+			frameCmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+			CD3DX12_RECT scissorRect(0, 0, LONG_MAX, LONG_MAX);
+			frameCmdList->RSSetScissorRects(1, &scissorRect);
+		}
+	}
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), currentBackBufferIndex, rtvDescriptorSize);
 	D3D12_CPU_DESCRIPTOR_HANDLE dsv = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
@@ -538,13 +533,13 @@ void DriverD3D12::beginRender()
 
 		float clearColor[] = { 0.4f, 0.6f, 0.9f, 1.0f };
 
-		commandList->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
-		commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, 0, nullptr);
+		frameCmdList->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
+		frameCmdList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, 0, nullptr);
 	}
 
 	// TODO: remove render target setting from here once we support it via the interface
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvs[] = { rtv };
-	commandList->OMSetRenderTargets(1, rtvs, false, &dsv);
+	frameCmdList->OMSetRenderTargets(1, rtvs, false, &dsv);
 }
 
 void DriverD3D12::endFrame()
@@ -559,24 +554,20 @@ void DriverD3D12::endFrame()
 		currentGraphicsPipelineState.depthStencilFormat = DXGI_FORMAT_D32_FLOAT;
 		currentGraphicsPipelineState.renderTargetFormats = rtvFormats;
 
-		commandList->SetPipelineState(getOrCreateCurrentGraphicsPipeline());
-		commandList->SetGraphicsRootSignature(m_RootSignature.Get());
-
-		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		commandList->IASetVertexBuffers(0, 1, &m_VertexBufferView);
-		commandList->IASetIndexBuffer(&m_IndexBufferView);
+		frameCmdList->SetPipelineState(getOrCreateCurrentGraphicsPipeline());
+		frameCmdList->SetGraphicsRootSignature(m_RootSignature.Get());
 
 		// Update the MVP matrix
 		XMMATRIX mvpMatrix = XMMatrixMultiply(m_ModelMatrix, m_ViewMatrix);
 		mvpMatrix = XMMatrixMultiply(mvpMatrix, m_ProjectionMatrix);
-		commandList->SetGraphicsRoot32BitConstants(0, sizeof(XMMATRIX) / 4, &mvpMatrix, 0);
+		frameCmdList->SetGraphicsRoot32BitConstants(0, sizeof(XMMATRIX) / 4, &mvpMatrix, 0);
 
-		commandList->DrawIndexedInstanced(_countof(g_Indicies), 1, 0, 0, 0);
+		frameCmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
 	}
 
 	// Render Dear ImGui graphics
-	commandList->SetDescriptorHeaps(1, cbvSrvUavDescriptorHeap.GetAddressOf());
-	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
+	frameCmdList->SetDescriptorHeaps(1, cbvSrvUavDescriptorHeap.GetAddressOf());
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), frameCmdList.Get());
 }
 
 void DriverD3D12::present()
@@ -584,7 +575,7 @@ void DriverD3D12::present()
 	transitionResource(backbuffers[currentBackBufferIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 
 	// Submit graphics work
-	frameFenceValues[currentBackBufferIndex] = directCommandQueue->ExecuteCommandList(commandList);
+	frameFenceValues[currentBackBufferIndex] = directCommandQueue->ExecuteCommandList(frameCmdList);
 
 	uint syncInterval = settings.vsync ? 1 : 0;
 	uint presentFlags = settings.vsync ? 0 : DXGI_PRESENT_ALLOW_TEARING;
@@ -654,9 +645,16 @@ ResId DriverD3D12::getErrorShader()
 	return errorShader->getId();
 }
 
+void DriverD3D12::transitionResource(ComPtr<ID3D12Resource> resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState)
+{
+	CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(resource.Get(), beforeState, afterState);
+	frameCmdList->ResourceBarrier(1, &barrier);
+}
+
 template<typename T>
 static ResId emplace_resource(T* res, std::unordered_map<ResId, T*>& dest)
 {
+	RESOURCE_LOCK_GUARD;
 	ResId resId = nextAvailableResId++;
 	auto&& emplaceResult = dest.emplace(resId, res);
 	assert(emplaceResult.second);
@@ -666,45 +664,19 @@ static ResId emplace_resource(T* res, std::unordered_map<ResId, T*>& dest)
 template<typename T>
 static void erase_resource(ResId id, std::unordered_map<ResId, T*>& from)
 {
+	RESOURCE_LOCK_GUARD;
 	size_t numElementsErased = from.erase(id);
 	assert(numElementsErased == 1);
 }
 
-ResId DriverD3D12::registerRenderState(RenderState* rs)
-{
-	RESOURCE_LOCK_GUARD;
-	return emplace_resource(rs, renderStates);
-}
-
-void DriverD3D12::unregisterRenderState(ResId id)
-{
-	RESOURCE_LOCK_GUARD;
-	erase_resource(id, renderStates);
-}
-
-ResId DriverD3D12::registerShaderSet(GraphicsShaderSet* shader_set)
-{
-	RESOURCE_LOCK_GUARD;
-	return emplace_resource(shader_set, graphicsShaders);
-}
-
-void DriverD3D12::unregisterShaderSet(ResId id)
-{
-	RESOURCE_LOCK_GUARD;
-	erase_resource(id, graphicsShaders);
-}
-
-ResId DriverD3D12::registerInputLayout(InputLayout* input_layout)
-{
-	RESOURCE_LOCK_GUARD;
-	return emplace_resource(input_layout, inputLayouts);
-}
-
-void DriverD3D12::unregisterInputLayout(ResId id)
-{
-	RESOURCE_LOCK_GUARD;
-	erase_resource(id, inputLayouts);
-}
+ResId DriverD3D12::registerBuffer(Buffer* buf) { return emplace_resource(buf, buffers); }
+void DriverD3D12::unregisterBuffer(ResId id) { erase_resource(id, buffers); }
+ResId DriverD3D12::registerRenderState(RenderState* rs) { return emplace_resource(rs, renderStates); }
+void DriverD3D12::unregisterRenderState(ResId id) { erase_resource(id, renderStates); }
+ResId DriverD3D12::registerShaderSet(GraphicsShaderSet* shader_set) { return emplace_resource(shader_set, graphicsShaders); }
+void DriverD3D12::unregisterShaderSet(ResId id) { erase_resource(id, graphicsShaders); }
+ResId DriverD3D12::registerInputLayout(InputLayout* input_layout) { return emplace_resource(input_layout, inputLayouts); }
+void DriverD3D12::unregisterInputLayout(ResId id) { erase_resource(id, inputLayouts); }
 
 void DriverD3D12::flush()
 {
@@ -715,7 +687,7 @@ void DriverD3D12::flush()
 
 void DriverD3D12::initDefaultPipelineStates()
 {
-	currentGraphicsPipelineState.primitiveTopology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	currentGraphicsPipelineState.primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	currentGraphicsPipelineState.blendState = CD3DX12_BLEND_DESC(CD3DX12_DEFAULT());
 	currentGraphicsPipelineState.rasterizerState = CD3DX12_RASTERIZER_DESC(CD3DX12_DEFAULT());
 	currentGraphicsPipelineState.depthStencilState = CD3DX12_DEPTH_STENCIL_DESC1(CD3DX12_DEFAULT());
@@ -822,12 +794,6 @@ void DriverD3D12::updateBackbufferRTVs()
 	}
 }
 
-void DriverD3D12::transitionResource(ComPtr<ID3D12Resource> resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState)
-{
-	CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(resource.Get(), beforeState, afterState);
-	commandList->ResourceBarrier(1, &barrier);
-}
-
 void DriverD3D12::updateBufferResource(ID3D12GraphicsCommandList2* cmdList, ID3D12Resource** pDestinationResource, ID3D12Resource** pIntermediateResource, size_t numElements, size_t elementSize, const void* bufferData, D3D12_RESOURCE_FLAGS flags)
 {
 	const size_t bufferSize = numElements * elementSize;
@@ -887,30 +853,6 @@ ID3D12PipelineState* DriverD3D12::getOrCreateCurrentGraphicsPipeline()
 
 bool DriverD3D12::loadDemoContent()
 {
-	auto cmdList = copyCommandQueue->GetCommandList();
-
-	// Upload vertex buffer data.
-	ComPtr<ID3D12Resource> intermediateVertexBuffer;
-	updateBufferResource(cmdList.Get(),
-		&m_VertexBuffer, &intermediateVertexBuffer,
-		_countof(g_Vertices), sizeof(VertexPosColor), g_Vertices);
-
-	// Create the vertex buffer view.
-	m_VertexBufferView.BufferLocation = m_VertexBuffer->GetGPUVirtualAddress();
-	m_VertexBufferView.SizeInBytes = sizeof(g_Vertices);
-	m_VertexBufferView.StrideInBytes = sizeof(VertexPosColor);
-
-	// Upload index buffer data.
-	ComPtr<ID3D12Resource> intermediateIndexBuffer;
-	updateBufferResource(cmdList.Get(),
-		&m_IndexBuffer, &intermediateIndexBuffer,
-		_countof(g_Indicies), sizeof(WORD), g_Indicies);
-
-	// Create index buffer view.
-	m_IndexBufferView.BufferLocation = m_IndexBuffer->GetGPUVirtualAddress();
-	m_IndexBufferView.Format = DXGI_FORMAT_R16_UINT;
-	m_IndexBufferView.SizeInBytes = sizeof(g_Indicies);
-
 	// Create the root signature.
 	{
 		// Before creating the root signature, the highest supported version of the root signature is queried. Root signature version 1.1 should be preferred because it allows for driver level optimizations to be made.
@@ -949,17 +891,12 @@ bool DriverD3D12::loadDemoContent()
 			rootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature)));
 	}
 
-	uint64 fenceValue = copyCommandQueue->ExecuteCommandList(cmdList);
-	copyCommandQueue->WaitForFenceValue(fenceValue);
-
 	return true;
 }
 
 void DriverD3D12::destroyDemoContent()
 {
 	m_RootSignature.Reset();
-	m_IndexBuffer.Reset();
-	m_VertexBuffer.Reset();
 }
 
 } // namespace drv_d3d12

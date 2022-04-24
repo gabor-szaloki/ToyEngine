@@ -25,6 +25,45 @@ D3D12Test::D3D12Test(int display_width, int display_height) : displayWidth(displ
 	RenderStateDesc rsDesc;
 	//rsDesc.rasterizerDesc.wireframe = true;
 	renderState = drv->createRenderState(rsDesc);
+
+	{
+		// Vertex data for a colored cube.
+		struct VertexPosColor
+		{
+			XMFLOAT3 Position;
+			XMFLOAT3 Color;
+		};
+
+		VertexPosColor cubeVertices[8] =
+		{
+			{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(0.0f, 0.0f, 0.0f) }, // 0
+			{ XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f) }, // 1
+			{ XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 0.0f) }, // 2
+			{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) }, // 3
+			{ XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f) }, // 4
+			{ XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT3(0.0f, 1.0f, 1.0f) }, // 5
+			{ XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f) }, // 6
+			{ XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT3(1.0f, 0.0f, 1.0f) }  // 7
+		};
+
+		BufferDesc cubeVbDesc("DemoCubeVb", sizeof(VertexPosColor), _countof(cubeVertices), ResourceUsage::DEFAULT, BIND_VERTEX_BUFFER);
+		cubeVbDesc.initialData = cubeVertices;
+		cubeVb.reset(drv->createBuffer(cubeVbDesc));
+
+		uint cubeIndices[36] =
+		{
+			0, 1, 2, 0, 2, 3,
+			4, 6, 5, 4, 7, 6,
+			4, 5, 1, 4, 1, 0,
+			3, 2, 6, 3, 6, 7,
+			1, 5, 6, 1, 6, 2,
+			4, 0, 3, 4, 3, 7
+		};
+
+		BufferDesc cubeIbDesc("DemoCubeIb", sizeof(uint), _countof(cubeIndices), ResourceUsage::DEFAULT, BIND_INDEX_BUFFER);
+		cubeIbDesc.initialData = cubeIndices;
+		cubeIb.reset(drv->createBuffer(cubeIbDesc));
+	}
 }
 
 void D3D12Test::onResize(int display_width, int display_height)
@@ -37,6 +76,8 @@ void D3D12Test::render(ITexture& target)
 {
 	drv->setView(0, 0, displayWidth, displayHeight, 0, 1);
 	drv->setShader(shaderSet, 0);
-	drv->setInputLayout(inputLayout);
 	drv->setRenderState(renderState);
+	drv->setInputLayout(inputLayout);
+	drv->setVertexBuffer(cubeVb->getId());
+	drv->setIndexBuffer(cubeIb->getId());
 }

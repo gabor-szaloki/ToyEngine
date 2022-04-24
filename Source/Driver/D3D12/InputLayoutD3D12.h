@@ -13,7 +13,7 @@ namespace drv_d3d12
 		~InputLayout();
 		const ResId& getId() const { return id; }
 
-		const std::vector<D3D12_INPUT_ELEMENT_DESC>& getInputElements() { return inputElements; };
+		const std::vector<D3D12_INPUT_ELEMENT_DESC>& getInputElements() const { return inputElements; };
 
 	private:
 		ResId id = BAD_RESID;

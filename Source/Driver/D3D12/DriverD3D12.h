@@ -20,6 +20,7 @@
 
 namespace drv_d3d12
 {
+	class Buffer;
 	class RenderState;
 	class GraphicsShaderSet;
 	class InputLayout;
@@ -90,16 +91,25 @@ namespace drv_d3d12
 		void setErrorShaderDesc(const ShaderSetDesc& desc) override;
 		ResId getErrorShader() override;
 
-		ID3D12Device& getDevice() { return *device.Get(); }
+		ID3D12Device& getDevice() const { return *device.Get(); }
 		std::mutex& getResourceMutex() { return resourceMutex; }
-		const GraphicsShaderSet* getErrorShaderSet() { return errorShader.get(); }
+		const GraphicsShaderSet* getErrorShaderSet() const { return errorShader.get(); }
+		CommandQueue* getDirectCommandQueue() const { return directCommandQueue.get(); };
+		CommandQueue* getComputeCommandQueue() const { return computeCommandQueue.get(); };
+		CommandQueue* getCopyCommandQueue() const { return copyCommandQueue.get(); };
 
+		void transitionResource(ComPtr<ID3D12Resource> resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState);
+
+		ResId registerBuffer(Buffer* buf);
+		void unregisterBuffer(ResId id);
 		ResId registerRenderState(RenderState* rs);
 		void unregisterRenderState(ResId id);
 		ResId registerShaderSet(GraphicsShaderSet* shader_set);
 		void unregisterShaderSet(ResId id);
 		ResId registerInputLayout(InputLayout* input_layout);
 		void unregisterInputLayout(ResId id);
+
+		void updateBufferResource(ID3D12GraphicsCommandList2* cmdList, ID3D12Resource** pDestinationResource, ID3D12Resource** pIntermediateResource, size_t numElements, size_t elementSize, const void* bufferData, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE);
 
 	private:
 		void flush();
@@ -109,19 +119,11 @@ namespace drv_d3d12
 		void releaseAllResources();
 		void enableDebugLayer();
 		void updateBackbufferRTVs();
-		void transitionResource(ComPtr<ID3D12Resource> resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState);
-		void updateBufferResource(ID3D12GraphicsCommandList2* cmdList, ID3D12Resource** pDestinationResource, ID3D12Resource** pIntermediateResource, size_t numElements, size_t elementSize, const void* bufferData, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE);
 		ID3D12PipelineState* getOrCreateCurrentGraphicsPipeline();
 
 		//
 		// Stuff for the cube demo
 		// 
-		// Vertex buffer for the cube.
-		ComPtr<ID3D12Resource> m_VertexBuffer;
-		D3D12_VERTEX_BUFFER_VIEW m_VertexBufferView;
-		// Index buffer for the cube.
-		ComPtr<ID3D12Resource> m_IndexBuffer;
-		D3D12_INDEX_BUFFER_VIEW m_IndexBufferView;
 		// Depth buffer.
 		ComPtr<ID3D12Resource> m_DepthBuffer;
 		// Root signature
@@ -148,7 +150,7 @@ namespace drv_d3d12
 		std::unique_ptr<CommandQueue> computeCommandQueue;
 		std::unique_ptr<CommandQueue> copyCommandQueue;
 
-		ComPtr<ID3D12GraphicsCommandList2> commandList;
+		ComPtr<ID3D12GraphicsCommandList2> frameCmdList;
 
 		ComPtr<IDXGISwapChain4> swapchain;
 		ComPtr<ID3D12Resource> backbuffers[NUM_SWACHAIN_BUFFERS]; // TODO: Make these our Texture type
@@ -172,16 +174,11 @@ namespace drv_d3d12
 
 		std::unordered_map<uint64, ID3D12PipelineState*> psoHashMap;
 
+		std::unordered_map<ResId, Buffer*> buffers;
 		std::unordered_map<ResId, RenderState*> renderStates;
 		std::unordered_map<ResId, GraphicsShaderSet*> graphicsShaders;
 		std::unordered_map<ResId, InputLayout*> inputLayouts;
 
 		std::unique_ptr<GraphicsShaderSet> errorShader;
 	};
-
-	inline void set_debug_name(ID3D12DeviceChild* child, const std::string& name)
-	{
-		if (child != nullptr)
-			child->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)name.size(), name.c_str());
-	}
 }

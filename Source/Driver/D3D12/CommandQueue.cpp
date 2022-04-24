@@ -30,30 +30,34 @@ ComPtr<ID3D12GraphicsCommandList2> CommandQueue::GetCommandList()
 	ComPtr<ID3D12CommandAllocator> commandAllocator;
 	ComPtr<ID3D12GraphicsCommandList2> commandList;
 
-	// Fetch and reset an available CommandAllocator, or create new one if there is none available
-	if (!m_CommandAllocatorQueue.empty() && IsFenceComplete(m_CommandAllocatorQueue.front().fenceValue))
 	{
-		commandAllocator = m_CommandAllocatorQueue.front().commandAllocator;
-		m_CommandAllocatorQueue.pop();
+		std::lock_guard<std::mutex> lock(mutex);
 
-		verify(commandAllocator->Reset());
-	}
-	else
-	{
-		commandAllocator = CreateCommandAllocator();
-	}
+		// Fetch and reset an available CommandAllocator, or create new one if there is none available
+		if (!m_CommandAllocatorQueue.empty() && IsFenceComplete(m_CommandAllocatorQueue.front().fenceValue))
+		{
+			commandAllocator = m_CommandAllocatorQueue.front().commandAllocator;
+			m_CommandAllocatorQueue.pop();
 
-	// Fetch and reset an available CommandList, or create a new one if there is none available
-	if (!m_CommandListQueue.empty())
-	{
-		commandList = m_CommandListQueue.front();
-		m_CommandListQueue.pop();
+			verify(commandAllocator->Reset());
+		}
+		else
+		{
+			commandAllocator = CreateCommandAllocator();
+		}
 
-		verify(commandList->Reset(commandAllocator.Get(), nullptr));
-	}
-	else
-	{
-		commandList = CreateCommandList(commandAllocator);
+		// Fetch and reset an available CommandList, or create a new one if there is none available
+		if (!m_CommandListQueue.empty())
+		{
+			commandList = m_CommandListQueue.front();
+			m_CommandListQueue.pop();
+
+			verify(commandList->Reset(commandAllocator.Get(), nullptr));
+		}
+		else
+		{
+			commandList = CreateCommandList(commandAllocator);
+		}
 	}
 
 	// Associate the command allocator with the command list so that it can be retrieved when the command list is executed.
@@ -75,8 +79,12 @@ uint64 CommandQueue::ExecuteCommandList(ComPtr<ID3D12GraphicsCommandList2> comma
 	m_d3d12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
 	uint64_t fenceValue = Signal();
 
-	m_CommandAllocatorQueue.emplace(CommandAllocatorEntry{ fenceValue, commandAllocator });
-	m_CommandListQueue.push(commandList);
+	{
+		std::lock_guard<std::mutex> lock(mutex);
+	
+		m_CommandAllocatorQueue.emplace(CommandAllocatorEntry{ fenceValue, commandAllocator });
+		m_CommandListQueue.push(commandList);
+	}
 
 	// The ownership of the command allocator has been transferred to the ComPtr
 	// in the command allocator queue. It is safe to release the reference 
