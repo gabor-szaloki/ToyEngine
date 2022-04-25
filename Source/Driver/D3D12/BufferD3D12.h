@@ -16,7 +16,7 @@ namespace drv_d3d12
 		const ResId& getId() const override { return id; };
 		void updateData(const void* src_data) override;
 
-		void transition(D3D12_RESOURCE_STATES dest_state);
+		void transition(D3D12_RESOURCE_STATES dest_state, ID3D12GraphicsCommandList2* cmd_list = DriverD3D12::get().getFrameCmdList());
 		ID3D12Resource* getResource() const { return resource; }
 
 	private:

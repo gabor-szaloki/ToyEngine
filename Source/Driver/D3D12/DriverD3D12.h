@@ -13,6 +13,7 @@
 #include <string>
 #include <memory>
 #include <unordered_map>
+#include <array>
 #include <mutex>
 
 #define ASSERT_NOT_IMPLEMENTED assert(false && "drv_d3d12: Not implemented.")
@@ -20,6 +21,7 @@
 
 namespace drv_d3d12
 {
+	class Texture;
 	class Buffer;
 	class RenderState;
 	class GraphicsShaderSet;
@@ -38,7 +40,7 @@ namespace drv_d3d12
 		void resize(int display_width, int display_height) override;
 		void getDisplaySize(int& display_width, int& display_height) override;
 
-		ITexture* getBackbufferTexture() override { return (ITexture*)nullptr; };
+		ITexture* getBackbufferTexture() override { return (ITexture*)backbuffers[currentBackBufferIndex].get(); };
 		ITexture* createTexture(const TextureDesc& desc) override;
 		ITexture* createTextureStub() override;
 		IBuffer* createBuffer(const BufferDesc& desc) override;
@@ -97,9 +99,17 @@ namespace drv_d3d12
 		CommandQueue* getDirectCommandQueue() const { return directCommandQueue.get(); };
 		CommandQueue* getComputeCommandQueue() const { return computeCommandQueue.get(); };
 		CommandQueue* getCopyCommandQueue() const { return copyCommandQueue.get(); };
+		ID3D12GraphicsCommandList2* getFrameCmdList() const { return frameCmdList.Get(); }
 
-		void transitionResource(ComPtr<ID3D12Resource> resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState);
+		void transitionResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES before_state, D3D12_RESOURCE_STATES after_state, ID3D12GraphicsCommandList2* cmd_list = DriverD3D12::get().getFrameCmdList());
+		CD3DX12_CPU_DESCRIPTOR_HANDLE createShaderResourceView(ID3D12Resource* resource, const D3D12_SHADER_RESOURCE_VIEW_DESC* desc = nullptr);
+		CD3DX12_CPU_DESCRIPTOR_HANDLE createUnorderedAccessView(ID3D12Resource* resource, const D3D12_UNORDERED_ACCESS_VIEW_DESC* desc = nullptr);
+		CD3DX12_CPU_DESCRIPTOR_HANDLE createConstantBufferView(const D3D12_CONSTANT_BUFFER_VIEW_DESC& desc);
+		CD3DX12_CPU_DESCRIPTOR_HANDLE createRenderTargetView(ID3D12Resource* resource, const D3D12_RENDER_TARGET_VIEW_DESC* desc = nullptr);
+		CD3DX12_CPU_DESCRIPTOR_HANDLE createDepthStencilView(ID3D12Resource* resource, const D3D12_DEPTH_STENCIL_VIEW_DESC* desc = nullptr);
 
+		ResId registerTexture(Texture* tex);
+		void unregisterTexture(ResId id);
 		ResId registerBuffer(Buffer* buf);
 		void unregisterBuffer(ResId id);
 		ResId registerRenderState(RenderState* rs);
@@ -111,19 +121,18 @@ namespace drv_d3d12
 
 	private:
 		void flush();
+		void initCapabilities();
 		void initDefaultPipelineStates();
 		bool initResolutionDependentResources();
 		void closeResolutionDependentResources();
 		void releaseAllResources();
 		void enableDebugLayer();
-		void updateBackbufferRTVs();
 		ID3D12PipelineState* getOrCreateCurrentGraphicsPipeline();
+		void flushGraphicsPipeline();
 
 		//
 		// Stuff for the cube demo
 		// 
-		// Depth buffer.
-		ComPtr<ID3D12Resource> m_DepthBuffer;
 		// Root signature
 		ComPtr<ID3D12RootSignature> m_RootSignature;
 		float m_FoV = 45.0f;
@@ -151,18 +160,22 @@ namespace drv_d3d12
 		ComPtr<ID3D12GraphicsCommandList2> frameCmdList;
 
 		ComPtr<IDXGISwapChain4> swapchain;
-		ComPtr<ID3D12Resource> backbuffers[NUM_SWACHAIN_BUFFERS]; // TODO: Make these our Texture type
+		std::unique_ptr<Texture> backbuffers[NUM_SWACHAIN_BUFFERS];
 		uint64 frameFenceValues[NUM_SWACHAIN_BUFFERS] = {};
 
+		// TODO: DescriptorHeap wrapper with mutex
 		ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap;
 		uint rtvDescriptorSize = 0;
-		static constexpr uint NUM_RTV_DESCRIPTORS = 100;
+		uint numRtvs = 0;
+		static constexpr uint NUM_MAX_RTV_DESCRIPTORS = 1000;
 		ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap;
 		uint dsvDescriptorSize = 0;
-		static constexpr uint NUM_DSV_DESCRIPTORS = 100;
+		uint numDsvs = 0;
+		static constexpr uint NUM_MAX_DSV_DESCRIPTORS = 1000;
 		ComPtr<ID3D12DescriptorHeap> cbvSrvUavDescriptorHeap;
 		uint cbvSrvUavDescriptorSize = 0;
-		static constexpr uint NUM_CBV_SRV_UAV_DESCRIPTORS = 100;
+		uint numCbvSrvUavs = 0;
+		static constexpr uint NUM_MAX_CBV_SRV_UAV_DESCRIPTORS = 1000;
 
 		ComPtr<IDXGIDebug> dxgiDebug = nullptr;
 
@@ -172,11 +185,17 @@ namespace drv_d3d12
 
 		std::unordered_map<uint64, ID3D12PipelineState*> psoHashMap;
 
+		std::unordered_map<ResId, Texture*> textures;
 		std::unordered_map<ResId, Buffer*> buffers;
 		std::unordered_map<ResId, RenderState*> renderStates;
 		std::unordered_map<ResId, GraphicsShaderSet*> graphicsShaders;
 		std::unordered_map<ResId, InputLayout*> inputLayouts;
 
 		std::unique_ptr<GraphicsShaderSet> errorShader;
+
+		std::array<CD3DX12_CPU_DESCRIPTOR_HANDLE, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> currentRTVs;
+		CD3DX12_CPU_DESCRIPTOR_HANDLE currentDSV{};
+
+		D3D_ROOT_SIGNATURE_VERSION highestRootSignatureVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
 	};
 }

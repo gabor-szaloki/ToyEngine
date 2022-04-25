@@ -1,5 +1,6 @@
 #include "DriverD3D12.h"
 
+#include "TextureD3D12.h"
 #include "BufferD3D12.h"
 #include "RenderStateD3D12.h"
 #include "GraphicsShaderSet.h"
@@ -88,19 +89,22 @@ static ComPtr<ID3D12Device2> create_device(ComPtr<IDXGIAdapter4> adapter, bool d
 			};
 
 			// Suppress individual messages by their ID
-			//D3D12_MESSAGE_ID DenyIds[] = {
-			//	D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,   // I'm really not sure how to avoid this message.
-			//	D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,                         // This warning occurs when using capture frame while graphics debugging.
-			//	D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,                       // This warning occurs when using capture frame while graphics debugging.
-			//};
+			D3D12_MESSAGE_ID DenyIds[] = {
+				D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE, // This warning occurs when a render target is cleared using a clear color that is 
+																			  // not the optimized clear color specified during resource creation.If you want to
+																			  // clear a render target using an arbitrary clear color, you should disable this warning.
+				D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE, // TODO: we should init depth textures with 1.0, or expose optimized clearvalue to TextureDesc
+				//D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,                         // This warning occurs when using capture frame while graphics debugging.
+				//D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,                       // This warning occurs when using capture frame while graphics debugging.
+			};
 
 			D3D12_INFO_QUEUE_FILTER NewFilter = {};
 			//NewFilter.DenyList.NumCategories = _countof(Categories);
 			//NewFilter.DenyList.pCategoryList = Categories;
 			NewFilter.DenyList.NumSeverities = _countof(Severities);
 			NewFilter.DenyList.pSeverityList = Severities;
-			//NewFilter.DenyList.NumIDs = _countof(DenyIds);
-			//NewFilter.DenyList.pIDList = DenyIds;
+			NewFilter.DenyList.NumIDs = _countof(DenyIds);
+			NewFilter.DenyList.pIDList = DenyIds;
 
 			if (FAILED(pInfoQueue->PushStorageFilter(&NewFilter)))
 				PLOG_ERROR << "Failed to push D3D debug layer info queue filter";
@@ -190,12 +194,12 @@ bool DriverD3D12::init(void* hwnd, int display_width, int display_height)
 	swapchain = create_swap_chain(hWnd, directCommandQueue->GetD3D12CommandQueue(), displayWidth, displayHeight, SWAPCHAIN_FORMAT, NUM_SWACHAIN_BUFFERS, debug_layer_enabled);
 	currentBackBufferIndex = swapchain->GetCurrentBackBufferIndex();
 
-	rtvDescriptorHeap = create_descriptor_heap(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, NUM_RTV_DESCRIPTORS, &rtvDescriptorSize);
-	dsvDescriptorHeap = create_descriptor_heap(device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, NUM_DSV_DESCRIPTORS, &dsvDescriptorSize);
-	cbvSrvUavDescriptorHeap = create_descriptor_heap(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, NUM_CBV_SRV_UAV_DESCRIPTORS, &cbvSrvUavDescriptorSize);
+	rtvDescriptorHeap = create_descriptor_heap(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, NUM_MAX_RTV_DESCRIPTORS, &rtvDescriptorSize);
+	dsvDescriptorHeap = create_descriptor_heap(device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, NUM_MAX_DSV_DESCRIPTORS, &dsvDescriptorSize);
+	cbvSrvUavDescriptorHeap = create_descriptor_heap(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, NUM_MAX_CBV_SRV_UAV_DESCRIPTORS, &cbvSrvUavDescriptorSize);
 
+	initCapabilities();
 	initDefaultPipelineStates();
-
 	initResolutionDependentResources();
 
 	ImGui_ImplDX12_Init(device.Get(), NUM_SWACHAIN_BUFFERS, SWAPCHAIN_FORMAT, cbvSrvUavDescriptorHeap.Get(),
@@ -275,14 +279,12 @@ void DriverD3D12::getDisplaySize(int& display_width, int& display_height)
 
 ITexture* DriverD3D12::createTexture(const TextureDesc& desc)
 {
-	ASSERT_NOT_IMPLEMENTED;
-	return nullptr;
+	return new Texture(&desc);
 }
 
 ITexture* DriverD3D12::createTextureStub()
 {
-	ASSERT_NOT_IMPLEMENTED;
-	return nullptr;
+	return new Texture();
 }
 
 IBuffer* DriverD3D12::createBuffer(const BufferDesc& desc)
@@ -350,8 +352,13 @@ void DriverD3D12::destroyResource(ResId res_id)
 }
 
 template<typename T>
-T* get_resource(ResId res_id, std::unordered_map<ResId, T*>& pool)
+T* get_resource(ResId res_id, std::unordered_map<ResId, T*>& pool, bool optional = false)
 {
+	assert(optional || res_id != BAD_RESID);
+
+	if (res_id == BAD_RESID)
+		return nullptr;
+
 	RESOURCE_LOCK_GUARD;
 	assert(pool.find(res_id) != pool.end());
 	return pool[res_id];
@@ -421,13 +428,87 @@ void DriverD3D12::setSampler(ShaderStage stage, unsigned int slot, ResId res_id)
 void DriverD3D12::setRenderTarget(ResId target_id, ResId depth_id,
 	unsigned int target_slice, unsigned int depth_slice, unsigned int target_mip, unsigned int depth_mip)
 {
-	ASSERT_NOT_IMPLEMENTED;
+	currentRTVs.fill(CD3DX12_CPU_DESCRIPTOR_HANDLE(CD3DX12_DEFAULT()));
+	currentDSV = CD3DX12_CPU_DESCRIPTOR_HANDLE(CD3DX12_DEFAULT());
+
+	Texture* targetTex = get_resource(target_id, textures, true);
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE* rtv = nullptr;
+	D3D12_RT_FORMAT_ARRAY rtvFormats = {};
+	if (targetTex != nullptr)
+	{
+		assert(targetTex->getDesc().bindFlags & BIND_RENDER_TARGET);
+
+		targetTex->transition(D3D12_RESOURCE_STATE_RENDER_TARGET);
+			
+		currentRTVs[0] = targetTex->getRtv(target_slice, target_mip);
+		rtv = &currentRTVs[0];
+
+		rtvFormats.NumRenderTargets = 1;
+		rtvFormats.RTFormats[0] = (DXGI_FORMAT)targetTex->getDesc().getRtvFormat();
+	}
+	currentGraphicsPipelineState.renderTargetFormats = rtvFormats;
+
+	Texture* depthTex = get_resource(depth_id, textures, true);
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE* dsv = nullptr;
+	currentGraphicsPipelineState.depthStencilFormat = DXGI_FORMAT_UNKNOWN;
+	if (depthTex != nullptr)
+	{
+		assert(depthTex->getDesc().bindFlags & BIND_DEPTH_STENCIL);
+
+		depthTex->transition(D3D12_RESOURCE_STATE_DEPTH_WRITE);
+
+		currentDSV = depthTex->getDsv(depth_slice, depth_mip);
+		dsv = &currentDSV;
+
+		currentGraphicsPipelineState.depthStencilFormat = (DXGI_FORMAT)depthTex->getDesc().getDsvFormat();
+	}
+
+	frameCmdList->OMSetRenderTargets(rtvFormats.NumRenderTargets, rtv, false, dsv);
 }
 
 void DriverD3D12::setRenderTargets(unsigned int num_targets, ResId* target_ids, ResId depth_id,
 	unsigned int* target_slices, unsigned int depth_slice, unsigned int* target_mips, unsigned int depth_mip)
 {
-	ASSERT_NOT_IMPLEMENTED;
+	assert(num_targets <= D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT);
+
+	currentRTVs.fill(CD3DX12_CPU_DESCRIPTOR_HANDLE(CD3DX12_DEFAULT()));
+	currentDSV = CD3DX12_CPU_DESCRIPTOR_HANDLE(CD3DX12_DEFAULT());
+
+	D3D12_RT_FORMAT_ARRAY rtvFormats;
+	rtvFormats.NumRenderTargets = num_targets;
+	for (uint i = 0; i < num_targets; i++)
+	{
+		Texture* targetTex = get_resource(target_ids[i], textures);
+		assert(targetTex->getDesc().bindFlags & BIND_RENDER_TARGET);
+
+		targetTex->transition(D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+		uint targetSlice = target_slices != nullptr ? target_slices[i] : 0;
+		uint targetMip = target_mips != nullptr ? target_mips[i] : 0;
+
+		currentRTVs[i] = targetTex->getRtv(targetSlice, targetMip);
+		rtvFormats.RTFormats[i] = (DXGI_FORMAT)targetTex->getDesc().getRtvFormat();
+	}
+
+	Texture* depthTex = get_resource(depth_id, textures, true);
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE* dsv = nullptr;
+	currentGraphicsPipelineState.depthStencilFormat = DXGI_FORMAT_UNKNOWN;
+	if (depthTex != nullptr)
+	{
+		assert(depthTex->getDesc().bindFlags & BIND_DEPTH_STENCIL);
+
+		depthTex->transition(D3D12_RESOURCE_STATE_DEPTH_WRITE);
+
+		currentDSV = depthTex->getDsv(depth_slice, depth_mip);
+		dsv = &currentDSV;
+
+		currentGraphicsPipelineState.depthStencilFormat = (DXGI_FORMAT)depthTex->getDesc().getDsvFormat();
+	}
+
+	frameCmdList->OMSetRenderTargets(num_targets, num_targets > 0 ? currentRTVs.data() : nullptr, false, dsv);
 }
 
 void DriverD3D12::setRenderState(ResId res_id)
@@ -461,12 +542,14 @@ void DriverD3D12::getView(ViewportParams& vp)
 
 void DriverD3D12::draw(unsigned int vertex_count, unsigned int start_vertex)
 {
-	ASSERT_NOT_IMPLEMENTED;
+	flushGraphicsPipeline();
+	frameCmdList->DrawInstanced(vertex_count, 1, start_vertex, 0);
 }
 
 void DriverD3D12::drawIndexed(unsigned int index_count, unsigned int start_index, int base_vertex)
 {
-	ASSERT_NOT_IMPLEMENTED;
+	flushGraphicsPipeline();
+	frameCmdList->DrawIndexedInstanced(index_count, 1, start_index, base_vertex, 0);
 }
 
 void DriverD3D12::dispatch(unsigned int num_threadgroups_x, unsigned int num_threadgroups_y, unsigned int num_threadgroups_z)
@@ -476,7 +559,27 @@ void DriverD3D12::dispatch(unsigned int num_threadgroups_x, unsigned int num_thr
 
 void DriverD3D12::clearRenderTargets(const RenderTargetClearParams clear_params)
 {
-	ASSERT_NOT_IMPLEMENTED;
+	if (clear_params.clearFlags & CLEAR_FLAG_COLOR)
+	{
+		for (uint i = 0, mask = clear_params.colorTargetMask;
+			mask && i < currentRTVs.size();
+			i++, mask >>= mask)
+		{
+			if ((mask & 1) && currentRTVs[i].ptr != 0)
+				frameCmdList->ClearRenderTargetView(currentRTVs[i], clear_params.color, 0, nullptr);
+		}
+	}
+	if ((clear_params.clearFlags & (CLEAR_FLAG_DEPTH | CLEAR_FLAG_STENCIL)) && currentDSV.ptr != 0)
+	{
+		D3D12_CLEAR_FLAGS dsvClearFlags = (D3D12_CLEAR_FLAGS)0;
+		if (clear_params.clearFlags & CLEAR_FLAG_DEPTH)
+			dsvClearFlags |= D3D12_CLEAR_FLAG_DEPTH;
+		if (clear_params.clearFlags & CLEAR_FLAG_STENCIL)
+			dsvClearFlags |= D3D12_CLEAR_FLAG_STENCIL;
+		assert(dsvClearFlags != 0);
+
+		frameCmdList->ClearDepthStencilView(currentDSV, dsvClearFlags, clear_params.depth, clear_params.stencil, 0, nullptr);
+	}
 }
 
 void DriverD3D12::beginFrame()
@@ -524,47 +627,12 @@ void DriverD3D12::beginRender()
 		}
 	}
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), currentBackBufferIndex, rtvDescriptorSize);
-	D3D12_CPU_DESCRIPTOR_HANDLE dsv = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-
-	// Clear the render target.
-	{
-		transitionResource(backbuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-		float clearColor[] = { 0.4f, 0.6f, 0.9f, 1.0f };
-
-		frameCmdList->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
-		frameCmdList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, 0, nullptr);
-	}
-
-	// TODO: remove render target setting from here once we support it via the interface
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvs[] = { rtv };
-	frameCmdList->OMSetRenderTargets(1, rtvs, false, &dsv);
+	currentRTVs.fill(CD3DX12_CPU_DESCRIPTOR_HANDLE(CD3DX12_DEFAULT()));
+	currentDSV = CD3DX12_CPU_DESCRIPTOR_HANDLE(CD3DX12_DEFAULT());
 }
 
 void DriverD3D12::endFrame()
 {
-	// Render demo cube
-	{
-		D3D12_RT_FORMAT_ARRAY rtvFormats = {};
-		rtvFormats.NumRenderTargets = 1;
-		rtvFormats.RTFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-
-		currentGraphicsPipelineState.rootSignature = m_RootSignature.Get();
-		currentGraphicsPipelineState.depthStencilFormat = DXGI_FORMAT_D32_FLOAT;
-		currentGraphicsPipelineState.renderTargetFormats = rtvFormats;
-
-		frameCmdList->SetPipelineState(getOrCreateCurrentGraphicsPipeline());
-		frameCmdList->SetGraphicsRootSignature(m_RootSignature.Get());
-
-		// Update the MVP matrix
-		XMMATRIX mvpMatrix = XMMatrixMultiply(m_ModelMatrix, m_ViewMatrix);
-		mvpMatrix = XMMatrixMultiply(mvpMatrix, m_ProjectionMatrix);
-		frameCmdList->SetGraphicsRoot32BitConstants(0, sizeof(XMMATRIX) / 4, &mvpMatrix, 0);
-
-		frameCmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
-	}
-
 	// Render Dear ImGui graphics
 	frameCmdList->SetDescriptorHeaps(1, cbvSrvUavDescriptorHeap.GetAddressOf());
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), frameCmdList.Get());
@@ -572,7 +640,7 @@ void DriverD3D12::endFrame()
 
 void DriverD3D12::present()
 {
-	transitionResource(backbuffers[currentBackBufferIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	backbuffers[currentBackBufferIndex]->transition(D3D12_RESOURCE_STATE_PRESENT);
 
 	// Submit graphics work
 	frameFenceValues[currentBackBufferIndex] = directCommandQueue->ExecuteCommandList(frameCmdList);
@@ -645,10 +713,57 @@ ResId DriverD3D12::getErrorShader()
 	return errorShader->getId();
 }
 
-void DriverD3D12::transitionResource(ComPtr<ID3D12Resource> resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState)
+void DriverD3D12::transitionResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES before_state, D3D12_RESOURCE_STATES after_state, ID3D12GraphicsCommandList2* cmd_list)
 {
-	CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(resource.Get(), beforeState, afterState);
-	frameCmdList->ResourceBarrier(1, &barrier);
+	// TODO: implement batch barriers
+	CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(resource, before_state, after_state);
+	cmd_list->ResourceBarrier(1, &barrier);
+}
+
+CD3DX12_CPU_DESCRIPTOR_HANDLE DriverD3D12::createShaderResourceView(ID3D12Resource* resource, const D3D12_SHADER_RESOURCE_VIEW_DESC* desc)
+{
+	assert(numCbvSrvUavs < NUM_MAX_CBV_SRV_UAV_DESCRIPTORS);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandle(cbvSrvUavDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), numCbvSrvUavs, cbvSrvUavDescriptorSize);
+	device->CreateShaderResourceView(resource, desc, srvHandle);
+	numCbvSrvUavs++;
+	return srvHandle;
+}
+
+CD3DX12_CPU_DESCRIPTOR_HANDLE DriverD3D12::createUnorderedAccessView(ID3D12Resource* resource, const D3D12_UNORDERED_ACCESS_VIEW_DESC* desc)
+{
+	assert(numCbvSrvUavs < NUM_MAX_CBV_SRV_UAV_DESCRIPTORS);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE uavHandle(cbvSrvUavDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), numCbvSrvUavs, cbvSrvUavDescriptorSize);
+	ID3D12Resource* counterResource = nullptr;
+	device->CreateUnorderedAccessView(resource, counterResource, desc, uavHandle);
+	numCbvSrvUavs++;
+	return uavHandle;
+}
+
+CD3DX12_CPU_DESCRIPTOR_HANDLE DriverD3D12::createConstantBufferView(const D3D12_CONSTANT_BUFFER_VIEW_DESC& desc)
+{
+	assert(numCbvSrvUavs < NUM_MAX_CBV_SRV_UAV_DESCRIPTORS);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle(cbvSrvUavDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), numCbvSrvUavs, cbvSrvUavDescriptorSize);
+	device->CreateConstantBufferView(&desc, cbvHandle);
+	numCbvSrvUavs++;
+	return cbvHandle;
+}
+
+CD3DX12_CPU_DESCRIPTOR_HANDLE DriverD3D12::createRenderTargetView(ID3D12Resource* resource, const D3D12_RENDER_TARGET_VIEW_DESC* desc)
+{
+	assert(numRtvs < NUM_MAX_RTV_DESCRIPTORS);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), numRtvs, rtvDescriptorSize);
+	device->CreateRenderTargetView(resource, desc, rtvHandle);
+	numRtvs++;
+	return rtvHandle;
+}
+
+CD3DX12_CPU_DESCRIPTOR_HANDLE DriverD3D12::createDepthStencilView(ID3D12Resource* resource, const D3D12_DEPTH_STENCIL_VIEW_DESC* desc)
+{
+	assert(numDsvs < NUM_MAX_DSV_DESCRIPTORS);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), numDsvs, dsvDescriptorSize);
+	device->CreateDepthStencilView(resource, desc, dsvHandle);
+	numDsvs++;
+	return dsvHandle;
 }
 
 template<typename T>
@@ -669,6 +784,8 @@ static void erase_resource(ResId id, std::unordered_map<ResId, T*>& from)
 	assert(numElementsErased == 1);
 }
 
+ResId DriverD3D12::registerTexture(Texture* tex) { return emplace_resource(tex, textures); }
+void DriverD3D12::unregisterTexture(ResId id) { erase_resource(id, textures); }
 ResId DriverD3D12::registerBuffer(Buffer* buf) { return emplace_resource(buf, buffers); }
 void DriverD3D12::unregisterBuffer(ResId id) { erase_resource(id, buffers); }
 ResId DriverD3D12::registerRenderState(RenderState* rs) { return emplace_resource(rs, renderStates); }
@@ -685,6 +802,20 @@ void DriverD3D12::flush()
 	copyCommandQueue->Flush();
 }
 
+void DriverD3D12::initCapabilities()
+{
+	// Root signature version 1.1 should be preferred because it allows for driver level optimizations to be made.
+	// Read more at:
+	// - https://www.3dgep.com/learning-directx-12-2/#root-signature
+	// - https://docs.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_descriptor_range_flags
+
+	D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
+	featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+	if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData))))
+		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
+	highestRootSignatureVersion = featureData.HighestVersion;
+}
+
 void DriverD3D12::initDefaultPipelineStates()
 {
 	currentGraphicsPipelineState.primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
@@ -695,37 +826,32 @@ void DriverD3D12::initDefaultPipelineStates()
 
 bool DriverD3D12::initResolutionDependentResources()
 {
-	updateBackbufferRTVs();
-
-	// init depth buffer for demo
+	// Create backbuffer render target views
+	for (int i = 0; i < NUM_SWACHAIN_BUFFERS; i++)
 	{
-		// Create a depth buffer.
-		D3D12_CLEAR_VALUE optimizedClearValue = {};
-		optimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
-		optimizedClearValue.DepthStencil = { 1.0f, 0 };
+		ID3D12Resource* backbufferResource;
+		verify(swapchain->GetBuffer(i, IID_PPV_ARGS(&backbufferResource)));
 
-		{
-			CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
-			CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, displayWidth, displayHeight, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
-			verify(device->CreateCommittedResource(
-				&heapProperties,
-				D3D12_HEAP_FLAG_NONE,
-				&resourceDesc,
-				D3D12_RESOURCE_STATE_DEPTH_WRITE,
-				&optimizedClearValue,
-				IID_PPV_ARGS(&m_DepthBuffer)
-			));
-		}
+		D3D12_RESOURCE_DESC rd;
+		rd = backbufferResource->GetDesc();
 
-		// Update the depth-stencil view.
-		D3D12_DEPTH_STENCIL_VIEW_DESC dsv = {};
-		dsv.Format = DXGI_FORMAT_D32_FLOAT;
-		dsv.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-		dsv.Texture2D.MipSlice = 0;
-		dsv.Flags = D3D12_DSV_FLAG_NONE;
+		assert(rd.Width == displayWidth);
+		assert(rd.Height == displayHeight);
 
-		device->CreateDepthStencilView(m_DepthBuffer.Get(), &dsv,
-			dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+		TextureDesc desc;
+		desc.name = "backbuffer";
+		desc.width = rd.Width;
+		desc.height = rd.Height;
+		desc.format = (TexFmt)rd.Format;
+		desc.mips = rd.MipLevels;
+		desc.usageFlags = ResourceUsage::DEFAULT;
+		desc.bindFlags = BIND_RENDER_TARGET;
+		desc.cpuAccessFlags = 0;
+		desc.miscFlags = 0;
+
+		backbuffers[i] = std::make_unique<Texture>(&desc, backbufferResource);
+
+		set_debug_name(backbufferResource, desc.name);
 	}
 
 	return true;
@@ -733,11 +859,9 @@ bool DriverD3D12::initResolutionDependentResources()
 
 void DriverD3D12::closeResolutionDependentResources()
 {
-	m_DepthBuffer.Reset();
-
 	for (int i = 0; i < NUM_SWACHAIN_BUFFERS; i++)
 	{
-		backbuffers[i].Reset();
+		backbuffers[i].reset();
 		frameFenceValues[i] = frameFenceValues[currentBackBufferIndex];
 	}
 }
@@ -775,25 +899,6 @@ void DriverD3D12::enableDebugLayer()
 	}
 }
 
-void DriverD3D12::updateBackbufferRTVs()
-{
-	uint rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
-	for (int i = 0; i < NUM_SWACHAIN_BUFFERS; ++i)
-	{
-		ComPtr<ID3D12Resource> backbuffer;
-		verify(swapchain->GetBuffer(i, IID_PPV_ARGS(&backbuffer)));
-
-		device->CreateRenderTargetView(backbuffer.Get(), nullptr, rtvHandle);
-
-		backbuffers[i] = backbuffer;
-
-		rtvHandle.Offset(rtvDescriptorSize);
-	}
-}
-
 ID3D12PipelineState* DriverD3D12::getOrCreateCurrentGraphicsPipeline()
 {
 	uint64 pipelineHash = currentGraphicsPipelineState.hash();
@@ -812,22 +917,31 @@ ID3D12PipelineState* DriverD3D12::getOrCreateCurrentGraphicsPipeline()
 	return newPso;
 }
 
+void DriverD3D12::flushGraphicsPipeline()
+{
+	// demo cube stuff
+	{
+		D3D12_RT_FORMAT_ARRAY rtvFormats = {};
+		rtvFormats.NumRenderTargets = 1;
+		rtvFormats.RTFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+		currentGraphicsPipelineState.rootSignature = m_RootSignature.Get();
+
+		frameCmdList->SetGraphicsRootSignature(m_RootSignature.Get());
+
+		// Update the MVP matrix
+		XMMATRIX mvpMatrix = XMMatrixMultiply(m_ModelMatrix, m_ViewMatrix);
+		mvpMatrix = XMMatrixMultiply(mvpMatrix, m_ProjectionMatrix);
+		frameCmdList->SetGraphicsRoot32BitConstants(0, sizeof(XMMATRIX) / 4, &mvpMatrix, 0);
+	}
+
+	frameCmdList->SetPipelineState(getOrCreateCurrentGraphicsPipeline());
+}
+
 bool DriverD3D12::loadDemoContent()
 {
 	// Create the root signature.
 	{
-		// Before creating the root signature, the highest supported version of the root signature is queried. Root signature version 1.1 should be preferred because it allows for driver level optimizations to be made.
-		// Read more at:
-		// - https://www.3dgep.com/learning-directx-12-2/#root-signature
-		// - https://docs.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_descriptor_range_flags
-
-		D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
-		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
-		if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData))))
-		{
-			featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
-		}
-
 		// Allow input layout and deny unnecessary access to certain pipeline stages.
 		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
 			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
@@ -846,7 +960,7 @@ bool DriverD3D12::loadDemoContent()
 		// Serialize the root signature.
 		ComPtr<ID3DBlob> rootSignatureBlob, errorBlob;
 		verify(D3DX12SerializeVersionedRootSignature(&rootSignatureDescription,
-			featureData.HighestVersion, &rootSignatureBlob, &errorBlob));
+			highestRootSignatureVersion, &rootSignatureBlob, &errorBlob));
 		// Create the root signature.
 		verify(device->CreateRootSignature(0, rootSignatureBlob->GetBufferPointer(),
 			rootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature)));

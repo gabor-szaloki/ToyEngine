@@ -205,9 +205,7 @@ static void render()
 		wr->render();
 	}
 
-#ifndef D3D12_DEV
 	drv->setRenderTarget(drv->getBackbufferTexture()->getId(), BAD_RESID);
-#endif
 
 	if (autoimgui::is_active)
 		ImGui::Render();

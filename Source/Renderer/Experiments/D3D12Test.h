@@ -6,8 +6,6 @@
 #include <Common.h>
 #include <Util/ResIdHolder.h>
 
-class ITexture;
-
 class D3D12Test : public IFullscreenExperiment
 {
 public:
@@ -16,7 +14,11 @@ public:
 	virtual void render(class ITexture& target) override;
 
 private:
+	void initResolutionDependentResources();
+	void closeResolutionDependentResources();
+
 	int displayWidth, displayHeight;
+	std::unique_ptr<ITexture> depthTex;
 	std::unique_ptr<IBuffer> cubeVb, cubeIb;
 	ResIdHolder shaderSet;
 	ResIdHolder inputLayout;

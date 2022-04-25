@@ -64,12 +64,18 @@ D3D12Test::D3D12Test(int display_width, int display_height) : displayWidth(displ
 		cubeIbDesc.initialData = cubeIndices;
 		cubeIb.reset(drv->createBuffer(cubeIbDesc));
 	}
+
+	initResolutionDependentResources();
 }
 
 void D3D12Test::onResize(int display_width, int display_height)
 {
+	closeResolutionDependentResources();
+
 	displayWidth = display_width;
 	displayHeight = display_height;
+
+	initResolutionDependentResources();
 }
 
 void D3D12Test::render(ITexture& target)
@@ -80,4 +86,23 @@ void D3D12Test::render(ITexture& target)
 	drv->setInputLayout(inputLayout);
 	drv->setVertexBuffer(cubeVb->getId());
 	drv->setIndexBuffer(cubeIb->getId());
+	drv->setRenderTarget(drv->getBackbufferTexture()->getId(), depthTex->getId());
+
+	drv->clearRenderTargets(RenderTargetClearParams::clear_all(0.4f, 0.6f, 0.9f, 1.0f, 1.0f));
+
+	drv->drawIndexed(36, 0, 0);
+}
+
+void D3D12Test::initResolutionDependentResources()
+{
+	TextureDesc depthTexDesc("depthTex", displayWidth, displayHeight,
+		TexFmt::R24G8_TYPELESS, 1, ResourceUsage::DEFAULT, BIND_DEPTH_STENCIL | BIND_SHADER_RESOURCE);
+	depthTexDesc.srvFormatOverride = TexFmt::R24_UNORM_X8_TYPELESS;
+	depthTexDesc.dsvFormatOverride = TexFmt::D24_UNORM_S8_UINT;
+	depthTex.reset(drv->createTexture(depthTexDesc));
+}
+
+void D3D12Test::closeResolutionDependentResources()
+{
+	depthTex.reset();
 }

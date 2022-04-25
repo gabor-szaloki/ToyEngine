@@ -17,12 +17,10 @@ Buffer::Buffer(const BufferDesc& desc_) : desc(desc_)
 			&heapProperties,
 			D3D12_HEAP_FLAG_NONE,
 			&resourceDesc,
-			D3D12_RESOURCE_STATE_COPY_DEST,
+			resourceState,
 			nullptr,
 			IID_PPV_ARGS(&resource)));
 	}
-
-	resourceState = D3D12_RESOURCE_STATE_COPY_DEST;
 
 	if (desc.initialData != nullptr)
 		updateData(desc.initialData);
@@ -69,17 +67,19 @@ void Buffer::updateData(const void* src_data)
 	CommandQueue* copyQueue = DriverD3D12::get().getCopyCommandQueue();
 	ComPtr<ID3D12GraphicsCommandList2> cmdList = copyQueue->GetCommandList();
 
+	transition(D3D12_RESOURCE_STATE_COPY_DEST, cmdList.Get());
+
 	UpdateSubresources(cmdList.Get(), resource, uploadBuffer, 0, 0, 1, &subresourceData);
 
 	uploadFenceValue = copyQueue->ExecuteCommandList(cmdList);
 }
 
-void Buffer::transition(D3D12_RESOURCE_STATES dest_state)
+void Buffer::transition(D3D12_RESOURCE_STATES dest_state, ID3D12GraphicsCommandList2* cmd_list)
 {
 	if (dest_state == resourceState)
 		return;
 
-	DriverD3D12::get().transitionResource(resource, resourceState, dest_state);
+	DriverD3D12::get().transitionResource(resource, resourceState, dest_state, cmd_list);
 	resourceState = dest_state;
 }
 

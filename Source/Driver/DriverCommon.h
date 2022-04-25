@@ -89,7 +89,11 @@ struct TextureDesc
 		name(name_), width(width_), height(height_), format(format_), mips(mips_), usageFlags(usage_flags),
 		bindFlags(bind_flags), cpuAccessFlags(cpu_access_flags), miscFlags(misc_flags) {}
 
-	unsigned int calcMipLevels() { return mips > 0 ? mips : calc_mip_levels(width, height); }
+	unsigned int calcMipLevels() const { return mips > 0 ? mips : calc_mip_levels(width, height); }
+	TexFmt getSrvFormat() const { return srvFormatOverride != TexFmt::INVALID ? srvFormatOverride : format; }
+	TexFmt getUavFormat() const { return uavFormatOverride != TexFmt::INVALID ? uavFormatOverride : format; }
+	TexFmt getRtvFormat() const { return rtvFormatOverride != TexFmt::INVALID ? rtvFormatOverride : format; }
+	TexFmt getDsvFormat() const { return dsvFormatOverride != TexFmt::INVALID ? dsvFormatOverride : format; }
 };
 
 struct BufferDesc
