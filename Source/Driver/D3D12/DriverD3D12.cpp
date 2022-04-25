@@ -3,13 +3,13 @@
 #include "TextureD3D12.h"
 #include "BufferD3D12.h"
 #include "RenderStateD3D12.h"
-#include "GraphicsShaderSet.h"
 #include "InputLayoutD3D12.h"
+#include "GraphicsShaderSet.h"
+#include "DescriptorHeap.h"
 
 #include <d3dcompiler.h>
 #pragma comment(lib,"d3dcompiler.lib")
 
-#include <assert.h>
 #include <algorithm>
 #include <3rdParty/cxxopts/cxxopts.hpp>
 #include <3rdParty/imgui/imgui_impl_dx12.h>
@@ -194,16 +194,16 @@ bool DriverD3D12::init(void* hwnd, int display_width, int display_height)
 	swapchain = create_swap_chain(hWnd, directCommandQueue->GetD3D12CommandQueue(), displayWidth, displayHeight, SWAPCHAIN_FORMAT, NUM_SWACHAIN_BUFFERS, debug_layer_enabled);
 	currentBackBufferIndex = swapchain->GetCurrentBackBufferIndex();
 
-	rtvDescriptorHeap = create_descriptor_heap(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, NUM_MAX_RTV_DESCRIPTORS, &rtvDescriptorSize);
-	dsvDescriptorHeap = create_descriptor_heap(device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, NUM_MAX_DSV_DESCRIPTORS, &dsvDescriptorSize);
-	cbvSrvUavDescriptorHeap = create_descriptor_heap(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, NUM_MAX_CBV_SRV_UAV_DESCRIPTORS, &cbvSrvUavDescriptorSize);
+	rtvHeap = std::make_unique<DescriptorHeap>(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1000);
+	dsvHeap = std::make_unique<DescriptorHeap>(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1000);
+	cbvSrvUavHeap = std::make_unique<DescriptorHeap>(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1000);
 
 	initCapabilities();
 	initDefaultPipelineStates();
 	initResolutionDependentResources();
 
-	ImGui_ImplDX12_Init(device.Get(), NUM_SWACHAIN_BUFFERS, SWAPCHAIN_FORMAT, cbvSrvUavDescriptorHeap.Get(),
-		cbvSrvUavDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), cbvSrvUavDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	DescriptorHandlePair imguiSrv = cbvSrvUavHeap->allocateDescriptor();
+	ImGui_ImplDX12_Init(device.Get(), NUM_SWACHAIN_BUFFERS, SWAPCHAIN_FORMAT, cbvSrvUavHeap->getHeap(), imguiSrv.cpuHandle, imguiSrv.gpuHandle);
 
 	loadDemoContent();
 
@@ -231,9 +231,9 @@ void DriverD3D12::shutdown()
 	closeResolutionDependentResources();
 	releaseAllResources();
 
-	cbvSrvUavDescriptorHeap.Reset();
-	dsvDescriptorHeap.Reset();
-	rtvDescriptorHeap.Reset();
+	cbvSrvUavHeap.reset();
+	dsvHeap.reset();
+	rtvHeap.reset();
 
 	swapchain.Reset();
 
@@ -634,7 +634,7 @@ void DriverD3D12::beginRender()
 void DriverD3D12::endFrame()
 {
 	// Render Dear ImGui graphics
-	frameCmdList->SetDescriptorHeaps(1, cbvSrvUavDescriptorHeap.GetAddressOf());
+	frameCmdList->SetDescriptorHeaps(1, cbvSrvUavHeap->getHeapAddress());
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), frameCmdList.Get());
 }
 
@@ -722,48 +722,39 @@ void DriverD3D12::transitionResource(ID3D12Resource* resource, D3D12_RESOURCE_ST
 
 CD3DX12_CPU_DESCRIPTOR_HANDLE DriverD3D12::createShaderResourceView(ID3D12Resource* resource, const D3D12_SHADER_RESOURCE_VIEW_DESC* desc)
 {
-	assert(numCbvSrvUavs < NUM_MAX_CBV_SRV_UAV_DESCRIPTORS);
-	CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandle(cbvSrvUavDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), numCbvSrvUavs, cbvSrvUavDescriptorSize);
-	device->CreateShaderResourceView(resource, desc, srvHandle);
-	numCbvSrvUavs++;
-	return srvHandle;
+	DescriptorHandlePair srv = cbvSrvUavHeap->allocateDescriptor();
+	device->CreateShaderResourceView(resource, desc, srv.cpuHandle);
+	return srv.cpuHandle;
 }
 
 CD3DX12_CPU_DESCRIPTOR_HANDLE DriverD3D12::createUnorderedAccessView(ID3D12Resource* resource, const D3D12_UNORDERED_ACCESS_VIEW_DESC* desc)
 {
-	assert(numCbvSrvUavs < NUM_MAX_CBV_SRV_UAV_DESCRIPTORS);
-	CD3DX12_CPU_DESCRIPTOR_HANDLE uavHandle(cbvSrvUavDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), numCbvSrvUavs, cbvSrvUavDescriptorSize);
+	DescriptorHandlePair uav = cbvSrvUavHeap->allocateDescriptor();
 	ID3D12Resource* counterResource = nullptr;
-	device->CreateUnorderedAccessView(resource, counterResource, desc, uavHandle);
-	numCbvSrvUavs++;
-	return uavHandle;
+	device->CreateUnorderedAccessView(resource, counterResource, desc, uav.cpuHandle);
+	return uav.cpuHandle;
 }
 
 CD3DX12_CPU_DESCRIPTOR_HANDLE DriverD3D12::createConstantBufferView(const D3D12_CONSTANT_BUFFER_VIEW_DESC& desc)
 {
-	assert(numCbvSrvUavs < NUM_MAX_CBV_SRV_UAV_DESCRIPTORS);
-	CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle(cbvSrvUavDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), numCbvSrvUavs, cbvSrvUavDescriptorSize);
-	device->CreateConstantBufferView(&desc, cbvHandle);
-	numCbvSrvUavs++;
-	return cbvHandle;
+	DescriptorHandlePair cbv = cbvSrvUavHeap->allocateDescriptor();
+	ID3D12Resource* counterResource = nullptr;
+	device->CreateConstantBufferView(&desc, cbv.cpuHandle);
+	return cbv.cpuHandle;
 }
 
 CD3DX12_CPU_DESCRIPTOR_HANDLE DriverD3D12::createRenderTargetView(ID3D12Resource* resource, const D3D12_RENDER_TARGET_VIEW_DESC* desc)
 {
-	assert(numRtvs < NUM_MAX_RTV_DESCRIPTORS);
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), numRtvs, rtvDescriptorSize);
-	device->CreateRenderTargetView(resource, desc, rtvHandle);
-	numRtvs++;
-	return rtvHandle;
+	DescriptorHandlePair rtv = rtvHeap->allocateDescriptor();
+	device->CreateRenderTargetView(resource, desc, rtv.cpuHandle);
+	return rtv.cpuHandle;
 }
 
 CD3DX12_CPU_DESCRIPTOR_HANDLE DriverD3D12::createDepthStencilView(ID3D12Resource* resource, const D3D12_DEPTH_STENCIL_VIEW_DESC* desc)
 {
-	assert(numDsvs < NUM_MAX_DSV_DESCRIPTORS);
-	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), numDsvs, dsvDescriptorSize);
-	device->CreateDepthStencilView(resource, desc, dsvHandle);
-	numDsvs++;
-	return dsvHandle;
+	DescriptorHandlePair dsv = dsvHeap->allocateDescriptor();
+	device->CreateDepthStencilView(resource, desc, dsv.cpuHandle);
+	return dsv.cpuHandle;
 }
 
 template<typename T>

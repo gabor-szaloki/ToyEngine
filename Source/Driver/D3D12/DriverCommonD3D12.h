@@ -5,7 +5,7 @@
 #define NOMINMAX
 #include <d3d12.h>
 #pragma comment(lib, "d3d12.lib")
-#pragma comment(lib, "dxgi.lib")
+#include <3rdParty/DirectX-Headers/d3dx12.h>
 
 #include <wrl.h>
 template<typename T>

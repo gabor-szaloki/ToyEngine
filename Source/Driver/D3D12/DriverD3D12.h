@@ -6,9 +6,9 @@
 #include "CommandQueue.h"
 #include "PipelineStates.h"
 
-#include <3rdParty/DirectX-Headers/d3dx12.h>
 #include <dxgi1_6.h>
 #include <dxgidebug.h>
+#pragma comment(lib, "dxgi.lib")
 
 #include <string>
 #include <memory>
@@ -24,8 +24,9 @@ namespace drv_d3d12
 	class Texture;
 	class Buffer;
 	class RenderState;
-	class GraphicsShaderSet;
 	class InputLayout;
+	class GraphicsShaderSet;
+	class DescriptorHeap;
 
 	class DriverD3D12 : public IDriver
 	{
@@ -163,19 +164,9 @@ namespace drv_d3d12
 		std::unique_ptr<Texture> backbuffers[NUM_SWACHAIN_BUFFERS];
 		uint64 frameFenceValues[NUM_SWACHAIN_BUFFERS] = {};
 
-		// TODO: DescriptorHeap wrapper with mutex
-		ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap;
-		uint rtvDescriptorSize = 0;
-		uint numRtvs = 0;
-		static constexpr uint NUM_MAX_RTV_DESCRIPTORS = 1000;
-		ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap;
-		uint dsvDescriptorSize = 0;
-		uint numDsvs = 0;
-		static constexpr uint NUM_MAX_DSV_DESCRIPTORS = 1000;
-		ComPtr<ID3D12DescriptorHeap> cbvSrvUavDescriptorHeap;
-		uint cbvSrvUavDescriptorSize = 0;
-		uint numCbvSrvUavs = 0;
-		static constexpr uint NUM_MAX_CBV_SRV_UAV_DESCRIPTORS = 1000;
+		std::unique_ptr<DescriptorHeap> rtvHeap;
+		std::unique_ptr<DescriptorHeap> dsvHeap;
+		std::unique_ptr<DescriptorHeap> cbvSrvUavHeap;
 
 		ComPtr<IDXGIDebug> dxgiDebug = nullptr;
 

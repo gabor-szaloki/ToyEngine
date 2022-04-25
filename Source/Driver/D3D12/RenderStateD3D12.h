@@ -2,8 +2,6 @@
 
 #include "DriverCommonD3D12.h"
 
-#include <3rdParty/DirectX-Headers/d3dx12.h>
-
 namespace drv_d3d12
 {
 	class RenderState

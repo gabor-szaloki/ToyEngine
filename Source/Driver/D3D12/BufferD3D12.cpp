@@ -1,7 +1,5 @@
 #include "BufferD3D12.h"
 
-#include <assert.h>
-
 namespace drv_d3d12
 {
 

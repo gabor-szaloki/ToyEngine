@@ -7,7 +7,6 @@
 
 #include <fstream>
 #include <system_error>
-#include <assert.h>
 #include <functional>
 #include <numeric>
 
