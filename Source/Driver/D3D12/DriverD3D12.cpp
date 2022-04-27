@@ -188,7 +188,6 @@ bool DriverD3D12::init(void* hwnd, int display_width, int display_height)
 	device = create_device(adapter, debug_layer_enabled);
 
 	directCommandQueue = std::make_unique<CommandQueue>(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
-	computeCommandQueue = std::make_unique<CommandQueue>(device, D3D12_COMMAND_LIST_TYPE_COMPUTE);
 	copyCommandQueue = std::make_unique<CommandQueue>(device, D3D12_COMMAND_LIST_TYPE_COPY);
 
 	swapchain = create_swap_chain(hWnd, directCommandQueue->GetD3D12CommandQueue(), displayWidth, displayHeight, SWAPCHAIN_FORMAT, NUM_SWACHAIN_BUFFERS, debug_layer_enabled);
@@ -240,7 +239,6 @@ void DriverD3D12::shutdown()
 	frameCmdList.Reset();
 
 	copyCommandQueue.reset();
-	computeCommandQueue.reset();
 	directCommandQueue.reset();
 
 	device.Reset();
@@ -789,7 +787,6 @@ void DriverD3D12::unregisterInputLayout(ResId id) { erase_resource(id, inputLayo
 void DriverD3D12::flush()
 {
 	directCommandQueue->Flush();
-	computeCommandQueue->Flush();
 	copyCommandQueue->Flush();
 }
 

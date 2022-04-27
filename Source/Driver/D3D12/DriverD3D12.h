@@ -98,7 +98,6 @@ namespace drv_d3d12
 		std::mutex& getResourceMutex() { return resourceMutex; }
 		const GraphicsShaderSet* getErrorShaderSet() const { return errorShader.get(); }
 		CommandQueue* getDirectCommandQueue() const { return directCommandQueue.get(); };
-		CommandQueue* getComputeCommandQueue() const { return computeCommandQueue.get(); };
 		CommandQueue* getCopyCommandQueue() const { return copyCommandQueue.get(); };
 		ID3D12GraphicsCommandList2* getFrameCmdList() const { return frameCmdList.Get(); }
 
@@ -155,7 +154,6 @@ namespace drv_d3d12
 		ComPtr<ID3D12Device2> device;
 
 		std::unique_ptr<CommandQueue> directCommandQueue;
-		std::unique_ptr<CommandQueue> computeCommandQueue;
 		std::unique_ptr<CommandQueue> copyCommandQueue;
 
 		ComPtr<ID3D12GraphicsCommandList2> frameCmdList;
