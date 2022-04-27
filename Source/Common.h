@@ -4,7 +4,7 @@
 #pragma warning(disable:4244) // warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 
 // This disables some unimplemented stuff while D3D12 backend is in early development
-//#define D3D12_DEV
+#define D3D12_DEV
 
 #include <DirectXMath.h>
 #include <3rdParty/plog/Log.h>
