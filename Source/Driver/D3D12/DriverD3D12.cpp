@@ -187,8 +187,8 @@ bool DriverD3D12::init(void* hwnd, int display_width, int display_height)
 	ComPtr<IDXGIAdapter4> adapter = get_adapter(debug_layer_enabled);
 	device = create_device(adapter, debug_layer_enabled);
 
-	directCommandQueue = std::make_unique<CommandQueue>(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
-	copyCommandQueue = std::make_unique<CommandQueue>(device, D3D12_COMMAND_LIST_TYPE_COPY);
+	directCommandQueue = std::make_unique<CommandQueue>(device.Get(), D3D12_COMMAND_LIST_TYPE_DIRECT);
+	copyCommandQueue = std::make_unique<CommandQueue>(device.Get(), D3D12_COMMAND_LIST_TYPE_COPY);
 
 	swapchain = create_swap_chain(hWnd, directCommandQueue->GetD3D12CommandQueue(), displayWidth, displayHeight, SWAPCHAIN_FORMAT, NUM_SWACHAIN_BUFFERS, debug_layer_enabled);
 	currentBackBufferIndex = swapchain->GetCurrentBackBufferIndex();
@@ -641,7 +641,7 @@ void DriverD3D12::present()
 	backbuffers[currentBackBufferIndex]->transition(D3D12_RESOURCE_STATE_PRESENT);
 
 	// Submit graphics work
-	frameFenceValues[currentBackBufferIndex] = directCommandQueue->ExecuteCommandList(frameCmdList);
+	frameFenceValues[currentBackBufferIndex] = directCommandQueue->ExecuteCommandList(frameCmdList.Get());
 
 	uint syncInterval = settings.vsync ? 1 : 0;
 	uint presentFlags = settings.vsync ? 0 : DXGI_PRESENT_ALLOW_TEARING;
@@ -806,6 +806,7 @@ void DriverD3D12::initCapabilities()
 
 void DriverD3D12::initDefaultPipelineStates()
 {
+	memset(&currentGraphicsPipelineState, 0, sizeof(currentGraphicsPipelineState));
 	currentGraphicsPipelineState.primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	currentGraphicsPipelineState.blendState = CD3DX12_BLEND_DESC(CD3DX12_DEFAULT());
 	currentGraphicsPipelineState.rasterizerState = CD3DX12_RASTERIZER_DESC(CD3DX12_DEFAULT());

@@ -69,7 +69,7 @@ void Buffer::updateData(const void* src_data)
 
 	UpdateSubresources(cmdList.Get(), resource, uploadBuffer, 0, 0, 1, &subresourceData);
 
-	uploadFenceValue = copyQueue->ExecuteCommandList(cmdList);
+	uploadFenceValue = copyQueue->ExecuteCommandList(cmdList.Get());
 }
 
 void Buffer::transition(D3D12_RESOURCE_STATES dest_state, ID3D12GraphicsCommandList2* cmd_list)
